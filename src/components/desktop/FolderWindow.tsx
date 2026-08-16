@@ -8,7 +8,9 @@ import {
   type ContextMenuEntry,
 } from "@/components/desktop/ContextMenu";
 import { FolderIcon, TextFileIcon, UpFolderIcon } from "@/components/desktop/icons";
-import { buildDeleteConfirmMessage, canDeleteIcon } from "@/lib/deleteConfirm";
+import { useContextMenuState } from "@/hooks/useContextMenuState";
+import { useDeleteConfirm } from "@/hooks/useDeleteConfirm";
+import { canDeleteIcon } from "@/lib/deleteConfirm";
 import {
   clearDropTargetHighlight,
   DROP_ATTR,
@@ -31,12 +33,6 @@ interface DragGhost {
   icon: DesktopIconType;
   x: number;
   y: number;
-}
-
-interface MenuState {
-  x: number;
-  y: number;
-  entries: ContextMenuEntry[];
 }
 
 const DRAG_THRESHOLD_PX = 4;
@@ -87,10 +83,17 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [ghost, setGhost] = useState<DragGhost | null>(null);
-  const [menu, setMenu] = useState<MenuState | null>(null);
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const { menu, openMenu, closeMenu } = useContextMenuState();
+  const {
+    pendingDeleteId,
+    deletePrompt,
+    requestDelete,
+    cancelDelete,
+    confirmDelete,
+  } = useDeleteConfirm(icons);
 
   const dragIconId = useRef<string | null>(null);
   const dragStarted = useRef(false);
@@ -100,12 +103,6 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
 
   const selected = contents.find((icon) => icon.id === selectedId);
   const renamingItem = contents.find((icon) => icon.id === renamingIconId);
-  const pendingDeleteIcon = pendingDeleteId
-    ? icons.find((icon) => icon.id === pendingDeleteId)
-    : undefined;
-  const deletePrompt = pendingDeleteIcon
-    ? buildDeleteConfirmMessage(pendingDeleteIcon, icons)
-    : null;
 
   useEffect(() => {
     if (!renamingItem) {
@@ -119,7 +116,11 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
     return () => window.clearTimeout(id);
   }, [renamingItem?.id, renamingItem?.label]);
 
-  const closeMenu = useCallback(() => setMenu(null), []);
+  const goUp = () => {
+    if (parentId) {
+      openWindow(parentId);
+    }
+  };
 
   const endDrag = useCallback(() => {
     dragIconId.current = null;
@@ -265,99 +266,85 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-win-face">
-      {readOnly ? (
-        <div className="flex flex-wrap items-center gap-2 border-b border-win-dark px-2 py-1">
+      <div className="flex flex-wrap items-center gap-2 border-b border-win-dark px-2 py-1">
+        <div className="flex items-center gap-1">
           <button
             type="button"
             className="win-raised flex items-center justify-center p-1 disabled:opacity-50"
             title="Up One Level"
             aria-label="Up One Level"
             disabled={!parentId}
-            onClick={() => {
-              if (parentId) {
-                openWindow(parentId);
-              }
-            }}
+            onClick={goUp}
           >
             <UpFolderIcon size={16} />
           </button>
+          {!readOnly ? (
+            <>
+              <button
+                type="button"
+                className="win-raised flex items-center justify-center p-1"
+                title="New Folder"
+                aria-label="New Folder"
+                onClick={() => {
+                  const id = createFolder(undefined, undefined, folderId);
+                  if (id) {
+                    setSelectedId(id);
+                  }
+                }}
+              >
+                <FolderIcon size={16} />
+              </button>
+              <button
+                type="button"
+                className="win-raised flex items-center justify-center p-1"
+                title="New Text Document"
+                aria-label="New Text Document"
+                onClick={() => {
+                  const id = createTextFile(folderId);
+                  if (id) {
+                    setSelectedId(id);
+                  }
+                }}
+              >
+                <TextFileIcon size={16} />
+              </button>
+            </>
+          ) : null}
+        </div>
+        {readOnly ? (
           <span className="text-[12px] text-win-dark">
             Read-only visit — open files to read
           </span>
-        </div>
-      ) : (
-        <div className="flex flex-wrap items-center gap-2 border-b border-win-dark px-2 py-1">
-          <div className="flex items-center gap-1">
+        ) : (
+          <>
+            <span className="text-win-dark" aria-hidden="true">
+              |
+            </span>
             <button
               type="button"
-              className="win-raised flex items-center justify-center p-1 disabled:opacity-50"
-              title="Up One Level"
-              aria-label="Up One Level"
-              disabled={!parentId}
+              className="win-raised px-2 py-0.5 disabled:opacity-50"
+              disabled={!selected}
               onClick={() => {
-                if (parentId) {
-                  openWindow(parentId);
+                if (!selected) {
+                  return;
                 }
+                moveIconToFolder(selected.id, null);
+                setSelectedId(null);
               }}
             >
-              <UpFolderIcon size={16} />
+              Move to Desktop
             </button>
             <button
               type="button"
-              className="win-raised flex items-center justify-center p-1"
-              title="New Folder"
-              aria-label="New Folder"
-              onClick={() => {
-                const id = createFolder(undefined, undefined, folderId);
-                if (id) {
-                  setSelectedId(id);
-                }
-              }}
+              className="win-raised px-2 py-0.5 disabled:opacity-50"
+              disabled={desktopItems.length === 0}
+              onClick={() => setAdding((value) => !value)}
             >
-              <FolderIcon size={16} />
+              {adding ? "Cancel" : "Add from Desktop..."}
             </button>
-            <button
-              type="button"
-              className="win-raised flex items-center justify-center p-1"
-              title="New Text Document"
-              aria-label="New Text Document"
-              onClick={() => {
-                const id = createTextFile(folderId);
-                if (id) {
-                  setSelectedId(id);
-                }
-              }}
-            >
-              <TextFileIcon size={16} />
-            </button>
-          </div>
-          <span className="text-win-dark" aria-hidden="true">
-            |
-          </span>
-          <button
-            type="button"
-            className="win-raised px-2 py-0.5 disabled:opacity-50"
-            disabled={!selected}
-            onClick={() => {
-              if (!selected) {
-                return;
-              }
-              moveIconToFolder(selected.id, null);
-              setSelectedId(null);
-            }}
-          >
-            Move to Desktop
-          </button>
-          <button
-            type="button"
-            className="win-raised px-2 py-0.5 disabled:opacity-50"
-            disabled={desktopItems.length === 0}
-            onClick={() => setAdding((value) => !value)}
-          >
-            {adding ? "Cancel" : "Add from Desktop..."}
-          </button>
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
       {!readOnly && adding ? (
         <div className="win-sunken m-1 max-h-28 overflow-auto bg-win-paper p-1 text-win-ink">
@@ -449,15 +436,11 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
                           entries.push({
                             id: "delete",
                             label: "Delete",
-                            onSelect: () => setPendingDeleteId(item.id),
+                            onSelect: () => requestDelete(item.id),
                           });
                         }
                       }
-                      setMenu({
-                        x: event.clientX,
-                        y: event.clientY,
-                        entries,
-                      });
+                      openMenu(event, entries);
                     }}
                     onPointerDown={(event) => {
                       if (!readOnly) {
@@ -539,13 +522,16 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
           title={deletePrompt.title}
           message={deletePrompt.message}
           onConfirm={() => {
-            deleteIcon(pendingDeleteId);
-            setPendingDeleteId(null);
-            if (selectedId === pendingDeleteId) {
+            const id = confirmDelete();
+            if (!id) {
+              return;
+            }
+            deleteIcon(id);
+            if (selectedId === id) {
               setSelectedId(null);
             }
           }}
-          onCancel={() => setPendingDeleteId(null)}
+          onCancel={cancelDelete}
         />
       ) : null}
     </div>

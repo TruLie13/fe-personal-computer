@@ -1,31 +1,12 @@
 "use client";
 
-import { ComputerIcon } from "@/components/desktop/icons";
-import { VisitPcButton } from "@/components/desktop/VisitPcButton";
+import {
+  LocalPcRow,
+  NetworkPcRow,
+} from "@/components/desktop/NetworkPcRow";
 import { isFavorite } from "@/lib/favorites";
-import { NETWORK_USERS, remoteDesktopPath } from "@/lib/networkSeed";
+import { NETWORK_USERS } from "@/lib/networkSeed";
 import { useDesktopStore } from "@/store/desktopStore";
-
-const PC_ICON_SIZE = 20;
-
-/** Full-size list icon that cannot paint over neighboring text. */
-function PcListIcon() {
-  return (
-    <span
-      className="shrink-0"
-      style={{
-        display: "inline-block",
-        width: PC_ICON_SIZE,
-        height: PC_ICON_SIZE,
-        overflow: "hidden",
-        contain: "paint",
-        lineHeight: 0,
-      }}
-    >
-      <ComputerIcon size={PC_ICON_SIZE} />
-    </span>
-  );
-}
 
 export function NetworkNeighborhood() {
   const favorites = useDesktopStore((state) => state.favorites);
@@ -55,26 +36,19 @@ export function NetworkNeighborhood() {
             ) : (
               <ul>
                 {favoriteUsers.map((user) => (
-                  <li
+                  <NetworkPcRow
                     key={user.id}
-                    className="flex items-center gap-2 px-1 py-1 hover:bg-win-paper-hover"
-                  >
-                    <PcListIcon />
-                    <div className="min-w-0 flex-1 pl-2">
-                      <div className="truncate font-bold">{user.displayName}</div>
-                      <div className="truncate text-win-paper-muted">
-                        {remoteDesktopPath(user)}
-                      </div>
-                    </div>
-                    <VisitPcButton userId={user.id} />
-                    <button
-                      type="button"
-                      className="win-raised px-2 py-0.5"
-                      onClick={() => removeFavorite(user.id)}
-                    >
-                      Remove
-                    </button>
-                  </li>
+                    user={user}
+                    actions={
+                      <button
+                        type="button"
+                        className="win-raised px-2 py-0.5"
+                        onClick={() => removeFavorite(user.id)}
+                      >
+                        Remove
+                      </button>
+                    }
+                  />
                 ))}
               </ul>
             )}
@@ -85,40 +59,30 @@ export function NetworkNeighborhood() {
           <h2 className="mb-1 font-bold">Entire Network</h2>
           <div className="win-sunken bg-win-paper p-1 text-win-ink">
             <ul>
-              <li className="flex items-center gap-2 px-1 py-1 text-win-paper-muted">
-                <PcListIcon />
-                <div className="min-w-0 flex-1 pl-2">
-                  <div className="font-bold text-win-ink">This PC (you)</div>
-                  <div>Local desktop — use Go Home while visiting others</div>
-                </div>
-              </li>
+              <LocalPcRow
+                title="This PC (you)"
+                subtitle="Local desktop — use Go Home while visiting others"
+              />
               {NETWORK_USERS.map((user) => {
                 const favorited = isFavorite(favorites, user.id);
                 return (
-                  <li
+                  <NetworkPcRow
                     key={user.id}
-                    className="flex items-center gap-2 px-1 py-1 hover:bg-win-paper-hover"
-                  >
-                    <PcListIcon />
-                    <div className="min-w-0 flex-1 pl-2">
-                      <div className="truncate font-bold">{user.displayName}</div>
-                      <div className="truncate text-win-paper-muted">
-                        {remoteDesktopPath(user)}
-                      </div>
-                    </div>
-                    <VisitPcButton userId={user.id} />
-                    <button
-                      type="button"
-                      className="win-raised px-2 py-0.5"
-                      onClick={() =>
-                        favorited
-                          ? removeFavorite(user.id)
-                          : addFavorite(user.id)
-                      }
-                    >
-                      {favorited ? "Unfavorite" : "Add to Favorites"}
-                    </button>
-                  </li>
+                    user={user}
+                    actions={
+                      <button
+                        type="button"
+                        className="win-raised px-2 py-0.5"
+                        onClick={() =>
+                          favorited
+                            ? removeFavorite(user.id)
+                            : addFavorite(user.id)
+                        }
+                      >
+                        {favorited ? "Unfavorite" : "Add to Favorites"}
+                      </button>
+                    }
+                  />
                 );
               })}
             </ul>
