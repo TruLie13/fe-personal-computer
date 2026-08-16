@@ -192,6 +192,39 @@ describe("desktopStore", () => {
     expect(docWindow?.title).toBe("story - Notepad");
   });
 
+  it("reopens a closed text file without duplicating window ids", () => {
+    const { openWindow, saveDocumentFromWindow, closeWindow, moveIconToFolder, createFolder } =
+      useDesktopStore.getState();
+    openWindow("notepad");
+    const editorId = useDesktopStore.getState().windows[0]?.id;
+    saveDocumentFromWindow(editorId!, "nested", "inside a folder");
+    const fileIconId = useDesktopStore
+      .getState()
+      .icons.find((icon) => icon.type === "text")?.id;
+    expect(fileIconId).toBeTruthy();
+
+    const folderId = createFolder("Hold");
+    moveIconToFolder(fileIconId!, folderId!);
+
+    closeWindow(editorId!);
+    openWindow(fileIconId!);
+    openWindow(fileIconId!);
+
+    const { windows } = useDesktopStore.getState();
+    const ids = windows.map((window) => window.id);
+    expect(new Set(ids).size).toBe(ids.length);
+
+    const docWindows = windows.filter(
+      (window) =>
+        window.documentId &&
+        window.documentId ===
+          useDesktopStore.getState().icons.find((icon) => icon.id === fileIconId)
+            ?.documentId,
+    );
+    expect(docWindows).toHaveLength(1);
+    expect(docWindows[0]?.isOpen).toBe(true);
+  });
+
   it("toggles the start menu", () => {
     const { toggleStartMenu, closeStartMenu } = useDesktopStore.getState();
     toggleStartMenu();
@@ -249,6 +282,78 @@ describe("desktopStore", () => {
     expect(state.icons.find((icon) => icon.id === fileId)?.label).toBe("final");
     expect(state.documents[0]?.title).toBe("final");
     expect(state.windows[0]?.title).toBe("final - Notepad");
+  });
+
+  it("auto-suffixes duplicate text names on save and move", () => {
+    const { openWindow, saveDocumentFromWindow, moveIconToFolder, createFolder } =
+      useDesktopStore.getState();
+
+    openWindow("notepad");
+    saveDocumentFromWindow(
+      useDesktopStore.getState().windows[0]!.id,
+      "notes",
+      "one",
+    );
+    openWindow("notepad");
+    saveDocumentFromWindow(
+      useDesktopStore.getState().windows.find((window) => !window.documentId)!
+        .id,
+      "notes",
+      "two",
+    );
+
+    const desktopTexts = useDesktopStore
+      .getState()
+      .icons.filter((icon) => icon.type === "text" && icon.parentId == null);
+    expect(desktopTexts.map((icon) => icon.label).sort()).toEqual([
+      "notes",
+      "notes (2)",
+    ]);
+
+    const folderId = createFolder("Bundle");
+    const firstNotesId = useDesktopStore
+      .getState()
+      .icons.find((icon) => icon.label === "notes")?.id;
+    moveIconToFolder(firstNotesId!, folderId!);
+
+    const secondNotesId = useDesktopStore
+      .getState()
+      .icons.find((icon) => icon.label === "notes (2)")?.id;
+    moveIconToFolder(secondNotesId!, folderId!);
+
+    const inFolder = useDesktopStore
+      .getState()
+      .icons.filter((icon) => icon.parentId === folderId);
+    // Second file keeps "notes (2)" — free in the folder — then collide a third.
+    expect(inFolder.map((icon) => icon.label).sort()).toEqual([
+      "notes",
+      "notes (2)",
+    ]);
+
+    openWindow("notepad");
+    saveDocumentFromWindow(
+      useDesktopStore.getState().windows.find((window) => !window.documentId)!
+        .id,
+      "notes",
+      "three",
+    );
+    const thirdId = useDesktopStore
+      .getState()
+      .icons.find(
+        (icon) =>
+          icon.type === "text" &&
+          icon.parentId == null &&
+          icon.label === "notes",
+      )?.id;
+    expect(thirdId).toBeTruthy();
+    moveIconToFolder(thirdId!, folderId!);
+
+    const after = useDesktopStore
+      .getState()
+      .icons.filter((icon) => icon.parentId === folderId)
+      .map((icon) => icon.label)
+      .sort();
+    expect(after).toEqual(["notes", "notes (2)", "notes (3)"]);
   });
 
   it("moves a file into a folder and back to the desktop", () => {

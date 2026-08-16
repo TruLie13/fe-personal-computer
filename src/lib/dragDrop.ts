@@ -41,54 +41,11 @@ function hitTest(clientX: number, clientY: number, dragElement: HTMLElement) {
   return under;
 }
 
-/**
- * Find a folder drop target under the pointer.
- * Temporarily disables pointer-events on the dragged icon so hit-testing
- * sees what is beneath it (Win95-style drop onto folder icon / window).
- */
-export function resolveFolderDropTarget(
+function resolveDesktopDrop(
   clientX: number,
   clientY: number,
-  dragElement: HTMLElement,
-  options?: { excludeFolderId?: string },
-): { folderId: string; element: HTMLElement } | null {
-  const result = resolveFileDropTarget(clientX, clientY, dragElement, options);
-  if (result?.kind === "folder") {
-    return { folderId: result.folderId, element: result.element };
-  }
-  return null;
-}
-
-/**
- * Resolve drop onto a folder or the bare desktop surface (not over another window).
- */
-export function resolveFileDropTarget(
-  clientX: number,
-  clientY: number,
-  dragElement: HTMLElement,
-  options?: { excludeFolderId?: string },
+  under: Element,
 ): FileDropResult | null {
-  const under = hitTest(clientX, clientY, dragElement);
-  if (!under) {
-    return null;
-  }
-
-  const folderTarget = under.closest(`[${DROP_ATTR}]`);
-  if (folderTarget instanceof HTMLElement) {
-    const folderId = folderTarget.getAttribute(DROP_ATTR);
-    if (!folderId) {
-      return null;
-    }
-    if (options?.excludeFolderId && folderId === options.excludeFolderId) {
-      return null;
-    }
-    return { kind: "folder", folderId, element: folderTarget };
-  }
-
-  if (under.closest(".win-window")) {
-    return null;
-  }
-
   const desktop = under.closest(`[${DESKTOP_ATTR}]`);
   if (!(desktop instanceof HTMLElement)) {
     return null;
@@ -110,6 +67,69 @@ export function resolveFileDropTarget(
     x: point.x,
     y: point.y,
   };
+}
+
+/**
+ * Find a folder drop target under the pointer.
+ * Temporarily disables pointer-events on the dragged icon so hit-testing
+ * sees what is beneath it (Win95-style drop onto folder icon / window).
+ */
+export function resolveFolderDropTarget(
+  clientX: number,
+  clientY: number,
+  dragElement: HTMLElement,
+  options?: { excludeFolderId?: string },
+): { folderId: string; element: HTMLElement } | null {
+  const result = resolveFileDropTarget(clientX, clientY, dragElement, options);
+  if (result?.kind === "folder") {
+    return { folderId: result.folderId, element: result.element };
+  }
+  return null;
+}
+
+/**
+ * Resolve drop onto a folder or the bare desktop surface.
+ * When `excludeFolderId` matches the folder under the pointer (dragging out
+ * of that folder), treat it as a desktop drop so the file can leave the folder
+ * even while the cursor is still over the source folder window/icon.
+ */
+export function resolveFileDropTarget(
+  clientX: number,
+  clientY: number,
+  dragElement: HTMLElement,
+  options?: { excludeFolderId?: string },
+): FileDropResult | null {
+  const under = hitTest(clientX, clientY, dragElement);
+  if (!under) {
+    return null;
+  }
+
+  const folderTarget = under.closest(`[${DROP_ATTR}]`);
+  const rawFolderId =
+    folderTarget instanceof HTMLElement
+      ? folderTarget.getAttribute(DROP_ATTR)
+      : null;
+
+  const hitExcludedSource =
+    Boolean(options?.excludeFolderId) &&
+    rawFolderId != null &&
+    rawFolderId === options?.excludeFolderId;
+
+  if (
+    folderTarget instanceof HTMLElement &&
+    rawFolderId &&
+    !hitExcludedSource
+  ) {
+    return { kind: "folder", folderId: rawFolderId, element: folderTarget };
+  }
+
+  // Other windows block desktop drops; the source folder being dragged out of
+  // does not — that surface resolves to desktop so the file can leave.
+  if (under.closest(".win-window") && !hitExcludedSource) {
+    return null;
+  }
+
+  return resolveDesktopDrop(clientX, clientY, under);
 }
 
 export { DROP_ATTR, DESKTOP_ATTR, DROP_ACTIVE_CLASS };

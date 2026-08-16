@@ -18,6 +18,7 @@ import {
   saveDesktopState,
   stripTextExtension,
   uniqueFolderName,
+  uniqueTextFileName,
 } from "@/lib/storage";
 import type {
   DesktopIcon,
@@ -141,8 +142,8 @@ function createWindowFromIcon(
 
   return {
     id:
-      icon.type === "editor"
-        ? createId("window-editor")
+      icon.type === "editor" || icon.type === "text" || Boolean(icon.documentId)
+        ? createId("window")
         : `window-${icon.id}`,
     title,
     type: isEditor ? "editor" : icon.type,
@@ -318,10 +319,41 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       return;
     }
 
+    if (icon.documentId) {
+      const existingDocWindow = state.windows.find(
+        (window) => window.documentId === icon.documentId,
+      );
+      if (existingDocWindow) {
+        const zIndex = state.nextZIndex;
+        set({
+          windows: state.windows.map((window) =>
+            window.id === existingDocWindow.id
+              ? {
+                  ...window,
+                  iconId,
+                  title:
+                    icon.type === "text"
+                      ? `${stripTextExtension(icon.label)} - Notepad`
+                      : window.title,
+                  isOpen: true,
+                  isMinimized: false,
+                  isFocused: true,
+                  zIndex,
+                }
+              : { ...window, isFocused: false },
+          ),
+          nextZIndex: zIndex + 1,
+          selectedIconId: iconId,
+          isStartMenuOpen: false,
+        });
+        return;
+      }
+    }
+
     const closed = state.windows.find(
       (window) => window.iconId === iconId && !window.isOpen,
     );
-    if (closed && icon.type !== "text") {
+    if (closed) {
       const zIndex = state.nextZIndex;
       set({
         windows: state.windows.map((window) =>
@@ -342,34 +374,6 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
         isStartMenuOpen: false,
       });
       return;
-    }
-
-    if (icon.documentId) {
-      const openDocWindow = state.windows.find(
-        (window) =>
-          window.documentId === icon.documentId &&
-          (window.isOpen || window.isMinimized),
-      );
-      if (openDocWindow) {
-        const zIndex = state.nextZIndex;
-        set({
-          windows: state.windows.map((window) =>
-            window.id === openDocWindow.id
-              ? {
-                  ...window,
-                  isOpen: true,
-                  isMinimized: false,
-                  isFocused: true,
-                  zIndex,
-                }
-              : { ...window, isFocused: false },
-          ),
-          nextZIndex: zIndex + 1,
-          selectedIconId: iconId,
-          isStartMenuOpen: false,
-        });
-        return;
-      }
     }
 
     const zIndex = state.nextZIndex;
@@ -498,10 +502,18 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       return;
     }
 
-    const fileTitle = stripTextExtension(title);
     const now = new Date().toISOString();
 
     if (target.documentId) {
+      const existingIcon = state.icons.find(
+        (icon) => icon.documentId === target.documentId,
+      );
+      const fileTitle = uniqueTextFileName(
+        state.icons,
+        existingIcon?.parentId ?? null,
+        title,
+        existingIcon?.id ?? null,
+      );
       const documents = state.documents.map((doc) =>
         doc.id === target.documentId
           ? { ...doc, title: fileTitle, content, updatedAt: now }
@@ -527,6 +539,7 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       return;
     }
 
+    const fileTitle = uniqueTextFileName(state.icons, null, title);
     const documentId = createId("doc");
     const position = nextDesktopIconPosition(state.icons, "file");
     const document: TextDocument = {
@@ -638,8 +651,17 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
 
     const nextLabel =
       icon.type === "text"
-        ? stripTextExtension(label)
-        : label.trim() || icon.label;
+        ? uniqueTextFileName(
+            state.icons,
+            icon.parentId ?? null,
+            label,
+            icon.id,
+          )
+        : uniqueFolderName(
+            state.icons,
+            label.trim() || icon.label,
+            icon.id,
+          );
 
     if (!nextLabel) {
       set({ renamingIconId: null });
@@ -773,6 +795,11 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       }
     }
 
+    const currentParent = icon.parentId ?? null;
+    if (currentParent === folderId) {
+      return;
+    }
+
     const position =
       folderId === null
         ? (dropPosition ??
@@ -782,6 +809,14 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
           ))
         : { x: icon.x, y: icon.y };
 
+    const nextLabel = uniqueTextFileName(
+      state.icons,
+      folderId,
+      icon.label,
+      icon.id,
+    );
+    const renamed = nextLabel !== icon.label;
+
     const icons = state.icons.map((item) =>
       item.id === iconId
         ? {
@@ -789,18 +824,41 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
             parentId: folderId,
             x: position.x,
             y: position.y,
+            label: nextLabel,
           }
         : item,
     );
 
+    const documents = renamed
+      ? state.documents.map((doc) =>
+          doc.id === icon.documentId
+            ? {
+                ...doc,
+                title: nextLabel,
+                updatedAt: new Date().toISOString(),
+              }
+            : doc,
+        )
+      : state.documents;
+
+    const windows = renamed
+      ? state.windows.map((window) =>
+          window.documentId === icon.documentId && window.type === "editor"
+            ? { ...window, title: `${nextLabel} - Notepad` }
+            : window,
+        )
+      : state.windows;
+
     persist({
       icons,
-      documents: state.documents,
+      documents,
       wallpaper: state.wallpaper,
       titleBarColor: state.titleBarColor,
     });
     set({
       icons,
+      documents,
+      windows,
       selectedIconId:
         state.selectedIconId === iconId && folderId !== null
           ? null

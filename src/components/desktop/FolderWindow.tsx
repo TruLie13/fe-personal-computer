@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
 import {
   ContextMenu,
@@ -70,6 +71,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
   const dragStarted = useRef(false);
   const origin = useRef({ x: 0, y: 0 });
   const ghostRef = useRef<HTMLDivElement>(null);
+  const lastPointer = useRef({ x: 0, y: 0 });
 
   const selected = contents.find((icon) => icon.id === selectedId);
   const renamingItem = contents.find((icon) => icon.id === renamingIconId);
@@ -94,12 +96,12 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
 
   const closeMenu = useCallback(() => setMenu(null), []);
 
-  const endDrag = () => {
+  const endDrag = useCallback(() => {
     dragIconId.current = null;
     dragStarted.current = false;
     setGhost(null);
     clearDropTargetHighlight();
-  };
+  }, []);
 
   const onItemPointerDown = (
     event: React.PointerEvent<HTMLButtonElement>,
@@ -114,6 +116,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
     dragIconId.current = item.id;
     dragStarted.current = false;
     origin.current = { x: event.clientX, y: event.clientY };
+    lastPointer.current = { x: event.clientX, y: event.clientY };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
@@ -124,6 +127,8 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
     if (dragIconId.current !== item.id) {
       return;
     }
+
+    lastPointer.current = { x: event.clientX, y: event.clientY };
 
     const dx = event.clientX - origin.current.x;
     const dy = event.clientY - origin.current.y;
@@ -151,36 +156,83 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
     }
   };
 
-  const onItemPointerUp = (
+  const completeDrag = (
+    event: React.PointerEvent<HTMLButtonElement>,
+    item: DesktopIconType,
+  ) => {
+    if (dragIconId.current !== item.id) {
+      endDrag();
+      return;
+    }
+
+    const wasDragging = dragStarted.current;
+    const clientX = event.clientX || lastPointer.current.x;
+    const clientY = event.clientY || lastPointer.current.y;
+
+    if (wasDragging) {
+      const probe = ghostRef.current ?? event.currentTarget;
+      const drop = resolveFileDropTarget(clientX, clientY, probe, {
+        excludeFolderId: folderId,
+      });
+      clearDropTargetHighlight();
+
+      if (drop?.kind === "folder") {
+        moveIconToFolder(item.id, drop.folderId);
+      } else if (drop?.kind === "desktop") {
+        moveIconToFolder(item.id, null, { x: drop.x, y: drop.y });
+      }
+    }
+
+    endDrag();
+
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Capture may already be released (cancel / lostcapture).
+    }
+  };
+
+  const onItemPointerCancel = (
     event: React.PointerEvent<HTMLButtonElement>,
     item: DesktopIconType,
   ) => {
     if (dragIconId.current !== item.id) {
       return;
     }
-
-    const wasDragging = dragStarted.current;
-    event.currentTarget.releasePointerCapture(event.pointerId);
-
-    if (!wasDragging) {
-      endDrag();
-      return;
-    }
-
-    const probe = ghostRef.current ?? event.currentTarget;
-    const drop = resolveFileDropTarget(event.clientX, event.clientY, probe, {
-      excludeFolderId: folderId,
-    });
-    clearDropTargetHighlight();
-
-    if (drop?.kind === "folder") {
-      moveIconToFolder(item.id, drop.folderId);
-    } else if (drop?.kind === "desktop") {
-      moveIconToFolder(item.id, null, { x: drop.x, y: drop.y });
-    }
-
     endDrag();
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // already released
+    }
   };
+
+  const onItemLostPointerCapture = (
+    _event: React.PointerEvent<HTMLButtonElement>,
+    item: DesktopIconType,
+  ) => {
+    if (dragIconId.current === item.id) {
+      endDrag();
+    }
+  };
+
+  const ghostNode =
+    ghost && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            ref={ghostRef}
+            className="win-desktop-icon pointer-events-none fixed z-[20000]"
+            style={{
+              left: ghost.x - 38,
+              top: ghost.y - 20,
+            }}
+          >
+            <TextFileIcon />
+            <span className="win-desktop-icon-label">{ghost.icon.label}</span>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-win-face">
@@ -253,8 +305,12 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
             {contents.map((item) => {
               const active = selectedId === item.id;
               const isRenaming = renamingIconId === item.id;
+              const isDragSource = ghost?.icon.id === item.id;
               return (
-                <li key={item.id}>
+                <li
+                  key={item.id}
+                  className={isDragSource ? "invisible" : undefined}
+                >
                   <button
                     type="button"
                     className={`flex w-full items-center gap-2 px-1 py-1 text-left ${
@@ -319,7 +375,17 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
                     }}
                     onPointerUp={(event) => {
                       if (!readOnly) {
-                        onItemPointerUp(event, item);
+                        completeDrag(event, item);
+                      }
+                    }}
+                    onPointerCancel={(event) => {
+                      if (!readOnly) {
+                        onItemPointerCancel(event, item);
+                      }
+                    }}
+                    onLostPointerCapture={(event) => {
+                      if (!readOnly) {
+                        onItemLostPointerCapture(event, item);
                       }
                     }}
                   >
@@ -359,19 +425,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
         )}
       </div>
 
-      {ghost ? (
-        <div
-          ref={ghostRef}
-          className="win-desktop-icon pointer-events-none fixed z-[20000]"
-          style={{
-            left: ghost.x - 38,
-            top: ghost.y - 20,
-          }}
-        >
-          <TextFileIcon />
-          <span className="win-desktop-icon-label">{ghost.icon.label}</span>
-        </div>
-      ) : null}
+      {ghostNode}
 
       {menu ? (
         <ContextMenu

@@ -152,22 +152,12 @@ export function mergeAppIcons(icons: DesktopIcon[]): DesktopIcon[] {
 
 export function nextDesktopIconPosition(
   icons: DesktopIcon[],
-  kind: "file" | "folder" = "file",
+  _kind: "file" | "folder" = "file",
 ): { x: number; y: number } {
-  const placed = icons.filter((icon) => {
-    if (!isOnDesktop(icon)) {
-      return false;
-    }
-    if (kind === "file") {
-      return Boolean(icon.documentId);
-    }
-    return icon.type === "folder" && !APP_ICON_IDS.has(icon.id);
-  });
-  const index = placed.length;
-  return {
-    x: 104 + (index % 4) * ICON_SLOT_WIDTH,
-    y: 16 + Math.floor(index / 4) * ICON_SLOT_HEIGHT,
-  };
+  const occupied = icons
+    .filter(isOnDesktop)
+    .map((icon) => ({ x: icon.x, y: icon.y }));
+  return findOpenDesktopSlot(occupied);
 }
 
 /** @deprecated use nextDesktopIconPosition */
@@ -178,18 +168,59 @@ export function nextDocumentIconPosition(icons: DesktopIcon[]): {
   return nextDesktopIconPosition(icons, "file");
 }
 
-export function uniqueFolderName(icons: DesktopIcon[], base = "New Folder"): string {
+export function uniqueFolderName(
+  icons: DesktopIcon[],
+  base = "New Folder",
+  excludeIconId?: string | null,
+): string {
+  const cleaned = base.trim() || "New Folder";
   const names = new Set(
-    icons.filter((icon) => icon.type === "folder").map((icon) => icon.label),
+    icons
+      .filter((icon) => icon.type === "folder" && icon.id !== excludeIconId)
+      .map((icon) => icon.label),
   );
-  if (!names.has(base)) {
-    return base;
+  if (!names.has(cleaned)) {
+    return cleaned;
   }
   let n = 2;
-  while (names.has(`${base} (${n})`)) {
+  while (names.has(`${cleaned} (${n})`)) {
     n += 1;
   }
-  return `${base} (${n})`;
+  return `${cleaned} (${n})`;
+}
+
+/**
+ * Unique text filename among siblings (same parent / desktop).
+ * Collision → `name (2)`, `name (3)`, … Matching is case-insensitive.
+ */
+export function uniqueTextFileName(
+  icons: DesktopIcon[],
+  parentId: string | null | undefined,
+  base: string,
+  excludeIconId?: string | null,
+): string {
+  const cleaned = stripTextExtension(base);
+  const parent = parentId ?? null;
+  const taken = new Set(
+    icons
+      .filter(
+        (icon) =>
+          icon.type === "text" &&
+          (icon.parentId ?? null) === parent &&
+          icon.id !== excludeIconId,
+      )
+      .map((icon) => icon.label.toLowerCase()),
+  );
+
+  if (!taken.has(cleaned.toLowerCase())) {
+    return cleaned;
+  }
+
+  let n = 2;
+  while (taken.has(`${cleaned} (${n})`.toLowerCase())) {
+    n += 1;
+  }
+  return `${cleaned} (${n})`;
 }
 
 function normalizeHexColor(value: unknown, fallback: string): string {
