@@ -4,6 +4,7 @@ import {
   ICON_SLOT_HEIGHT,
   ICON_SLOT_WIDTH,
   mergeAppIcons,
+  nextDesktopIconPosition,
 } from "@/lib/storage";
 import type { DesktopIcon } from "@/types/desktop";
 
@@ -64,5 +65,15 @@ describe("desktop icon placement", () => {
       Math.abs(slot.x - 104) < ICON_SLOT_WIDTH &&
         Math.abs(slot.y - 112) < ICON_SLOT_HEIGHT,
     ).toBe(false);
+  });
+
+  it("places new files away from existing app icons", () => {
+    const slot = nextDesktopIconPosition(DEFAULT_ICONS, "file");
+    for (const app of DEFAULT_ICONS) {
+      const overlaps =
+        Math.abs(slot.x - app.x) < ICON_SLOT_WIDTH &&
+        Math.abs(slot.y - app.y) < ICON_SLOT_HEIGHT;
+      expect(overlaps).toBe(false);
+    }
   });
 });
