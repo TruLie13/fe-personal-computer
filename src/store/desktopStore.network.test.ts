@@ -32,6 +32,7 @@ describe("desktopStore network", () => {
       windows: [],
       wallpaper: DEFAULT_WALLPAPER,
       titleBarColor: DEFAULT_TITLE_BAR_COLOR,
+      contentDark: false,
       selectedIconId: null,
       renamingIconId: null,
       isStartMenuOpen: false,

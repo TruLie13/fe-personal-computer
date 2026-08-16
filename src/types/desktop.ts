@@ -54,4 +54,6 @@ export interface DesktopPersistedState {
   documents: TextDocument[];
   wallpaper: string;
   titleBarColor: string;
+  /** Near-black paper / white ink inside apps, folders, and editors. */
+  contentDark: boolean;
 }

@@ -175,6 +175,33 @@ export function StartLogo({ className }: IconProps) {
   );
 }
 
+export function UpFolderIcon({ className, size = 32 }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      aria-hidden="true"
+    >
+      <path
+        d="M4 12h8l2 3h14v13H4V12z"
+        fill="#f8d568"
+        stroke="#000"
+        strokeWidth="1"
+      />
+      <path d="M4 15h24v13H4z" fill="#e8b830" stroke="#000" />
+      <path
+        d="M16 4v10M11 9l5-5 5 5"
+        fill="none"
+        stroke="#008000"
+        strokeWidth="2"
+        strokeLinejoin="miter"
+      />
+    </svg>
+  );
+}
+
 export function iconForType(type: string) {
   switch (type) {
     case "folder":

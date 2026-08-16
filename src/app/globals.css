@@ -13,6 +13,21 @@
   --font-win: Tahoma, "MS Sans Serif", "Segoe UI", sans-serif;
 }
 
+/* Non-inline so utilities use var(--color-*) and dark mode can override. */
+@theme {
+  --color-win-paper: #ffffff;
+  --color-win-ink: #000000;
+  --color-win-paper-hover: #dfdfdf;
+  --color-win-paper-muted: #808080;
+}
+
+[data-content-theme="dark"] {
+  --color-win-paper: #121212;
+  --color-win-ink: #f5f5f5;
+  --color-win-paper-hover: #2a2a2a;
+  --color-win-paper-muted: #a8a8a8;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -160,8 +175,8 @@ textarea {
   margin-top: 2px;
   padding: 1px 2px;
   border: 1px solid var(--color-win-black);
-  background: var(--color-win-white);
-  color: var(--color-win-black);
+  background: var(--color-win-paper);
+  color: var(--color-win-ink);
   text-align: center;
   text-shadow: none;
   outline: none;

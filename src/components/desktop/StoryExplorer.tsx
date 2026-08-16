@@ -54,9 +54,9 @@ export function StoryExplorer() {
         Story Explorer — public writing from the network (no follow required)
       </div>
       <div className="flex min-h-0 flex-1">
-        <div className="win-sunken m-1 w-[42%] overflow-auto bg-white">
+        <div className="win-sunken m-1 w-[42%] overflow-auto bg-win-paper text-win-ink">
           {stories.length === 0 ? (
-            <p className="p-2 text-win-dark">No public stories yet.</p>
+            <p className="p-2 text-win-paper-muted">No public stories yet.</p>
           ) : (
             <ul>
               {stories.map((story) => {
@@ -68,7 +68,7 @@ export function StoryExplorer() {
                       className={`flex w-full flex-col gap-0.5 px-2 py-1.5 text-left ${
                         active
                           ? "bg-win-navy text-white"
-                          : "hover:bg-win-face-light"
+                          : "hover:bg-win-paper-hover"
                       }`}
                       onClick={() => setSelectedId(story.id)}
                     >
@@ -78,7 +78,7 @@ export function StoryExplorer() {
                       </span>
                       <span
                         className={`truncate text-[11px] ${
-                          active ? "text-white/90" : "text-win-dark"
+                          active ? "text-white/90" : "text-win-paper-muted"
                         }`}
                       >
                         {authorDisplayName(story.authorId)} ·{" "}
@@ -86,7 +86,7 @@ export function StoryExplorer() {
                       </span>
                       <span
                         className={`line-clamp-2 text-[11px] ${
-                          active ? "text-white/80" : "text-win-dark"
+                          active ? "text-white/80" : "text-win-paper-muted"
                         }`}
                       >
                         {snippet(story.content)}
@@ -117,12 +117,12 @@ export function StoryExplorer() {
                   </button>
                 ) : null}
               </div>
-              <div className="win-sunken min-h-0 flex-1 overflow-auto whitespace-pre-wrap bg-white p-2 leading-5">
+              <div className="win-sunken min-h-0 flex-1 overflow-auto whitespace-pre-wrap bg-win-paper p-2 leading-5 text-win-ink">
                 {selected.content}
               </div>
             </>
           ) : (
-            <div className="win-sunken flex flex-1 items-center justify-center bg-white text-win-dark">
+            <div className="win-sunken flex flex-1 items-center justify-center bg-win-paper text-win-paper-muted">
               Select a story to read.
             </div>
           )}

@@ -10,7 +10,8 @@ import { ProfileWindow } from "@/components/desktop/ProfileWindow";
 import { StoryExplorer } from "@/components/desktop/StoryExplorer";
 import { TextEditor } from "@/components/desktop/TextEditor";
 import { getNetworkUser } from "@/lib/networkSeed";
-import { useDesktopStore } from "@/store/desktopStore";
+import { displayWindowTitle } from "@/lib/storage";
+import { selectActiveIcons, useDesktopStore } from "@/store/desktopStore";
 import type { DesktopWindow } from "@/types/desktop";
 
 interface WindowFrameProps {
@@ -92,6 +93,8 @@ export function WindowFrame({ window }: WindowFrameProps) {
   const updateWindowPosition = useDesktopStore(
     (state) => state.updateWindowPosition,
   );
+  const icons = useDesktopStore(selectActiveIcons);
+  const title = displayWindowTitle(window, icons);
   const Icon = iconForType(window.type);
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
@@ -163,7 +166,7 @@ export function WindowFrame({ window }: WindowFrameProps) {
       }}
       onMouseDown={() => focusWindow(window.id)}
       role="dialog"
-      aria-label={window.title}
+      aria-label={title}
     >
       <div
         className={`win-titlebar ${window.isFocused ? "" : "win-titlebar-inactive"}`}
@@ -172,7 +175,7 @@ export function WindowFrame({ window }: WindowFrameProps) {
         onPointerUp={onTitlePointerUp}
       >
         <Icon className="shrink-0" size={16} />
-        <span className="min-w-0 flex-1 truncate">{window.title}</span>
+        <span className="min-w-0 flex-1 truncate">{title}</span>
         <button
           type="button"
           className="win-title-btn"

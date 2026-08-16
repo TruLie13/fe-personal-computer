@@ -31,9 +31,9 @@ export function NetworkNeighborhood() {
       <div className="min-h-0 flex-1 overflow-auto p-2">
         <section className="mb-3">
           <h2 className="mb-1 font-bold">Favorites</h2>
-          <div className="win-sunken bg-white p-1">
+          <div className="win-sunken bg-win-paper p-1 text-win-ink">
             {favoriteUsers.length === 0 ? (
-              <p className="px-1 py-2 text-win-dark">
+              <p className="px-1 py-2 text-win-paper-muted">
                 No favorites yet. Add a PC below to pin it here.
               </p>
             ) : (
@@ -41,12 +41,12 @@ export function NetworkNeighborhood() {
                 {favoriteUsers.map((user) => (
                   <li
                     key={user.id}
-                    className="flex items-center gap-2 px-1 py-1 hover:bg-win-face-light"
+                    className="flex items-center gap-2 px-1 py-1 hover:bg-win-paper-hover"
                   >
                     <ComputerIcon size={16} />
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-bold">{user.displayName}</div>
-                      <div className="truncate text-win-dark">
+                      <div className="truncate text-win-paper-muted">
                         {remoteDesktopPath(user)}
                       </div>
                     </div>
@@ -73,12 +73,12 @@ export function NetworkNeighborhood() {
 
         <section>
           <h2 className="mb-1 font-bold">Entire Network</h2>
-          <div className="win-sunken bg-white p-1">
+          <div className="win-sunken bg-win-paper p-1 text-win-ink">
             <ul>
-              <li className="flex items-center gap-2 px-1 py-1 text-win-dark">
+              <li className="flex items-center gap-2 px-1 py-1 text-win-paper-muted">
                 <ComputerIcon size={16} />
                 <div className="min-w-0 flex-1">
-                  <div className="font-bold text-black">This PC (you)</div>
+                  <div className="font-bold text-win-ink">This PC (you)</div>
                   <div>Local desktop — use Go Home while visiting others</div>
                 </div>
               </li>
@@ -87,12 +87,12 @@ export function NetworkNeighborhood() {
                 return (
                   <li
                     key={user.id}
-                    className="flex items-center gap-2 px-1 py-1 hover:bg-win-face-light"
+                    className="flex items-center gap-2 px-1 py-1 hover:bg-win-paper-hover"
                   >
                     <ComputerIcon size={16} />
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-bold">{user.displayName}</div>
-                      <div className="truncate text-win-dark">
+                      <div className="truncate text-win-paper-muted">
                         {remoteDesktopPath(user)}
                       </div>
                     </div>

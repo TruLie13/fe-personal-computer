@@ -33,6 +33,7 @@ export function Desktop() {
   const windows = useDesktopStore((state) => state.windows);
   const wallpaper = useDesktopStore(selectActiveWallpaper);
   const titleBarColor = useDesktopStore(selectActiveTitleBarColor);
+  const contentDark = useDesktopStore((state) => state.contentDark);
   const hydrate = useDesktopStore((state) => state.hydrate);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
   const closeStartMenu = useDesktopStore((state) => state.closeStartMenu);
@@ -74,6 +75,7 @@ export function Desktop() {
   return (
     <div
       className="flex h-dvh w-screen flex-col overflow-hidden"
+      data-content-theme={contentDark ? "dark" : "light"}
       style={
         {
           "--color-win-navy": titleBarColor,

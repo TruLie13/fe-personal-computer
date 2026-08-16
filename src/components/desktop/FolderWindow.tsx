@@ -7,7 +7,7 @@ import {
   ContextMenu,
   type ContextMenuEntry,
 } from "@/components/desktop/ContextMenu";
-import { FolderIcon, TextFileIcon } from "@/components/desktop/icons";
+import { FolderIcon, TextFileIcon, UpFolderIcon } from "@/components/desktop/icons";
 import { buildDeleteConfirmMessage, canDeleteIcon } from "@/lib/deleteConfirm";
 import {
   clearDropTargetHighlight,
@@ -41,6 +41,12 @@ interface MenuState {
 
 const DRAG_THRESHOLD_PX = 4;
 
+function canMoveIcon(icon: DesktopIconType): boolean {
+  return (
+    icon.type === "folder" || icon.type === "text" || Boolean(icon.documentId)
+  );
+}
+
 export function FolderWindow({ folderId }: FolderWindowProps) {
   const icons = useDesktopStore(selectActiveIcons);
   const viewMode = useDesktopStore((state) => state.viewMode);
@@ -56,14 +62,13 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
   const deleteIcon = useDesktopStore((state) => state.deleteIcon);
 
   const readOnly = viewMode === "remote";
+  const folder = icons.find(
+    (icon) => icon.id === folderId && icon.type === "folder",
+  );
+  const parentId = folder?.parentId ?? null;
   const contents = selectFolderContents(icons, folderId);
   const desktopItems = icons.filter((icon) => {
-    if (!isOnDesktop(icon)) {
-      return false;
-    }
-    const movable =
-      icon.type === "folder" || icon.type === "text" || Boolean(icon.documentId);
-    if (!movable) {
+    if (!isOnDesktop(icon) || !canMoveIcon(icon)) {
       return false;
     }
     // Don't offer the open folder (or an ancestor) — that would nest a parent in itself.
@@ -261,12 +266,42 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
   return (
     <div className="flex h-full min-h-0 flex-col bg-win-face">
       {readOnly ? (
-        <div className="border-b border-win-dark px-2 py-1 text-[12px] text-win-dark">
-          Read-only visit — open files to read
+        <div className="flex flex-wrap items-center gap-2 border-b border-win-dark px-2 py-1">
+          <button
+            type="button"
+            className="win-raised flex items-center justify-center p-1 disabled:opacity-50"
+            title="Up One Level"
+            aria-label="Up One Level"
+            disabled={!parentId}
+            onClick={() => {
+              if (parentId) {
+                openWindow(parentId);
+              }
+            }}
+          >
+            <UpFolderIcon size={16} />
+          </button>
+          <span className="text-[12px] text-win-dark">
+            Read-only visit — open files to read
+          </span>
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2 border-b border-win-dark px-2 py-1">
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="win-raised flex items-center justify-center p-1 disabled:opacity-50"
+              title="Up One Level"
+              aria-label="Up One Level"
+              disabled={!parentId}
+              onClick={() => {
+                if (parentId) {
+                  openWindow(parentId);
+                }
+              }}
+            >
+              <UpFolderIcon size={16} />
+            </button>
             <button
               type="button"
               className="win-raised flex items-center justify-center p-1"
@@ -325,9 +360,9 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
       )}
 
       {!readOnly && adding ? (
-        <div className="win-sunken m-1 max-h-28 overflow-auto bg-white p-1">
+        <div className="win-sunken m-1 max-h-28 overflow-auto bg-win-paper p-1 text-win-ink">
           {desktopItems.length === 0 ? (
-            <p className="px-1 text-win-dark">Nothing movable on the desktop.</p>
+            <p className="px-1 text-win-paper-muted">Nothing movable on the desktop.</p>
           ) : (
             desktopItems.map((item) => (
               <button
@@ -352,11 +387,11 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
       ) : null}
 
       <div
-        className="win-sunken m-1 min-h-0 flex-1 overflow-auto bg-white"
+        className="win-sunken m-1 min-h-0 flex-1 overflow-auto bg-win-paper text-win-ink"
         {...(readOnly ? {} : { [DROP_ATTR]: folderId })}
       >
         {contents.length === 0 ? (
-          <div className="p-3 text-[12px] text-win-dark">
+          <div className="p-3 text-[12px] text-win-paper-muted">
             {readOnly
               ? "This folder is empty."
               : "This folder is empty. Use the toolbar to create a folder or text file, or drag files in from the desktop."}
@@ -377,7 +412,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
                     className={`flex w-full items-center gap-2 px-1 py-1 text-left ${
                       active
                         ? "bg-win-navy text-white"
-                        : "hover:bg-win-face-light"
+                        : "hover:bg-win-paper-hover"
                     }`}
                     onClick={() => {
                       setSelectedId(item.id);
