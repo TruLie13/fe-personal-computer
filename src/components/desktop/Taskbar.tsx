@@ -1,11 +1,17 @@
 "use client";
 
+import { useRef } from "react";
 import { Clock } from "@/components/desktop/Clock";
 import { ComputerIcon, StartLogo, iconForType } from "@/components/desktop/icons";
 import { ProfileAvatar } from "@/components/desktop/ProfileAvatar";
 import { StartMenu } from "@/components/desktop/StartMenu";
 import { getNetworkUser } from "@/lib/networkSeed";
-import { displayWindowTitle } from "@/lib/storage";
+import {
+  clampTaskbarHeight,
+  displayWindowTitle,
+  MAX_TASKBAR_HEIGHT,
+  MIN_TASKBAR_HEIGHT,
+} from "@/lib/storage";
 import { selectActiveIcons, useDesktopStore } from "@/store/desktopStore";
 
 export function Taskbar() {
@@ -15,11 +21,15 @@ export function Taskbar() {
   const viewMode = useDesktopStore((state) => state.viewMode);
   const remoteUserId = useDesktopStore((state) => state.remoteUserId);
   const localProfile = useDesktopStore((state) => state.localProfile);
+  const taskbarHeight = useDesktopStore((state) => state.taskbarHeight);
+  const setTaskbarHeight = useDesktopStore((state) => state.setTaskbarHeight);
   const toggleStartMenu = useDesktopStore((state) => state.toggleStartMenu);
   const focusWindow = useDesktopStore((state) => state.focusWindow);
   const minimizeWindow = useDesktopStore((state) => state.minimizeWindow);
   const goHome = useDesktopStore((state) => state.goHome);
   const openProfile = useDesktopStore((state) => state.openProfile);
+
+  const dragOrigin = useRef<{ y: number; height: number } | null>(null);
 
   const visibleTasks = windows.filter((window) => window.isOpen);
   const isRemote = viewMode === "remote";
@@ -28,8 +38,66 @@ export function Taskbar() {
   const identityName = remoteUser?.displayName ?? localProfile.displayName;
   const identityAvatarUrl = remoteUser?.avatarUrl ?? localProfile.avatarUrl;
 
+  const onResizePointerDown = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    if (event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    dragOrigin.current = { y: event.clientY, height: taskbarHeight };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onResizePointerMove = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    if (!dragOrigin.current) {
+      return;
+    }
+    // Dragging up increases height (Win95 taskbar grows upward).
+    const delta = dragOrigin.current.y - event.clientY;
+    setTaskbarHeight(
+      clampTaskbarHeight(dragOrigin.current.height + delta),
+    );
+  };
+
+  const onResizePointerUp = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    if (!dragOrigin.current) {
+      return;
+    }
+    dragOrigin.current = null;
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // already released
+    }
+  };
+
   return (
-    <footer className="win-taskbar relative z-[150]">
+    <footer
+      className="win-taskbar relative z-[150]"
+      style={{ height: taskbarHeight }}
+      aria-label="Taskbar"
+    >
+      <div
+        className="win-taskbar-resize"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-valuemin={MIN_TASKBAR_HEIGHT}
+        aria-valuemax={MAX_TASKBAR_HEIGHT}
+        aria-valuenow={taskbarHeight}
+        aria-label="Resize taskbar"
+        title="Drag to resize taskbar"
+        onPointerDown={onResizePointerDown}
+        onPointerMove={onResizePointerMove}
+        onPointerUp={onResizePointerUp}
+        onPointerCancel={onResizePointerUp}
+      />
+
       <button
         type="button"
         className={`win-start-btn win-raised ${isStartMenuOpen ? "win-raised-active" : ""}`}
@@ -44,7 +112,7 @@ export function Taskbar() {
       {isRemote ? (
         <button
           type="button"
-          className="win-raised ml-1 flex items-center gap-1 px-2 py-0.5 text-[11px]"
+          className="win-raised ml-1 flex items-center gap-1 px-2 text-[11px]"
           onClick={goHome}
         >
           <ComputerIcon size={14} />
@@ -52,7 +120,7 @@ export function Taskbar() {
         </button>
       ) : null}
 
-      <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden px-1">
+      <div className="flex min-w-0 flex-1 items-stretch gap-1 overflow-hidden px-1">
         {visibleTasks.map((window) => {
           const Icon = iconForType(window.type);
           const active = window.isFocused && !window.isMinimized;
@@ -77,10 +145,10 @@ export function Taskbar() {
         })}
       </div>
 
-      <div className="ml-auto flex shrink-0 items-center gap-1 pr-1">
+      <div className="ml-auto flex shrink-0 items-stretch gap-1 pr-1">
         <button
           type="button"
-          className="win-tray-identity win-sunken flex max-w-[140px] items-center gap-1 px-1 py-0.5 text-[11px]"
+          className="win-tray-identity win-sunken flex max-w-[140px] items-center gap-1 px-1 text-[11px]"
           onClick={openProfile}
           title={identityName}
         >

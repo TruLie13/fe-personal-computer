@@ -19,9 +19,11 @@ import {
   DEFAULT_TITLE_BAR_COLOR,
   DEFAULT_WALLPAPER,
   DEFAULT_CONTENT_DARK,
+  DEFAULT_TASKBAR_HEIGHT,
   PROFILE_ICON_ID,
   PROFILE_ICON_POSITION,
   canDeleteIcon,
+  clampTaskbarHeight,
   folderWindowTitle,
   isOnDesktop,
   isPinnedProfileIcon,
@@ -69,6 +71,7 @@ interface DesktopStore {
   wallpaper: string;
   titleBarColor: string;
   contentDark: boolean;
+  taskbarHeight: number;
   selectedIconId: string | null;
   isStartMenuOpen: boolean;
   nextZIndex: number;
@@ -116,6 +119,7 @@ interface DesktopStore {
   setWallpaper: (color: string) => void;
   setTitleBarColor: (color: string) => void;
   setContentDark: (enabled: boolean) => void;
+  setTaskbarHeight: (height: number) => void;
   resetTheme: () => void;
   visitRemotePc: (userId: NetworkUserId) => void;
   goHome: () => void;
@@ -138,6 +142,7 @@ function persist(state: {
     wallpaper: state.wallpaper,
     titleBarColor: state.titleBarColor,
     contentDark: useDesktopStore.getState().contentDark,
+    taskbarHeight: useDesktopStore.getState().taskbarHeight,
   });
 }
 
@@ -305,6 +310,7 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
   wallpaper: DEFAULT_WALLPAPER,
   titleBarColor: DEFAULT_TITLE_BAR_COLOR,
   contentDark: DEFAULT_CONTENT_DARK,
+  taskbarHeight: DEFAULT_TASKBAR_HEIGHT,
   selectedIconId: null,
   renamingIconId: null,
   isStartMenuOpen: false,
@@ -333,6 +339,7 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       wallpaper: saved.wallpaper,
       titleBarColor: saved.titleBarColor,
       contentDark: saved.contentDark,
+      taskbarHeight: saved.taskbarHeight,
       favorites: loadFavorites(),
       localBbsNotes: loadLocalBbsNotes(),
       localProfile,
@@ -1130,8 +1137,27 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
         wallpaper: state.wallpaper,
         titleBarColor: state.titleBarColor,
         contentDark: enabled,
+        taskbarHeight: state.taskbarHeight,
       });
       return { contentDark: enabled };
+    });
+  },
+
+  setTaskbarHeight: (height) => {
+    const taskbarHeight = clampTaskbarHeight(height);
+    set((state) => {
+      if (state.taskbarHeight === taskbarHeight) {
+        return state;
+      }
+      saveDesktopState({
+        icons: state.icons,
+        documents: state.documents,
+        wallpaper: state.wallpaper,
+        titleBarColor: state.titleBarColor,
+        contentDark: state.contentDark,
+        taskbarHeight,
+      });
+      return { taskbarHeight };
     });
   },
 
@@ -1146,11 +1172,13 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
         wallpaper: DEFAULT_WALLPAPER,
         titleBarColor: DEFAULT_TITLE_BAR_COLOR,
         contentDark: DEFAULT_CONTENT_DARK,
+        taskbarHeight: DEFAULT_TASKBAR_HEIGHT,
       });
       return {
         wallpaper: DEFAULT_WALLPAPER,
         titleBarColor: DEFAULT_TITLE_BAR_COLOR,
         contentDark: DEFAULT_CONTENT_DARK,
+        taskbarHeight: DEFAULT_TASKBAR_HEIGHT,
       };
     });
   },

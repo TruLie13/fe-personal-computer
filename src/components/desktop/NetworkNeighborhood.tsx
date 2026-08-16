@@ -1,14 +1,13 @@
 "use client";
 
 import { ComputerIcon } from "@/components/desktop/icons";
+import { VisitPcButton } from "@/components/desktop/VisitPcButton";
 import { isFavorite } from "@/lib/favorites";
 import { NETWORK_USERS, remoteDesktopPath } from "@/lib/networkSeed";
 import { useDesktopStore } from "@/store/desktopStore";
-import type { NetworkUserId } from "@/types/network";
 
 export function NetworkNeighborhood() {
   const favorites = useDesktopStore((state) => state.favorites);
-  const visitRemotePc = useDesktopStore((state) => state.visitRemotePc);
   const addFavorite = useDesktopStore((state) => state.addFavorite);
   const removeFavorite = useDesktopStore((state) => state.removeFavorite);
 
@@ -17,10 +16,6 @@ export function NetworkNeighborhood() {
       NETWORK_USERS.find((user) => user.id === favorite.userId),
     )
     .filter((user): user is (typeof NETWORK_USERS)[number] => Boolean(user));
-
-  const openPc = (userId: NetworkUserId) => {
-    visitRemotePc(userId);
-  };
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-win-face text-[12px]">
@@ -50,13 +45,7 @@ export function NetworkNeighborhood() {
                         {remoteDesktopPath(user)}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="win-raised px-2 py-0.5"
-                      onClick={() => openPc(user.id)}
-                    >
-                      Open
-                    </button>
+                    <VisitPcButton userId={user.id} />
                     <button
                       type="button"
                       className="win-raised px-2 py-0.5"
@@ -96,13 +85,7 @@ export function NetworkNeighborhood() {
                         {remoteDesktopPath(user)}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="win-raised px-2 py-0.5"
-                      onClick={() => openPc(user.id)}
-                    >
-                      Open
-                    </button>
+                    <VisitPcButton userId={user.id} />
                     <button
                       type="button"
                       className="win-raised px-2 py-0.5"

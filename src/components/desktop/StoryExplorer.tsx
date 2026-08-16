@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ComputerIcon, TextFileIcon } from "@/components/desktop/icons";
+import { TextFileIcon } from "@/components/desktop/icons";
+import { VisitPcButton } from "@/components/desktop/VisitPcButton";
 import {
   authorDisplayName,
   getNetworkUser,
   listPublicStoriesNewestFirst,
   LOCAL_USER_ID,
 } from "@/lib/networkSeed";
-import { useDesktopStore } from "@/store/desktopStore";
 import type { PublicStory } from "@/types/network";
 
 function formatDate(iso: string): string {
@@ -34,7 +34,6 @@ function snippet(content: string, max = 80): string {
 }
 
 export function StoryExplorer() {
-  const visitRemotePc = useDesktopStore((state) => state.visitRemotePc);
   const stories = useMemo(() => listPublicStoriesNewestFirst(), []);
   const [selectedId, setSelectedId] = useState<string | null>(
     stories[0]?.id ?? null,
@@ -58,7 +57,7 @@ export function StoryExplorer() {
           {stories.length === 0 ? (
             <p className="p-2 text-win-paper-muted">No public stories yet.</p>
           ) : (
-            <ul>
+            <ul className="list-none">
               {stories.map((story) => {
                 const active = story.id === selectedId;
                 return (
@@ -72,9 +71,11 @@ export function StoryExplorer() {
                       }`}
                       onClick={() => setSelectedId(story.id)}
                     >
-                      <span className="flex items-center gap-1 font-bold">
-                        <TextFileIcon size={14} />
-                        <span className="truncate">{story.title}</span>
+                      <span className="flex items-center gap-2 font-bold">
+                        <TextFileIcon size={14} className="shrink-0" />
+                        <span className="min-w-0 flex-1 truncate pl-0.5">
+                          {story.title}
+                        </span>
                       </span>
                       <span
                         className={`truncate text-[11px] ${
@@ -107,14 +108,7 @@ export function StoryExplorer() {
                   by {authorDisplayName(selected.authorId)}
                 </span>
                 {author ? (
-                  <button
-                    type="button"
-                    className="win-raised ml-auto flex items-center gap-1 px-2 py-0.5"
-                    onClick={() => visitRemotePc(author.id)}
-                  >
-                    <ComputerIcon size={14} />
-                    Visit PC
-                  </button>
+                  <VisitPcButton userId={author.id} className="ml-auto" />
                 ) : null}
               </div>
               <div className="win-sunken min-h-0 flex-1 overflow-auto whitespace-pre-wrap bg-win-paper p-2 leading-5 text-win-ink">

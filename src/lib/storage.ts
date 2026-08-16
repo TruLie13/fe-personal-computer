@@ -61,6 +61,19 @@ export const DEFAULT_DOCUMENTS: TextDocument[] = [];
 export const DEFAULT_WALLPAPER = "#008080";
 export const DEFAULT_TITLE_BAR_COLOR = "#000080";
 export const DEFAULT_CONTENT_DARK = false;
+export const DEFAULT_TASKBAR_HEIGHT = 36;
+export const MIN_TASKBAR_HEIGHT = 28;
+export const MAX_TASKBAR_HEIGHT = 72;
+
+export function clampTaskbarHeight(value: number): number {
+  if (!Number.isFinite(value)) {
+    return DEFAULT_TASKBAR_HEIGHT;
+  }
+  return Math.min(
+    MAX_TASKBAR_HEIGHT,
+    Math.max(MIN_TASKBAR_HEIGHT, Math.round(value)),
+  );
+}
 
 export const WALLPAPER_PRESETS: ReadonlyArray<{ label: string; color: string }> =
   [
@@ -338,6 +351,12 @@ function normalizeBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
+function normalizeTaskbarHeight(value: unknown): number {
+  return typeof value === "number"
+    ? clampTaskbarHeight(value)
+    : DEFAULT_TASKBAR_HEIGHT;
+}
+
 export function loadDesktopState(): DesktopPersistedState {
   if (typeof window === "undefined") {
     return {
@@ -346,6 +365,7 @@ export function loadDesktopState(): DesktopPersistedState {
       wallpaper: DEFAULT_WALLPAPER,
       titleBarColor: DEFAULT_TITLE_BAR_COLOR,
       contentDark: DEFAULT_CONTENT_DARK,
+      taskbarHeight: DEFAULT_TASKBAR_HEIGHT,
     };
   }
 
@@ -360,6 +380,7 @@ export function loadDesktopState(): DesktopPersistedState {
         wallpaper: DEFAULT_WALLPAPER,
         titleBarColor: DEFAULT_TITLE_BAR_COLOR,
         contentDark: DEFAULT_CONTENT_DARK,
+        taskbarHeight: DEFAULT_TASKBAR_HEIGHT,
       };
     }
 
@@ -382,6 +403,7 @@ export function loadDesktopState(): DesktopPersistedState {
         DEFAULT_TITLE_BAR_COLOR,
       ),
       contentDark: normalizeBoolean(parsed.contentDark, DEFAULT_CONTENT_DARK),
+      taskbarHeight: normalizeTaskbarHeight(parsed.taskbarHeight),
     };
   } catch {
     return {
@@ -390,6 +412,7 @@ export function loadDesktopState(): DesktopPersistedState {
       wallpaper: DEFAULT_WALLPAPER,
       titleBarColor: DEFAULT_TITLE_BAR_COLOR,
       contentDark: DEFAULT_CONTENT_DARK,
+      taskbarHeight: DEFAULT_TASKBAR_HEIGHT,
     };
   }
 }

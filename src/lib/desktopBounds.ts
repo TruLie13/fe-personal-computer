@@ -8,6 +8,18 @@ export interface Size {
   height: number;
 }
 
+import { DEFAULT_TASKBAR_HEIGHT } from "@/lib/storage";
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export interface Size {
+  width: number;
+  height: number;
+}
+
 /** Keep an icon fully inside the desktop surface (above the taskbar). */
 export function clampIconPosition(
   point: Point,
@@ -23,12 +35,11 @@ export function clampIconPosition(
   };
 }
 
-const TASKBAR_HEIGHT = 28;
-
 /** Center a window in the visible desktop (viewport minus taskbar). */
 export function centeredWindowPosition(
   windowSize: Size,
   viewport?: Size,
+  taskbarHeight: number = DEFAULT_TASKBAR_HEIGHT,
 ): Point {
   const width =
     viewport?.width ??
@@ -38,7 +49,7 @@ export function centeredWindowPosition(
     (typeof window !== "undefined" ? window.innerHeight : 768);
   const desktop: Size = {
     width,
-    height: Math.max(0, height - TASKBAR_HEIGHT),
+    height: Math.max(0, height - taskbarHeight),
   };
   return clampIconPosition(
     {

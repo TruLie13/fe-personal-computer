@@ -20,6 +20,7 @@ export function StartMenu() {
   const viewMode = useDesktopStore((state) => state.viewMode);
   const remoteUserId = useDesktopStore((state) => state.remoteUserId);
   const localProfile = useDesktopStore((state) => state.localProfile);
+  const taskbarHeight = useDesktopStore((state) => state.taskbarHeight);
   const openWindow = useDesktopStore((state) => state.openWindow);
   const openProfile = useDesktopStore((state) => state.openProfile);
   const closeStartMenu = useDesktopStore((state) => state.closeStartMenu);
@@ -39,7 +40,8 @@ export function StartMenu() {
 
   return (
     <div
-      className="win-menu win-raised absolute bottom-[28px] left-0 z-[200] flex"
+      className="win-menu win-raised absolute left-0 z-[200] flex"
+      style={{ bottom: taskbarHeight }}
       role="menu"
       aria-label="Start"
     >

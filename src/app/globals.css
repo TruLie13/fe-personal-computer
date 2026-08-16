@@ -205,17 +205,29 @@ textarea {
 }
 
 .win-taskbar {
-  height: 28px;
+  position: relative;
+  height: var(--win-taskbar-height, 36px);
   background: var(--color-win-face);
   border-top: 2px solid var(--color-win-white);
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 4px;
-  padding: 2px 2px 2px 2px;
+  padding: 3px 2px 2px 4px;
+}
+
+.win-taskbar-resize {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: ns-resize;
+  z-index: 1;
 }
 
 .win-start-btn {
-  height: 22px;
+  height: auto;
+  min-height: 22px;
   padding: 0 6px 0 4px;
   display: inline-flex;
   align-items: center;
@@ -226,7 +238,8 @@ textarea {
 }
 
 .win-task-btn {
-  height: 22px;
+  height: auto;
+  min-height: 22px;
   min-width: 120px;
   max-width: 160px;
   padding: 0 8px;
@@ -246,7 +259,8 @@ textarea {
 }
 
 .win-clock {
-  height: 22px;
+  height: auto;
+  min-height: 22px;
   min-width: 64px;
   padding: 0 8px;
   display: inline-flex;
@@ -255,7 +269,8 @@ textarea {
 }
 
 .win-tray-identity {
-  height: 22px;
+  height: auto;
+  min-height: 22px;
   background: var(--color-win-face);
   color: var(--color-win-black);
   cursor: default;

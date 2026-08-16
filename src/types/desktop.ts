@@ -56,4 +56,6 @@ export interface DesktopPersistedState {
   titleBarColor: string;
   /** Near-black paper / white ink inside apps, folders, and editors. */
   contentDark: boolean;
+  /** Taskbar height in px (Win95-style resizable). */
+  taskbarHeight: number;
 }
