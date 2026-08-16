@@ -72,24 +72,22 @@ export function TextEditor({ windowId, documentId }: TextEditorProps) {
         <label className="flex min-w-0 flex-1 items-center gap-2">
           <span className="shrink-0">File name:</span>
           <input
-            className="win-sunken min-w-0 flex-1 bg-win-paper py-0.5 pl-2 pr-1 text-win-ink outline-none disabled:bg-win-face-light disabled:text-win-dark"
+            className="win-sunken min-w-0 flex-1 bg-win-paper py-0.5 pl-2 pr-1 text-win-ink outline-none"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             spellCheck={false}
-            disabled={readOnly}
             readOnly={readOnly}
           />
         </label>
         {savedFlash ? <span className="text-win-dark">Saved</span> : null}
       </div>
       <textarea
-        className="win-sunken min-h-0 flex-1 resize-none bg-win-paper p-2 text-[12px] leading-5 text-win-ink outline-none disabled:bg-win-face-light disabled:text-win-dark"
+        className="win-sunken min-h-0 flex-1 resize-none bg-win-paper p-2 text-[12px] leading-5 text-win-ink outline-none"
         value={content}
         onChange={(event) => setContent(event.target.value)}
         placeholder={readOnly ? "" : "Write a poem or story..."}
         spellCheck={false}
         aria-label="Document content"
-        disabled={readOnly}
         readOnly={readOnly}
       />
     </div>
