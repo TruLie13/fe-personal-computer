@@ -1,26 +1,284 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-win-teal: #008080;
+  --color-win-face: #c0c0c0;
+  --color-win-face-light: #dfdfdf;
+  --color-win-white: #ffffff;
+  --color-win-black: #000000;
+  --color-win-dark: #808080;
+  --color-win-navy: #000080;
+  --color-win-title-inactive: #808080;
+  --color-win-desktop: #008080;
+  --font-win: Tahoma, "MS Sans Serif", "Segoe UI", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-win);
+  font-size: 11px;
+  color: var(--color-win-black);
+  background: var(--color-win-desktop);
+  -webkit-font-smoothing: none;
+  image-rendering: pixelated;
+}
+
+button,
+input,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Classic Win95 raised bevel (buttons, windows, taskbar) */
+.win-raised {
+  border-top: 2px solid var(--color-win-white);
+  border-left: 2px solid var(--color-win-white);
+  border-right: 2px solid var(--color-win-black);
+  border-bottom: 2px solid var(--color-win-black);
+  box-shadow:
+    inset 1px 1px 0 var(--color-win-face-light),
+    inset -1px -1px 0 var(--color-win-dark);
+}
+
+.win-raised:active,
+.win-raised-active {
+  border-top: 2px solid var(--color-win-black);
+  border-left: 2px solid var(--color-win-black);
+  border-right: 2px solid var(--color-win-white);
+  border-bottom: 2px solid var(--color-win-white);
+  box-shadow:
+    inset 1px 1px 0 var(--color-win-dark),
+    inset -1px -1px 0 var(--color-win-face-light);
+}
+
+/* Classic Win95 sunken bevel (fields, icon wells) */
+.win-sunken {
+  border-top: 2px solid var(--color-win-dark);
+  border-left: 2px solid var(--color-win-dark);
+  border-right: 2px solid var(--color-win-white);
+  border-bottom: 2px solid var(--color-win-white);
+  box-shadow:
+    inset 1px 1px 0 var(--color-win-black),
+    inset -1px -1px 0 var(--color-win-face-light);
+}
+
+.win-window {
+  background: var(--color-win-face);
+  border-top: 2px solid var(--color-win-white);
+  border-left: 2px solid var(--color-win-white);
+  border-right: 2px solid var(--color-win-black);
+  border-bottom: 2px solid var(--color-win-black);
+  box-shadow:
+    inset 1px 1px 0 var(--color-win-face-light),
+    inset -1px -1px 0 var(--color-win-dark);
+}
+
+.win-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  padding: 0 2px 0 3px;
+  background: var(--color-win-navy);
+  color: var(--color-win-white);
+  font-weight: 700;
+  user-select: none;
+}
+
+.win-titlebar-inactive {
+  background: var(--color-win-title-inactive);
+}
+
+.win-title-btn {
+  width: 16px;
+  height: 14px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-win-face);
+  color: var(--color-win-black);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: default;
+  border-top: 1px solid var(--color-win-white);
+  border-left: 1px solid var(--color-win-white);
+  border-right: 1px solid var(--color-win-black);
+  border-bottom: 1px solid var(--color-win-black);
+  box-shadow:
+    inset 1px 1px 0 var(--color-win-face-light),
+    inset -1px -1px 0 var(--color-win-dark);
+}
+
+.win-title-btn:active {
+  border-top: 1px solid var(--color-win-black);
+  border-left: 1px solid var(--color-win-black);
+  border-right: 1px solid var(--color-win-white);
+  border-bottom: 1px solid var(--color-win-white);
+  box-shadow: none;
+  padding-top: 1px;
+  padding-left: 1px;
+}
+
+.win-desktop-icon {
+  width: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: default;
+  user-select: none;
+}
+
+.win-desktop-icon-label {
+  max-width: 72px;
+  padding: 1px 2px;
+  text-align: center;
+  color: var(--color-win-white);
+  text-shadow: 1px 1px 0 var(--color-win-black);
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+.win-desktop-icon-selected .win-desktop-icon-label {
+  background: var(--color-win-navy);
+  outline: 1px dotted var(--color-win-white);
+}
+
+.win-icon-rename {
+  width: 72px;
+  margin-top: 2px;
+  padding: 1px 2px;
+  border: 1px solid var(--color-win-black);
+  background: var(--color-win-white);
+  color: var(--color-win-black);
+  text-align: center;
+  text-shadow: none;
+  outline: none;
+  font: inherit;
+}
+
+/* Win95-style drop target highlight while dragging a file */
+.win-desktop-icon.win-drop-active .win-desktop-icon-label {
+  background: var(--color-win-navy);
+  outline: 1px dotted var(--color-win-white);
+}
+
+.win-desktop-icon.win-drop-active {
+  outline: 1px dotted var(--color-win-white);
+}
+
+[data-drop-folder-id].win-drop-active {
+  background: #ffffff !important;
+  outline: 1px dotted var(--color-win-navy);
+  box-shadow: inset 0 0 0 2px var(--color-win-navy);
+}
+
+[data-desktop-surface].win-drop-active {
+  outline: 1px dotted var(--color-win-white);
+  outline-offset: -2px;
+}
+
+.win-taskbar {
+  height: 28px;
+  background: var(--color-win-face);
+  border-top: 2px solid var(--color-win-white);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 2px 2px 2px;
+}
+
+.win-start-btn {
+  height: 22px;
+  padding: 0 6px 0 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-win-face);
+  font-weight: 700;
+  cursor: default;
+}
+
+.win-task-btn {
+  height: 22px;
+  min-width: 120px;
+  max-width: 160px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-win-face);
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+.win-task-btn-active {
+  background: var(--color-win-face-light);
+}
+
+.win-clock {
+  height: 22px;
+  min-width: 64px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.win-menu {
+  background: var(--color-win-face);
+  min-width: 180px;
+  padding: 2px;
+}
+
+.win-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 12px 4px 8px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: default;
+  color: var(--color-win-black);
+}
+
+.win-menu-item:hover,
+.win-menu-item:focus {
+  background: var(--color-win-navy);
+  color: var(--color-win-white);
+  outline: none;
+}
+
+.win-menu-item:disabled {
+  color: var(--color-win-dark);
+}
+
+.win-menu-item:disabled:hover,
+.win-menu-item:disabled:focus {
+  background: transparent;
+  color: var(--color-win-dark);
+}
+
+.win-menu-separator {
+  height: 2px;
+  margin: 3px 2px;
+  border-top: 1px solid var(--color-win-dark);
+  border-bottom: 1px solid var(--color-win-white);
 }
