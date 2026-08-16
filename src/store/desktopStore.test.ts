@@ -17,6 +17,7 @@ describe("desktopStore", () => {
       wallpaper: DEFAULT_WALLPAPER,
       titleBarColor: DEFAULT_TITLE_BAR_COLOR,
       contentDark: false,
+      taskbarHeight: 36,
       selectedIconId: null,
       renamingIconId: null,
       isStartMenuOpen: false,
@@ -589,6 +590,20 @@ describe("desktopStore", () => {
     expect(parsed.contentDark).toBe(true);
     resetTheme();
     expect(useDesktopStore.getState().contentDark).toBe(false);
+  });
+
+  it("resizes the taskbar within Win95-like bounds", () => {
+    const { setTaskbarHeight } = useDesktopStore.getState();
+    setTaskbarHeight(48);
+    expect(useDesktopStore.getState().taskbarHeight).toBe(48);
+    setTaskbarHeight(10);
+    expect(useDesktopStore.getState().taskbarHeight).toBe(28);
+    setTaskbarHeight(200);
+    expect(useDesktopStore.getState().taskbarHeight).toBe(72);
+    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY)!) as {
+      taskbarHeight: number;
+    };
+    expect(parsed.taskbarHeight).toBe(72);
   });
 
   it("opens Display Properties", () => {

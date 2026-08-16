@@ -33,6 +33,7 @@ describe("desktopStore network", () => {
       wallpaper: DEFAULT_WALLPAPER,
       titleBarColor: DEFAULT_TITLE_BAR_COLOR,
       contentDark: false,
+      taskbarHeight: 36,
       selectedIconId: null,
       renamingIconId: null,
       isStartMenuOpen: false,

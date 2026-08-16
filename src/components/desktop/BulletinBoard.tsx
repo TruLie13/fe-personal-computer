@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ComputerIcon, TextFileIcon } from "@/components/desktop/icons";
+import { TextFileIcon } from "@/components/desktop/icons";
+import { VisitPcButton } from "@/components/desktop/VisitPcButton";
 import {
   authorDisplayName,
   getNetworkUser,
@@ -26,7 +27,6 @@ function formatPostDate(iso: string): string {
 }
 
 export function BulletinBoard() {
-  const visitRemotePc = useDesktopStore((state) => state.visitRemotePc);
   const localBbsNotes = useDesktopStore((state) => state.localBbsNotes);
   const postBbsNote = useDesktopStore((state) => state.postBbsNote);
   const posts = useMemo(
@@ -112,7 +112,7 @@ export function BulletinBoard() {
           {posts.length === 0 ? (
             <p className="p-2 text-win-paper-muted">No notes yet. Post the first one.</p>
           ) : (
-            <ul>
+            <ul className="list-none">
               {posts.map((post) => {
                 const active = post.id === effectiveSelectedId;
                 return (
@@ -126,9 +126,11 @@ export function BulletinBoard() {
                       }`}
                       onClick={() => setSelectedId(post.id)}
                     >
-                      <span className="flex items-center gap-1 font-bold">
-                        <TextFileIcon size={14} />
-                        <span className="truncate">{post.title}</span>
+                      <span className="flex items-center gap-2 font-bold">
+                        <TextFileIcon size={14} className="shrink-0" />
+                        <span className="min-w-0 flex-1 truncate pl-0.5">
+                          {post.title}
+                        </span>
                       </span>
                       <span
                         className={`truncate text-[11px] ${
@@ -154,14 +156,10 @@ export function BulletinBoard() {
                   by {authorDisplayName(selected.authorId)}
                 </span>
                 {canVisit ? (
-                  <button
-                    type="button"
-                    className="win-raised ml-auto flex items-center gap-1 px-2 py-0.5"
-                    onClick={() => visitRemotePc(selected.authorId)}
-                  >
-                    <ComputerIcon size={14} />
-                    Visit PC
-                  </button>
+                  <VisitPcButton
+                    userId={selected.authorId}
+                    className="ml-auto"
+                  />
                 ) : null}
               </div>
               <div className="win-sunken min-h-0 flex-1 overflow-auto whitespace-pre-wrap bg-win-paper p-2 leading-5 text-win-ink">

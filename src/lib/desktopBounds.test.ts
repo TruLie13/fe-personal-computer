@@ -42,7 +42,7 @@ describe("centeredWindowPosition", () => {
       ),
     ).toEqual({
       x: 290,
-      y: 156,
+      y: 152,
     });
   });
 });

@@ -397,7 +397,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
               : "This folder is empty. Use the toolbar to create a folder or text file, or drag files in from the desktop."}
           </div>
         ) : (
-          <ul className="p-1">
+          <ul className="list-none p-1">
             {contents.map((item) => {
               const active = selectedId === item.id;
               const isRenaming = renamingIconId === item.id;

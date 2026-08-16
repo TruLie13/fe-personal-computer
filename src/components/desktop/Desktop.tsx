@@ -34,6 +34,7 @@ export function Desktop() {
   const wallpaper = useDesktopStore(selectActiveWallpaper);
   const titleBarColor = useDesktopStore(selectActiveTitleBarColor);
   const contentDark = useDesktopStore((state) => state.contentDark);
+  const taskbarHeight = useDesktopStore((state) => state.taskbarHeight);
   const hydrate = useDesktopStore((state) => state.hydrate);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
   const closeStartMenu = useDesktopStore((state) => state.closeStartMenu);
@@ -80,6 +81,7 @@ export function Desktop() {
         {
           "--color-win-navy": titleBarColor,
           "--color-win-desktop": wallpaper,
+          "--win-taskbar-height": `${taskbarHeight}px`,
         } as CSSProperties
       }
     >
