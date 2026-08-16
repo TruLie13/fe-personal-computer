@@ -46,6 +46,8 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
   const viewMode = useDesktopStore((state) => state.viewMode);
   const openWindow = useDesktopStore((state) => state.openWindow);
   const moveIconToFolder = useDesktopStore((state) => state.moveIconToFolder);
+  const createFolder = useDesktopStore((state) => state.createFolder);
+  const createTextFile = useDesktopStore((state) => state.createTextFile);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
   const renamingIconId = useDesktopStore((state) => state.renamingIconId);
   const startRename = useDesktopStore((state) => state.startRename);
@@ -55,9 +57,27 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
 
   const readOnly = viewMode === "remote";
   const contents = selectFolderContents(icons, folderId);
-  const desktopFiles = icons.filter(
-    (icon) => icon.documentId && isOnDesktop(icon),
-  );
+  const desktopItems = icons.filter((icon) => {
+    if (!isOnDesktop(icon)) {
+      return false;
+    }
+    const movable =
+      icon.type === "folder" || icon.type === "text" || Boolean(icon.documentId);
+    if (!movable) {
+      return false;
+    }
+    // Don't offer the open folder (or an ancestor) — that would nest a parent in itself.
+    if (icon.type === "folder") {
+      let walk: string | null = folderId;
+      while (walk) {
+        if (walk === icon.id) {
+          return false;
+        }
+        walk = icons.find((item) => item.id === walk)?.parentId ?? null;
+      }
+    }
+    return true;
+  });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -107,7 +127,11 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
     event: React.PointerEvent<HTMLButtonElement>,
     item: DesktopIconType,
   ) => {
-    if (event.button !== 0 || !item.documentId || renamingIconId === item.id) {
+    if (
+      event.button !== 0 ||
+      renamingIconId === item.id ||
+      (item.type !== "folder" && !item.documentId)
+    ) {
       return;
     }
     event.stopPropagation();
@@ -227,7 +251,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
               top: ghost.y - 20,
             }}
           >
-            <TextFileIcon />
+            {ghost.icon.type === "folder" ? <FolderIcon /> : <TextFileIcon />}
             <span className="win-desktop-icon-label">{ghost.icon.label}</span>
           </div>,
           document.body,
@@ -242,6 +266,39 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2 border-b border-win-dark px-2 py-1">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="win-raised flex items-center justify-center p-1"
+              title="New Folder"
+              aria-label="New Folder"
+              onClick={() => {
+                const id = createFolder(undefined, undefined, folderId);
+                if (id) {
+                  setSelectedId(id);
+                }
+              }}
+            >
+              <FolderIcon size={16} />
+            </button>
+            <button
+              type="button"
+              className="win-raised flex items-center justify-center p-1"
+              title="New Text Document"
+              aria-label="New Text Document"
+              onClick={() => {
+                const id = createTextFile(folderId);
+                if (id) {
+                  setSelectedId(id);
+                }
+              }}
+            >
+              <TextFileIcon size={16} />
+            </button>
+          </div>
+          <span className="text-win-dark" aria-hidden="true">
+            |
+          </span>
           <button
             type="button"
             className="win-raised px-2 py-0.5 disabled:opacity-50"
@@ -259,7 +316,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
           <button
             type="button"
             className="win-raised px-2 py-0.5 disabled:opacity-50"
-            disabled={desktopFiles.length === 0}
+            disabled={desktopItems.length === 0}
             onClick={() => setAdding((value) => !value)}
           >
             {adding ? "Cancel" : "Add from Desktop..."}
@@ -269,21 +326,25 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
 
       {!readOnly && adding ? (
         <div className="win-sunken m-1 max-h-28 overflow-auto bg-white p-1">
-          {desktopFiles.length === 0 ? (
-            <p className="px-1 text-win-dark">No files on the desktop.</p>
+          {desktopItems.length === 0 ? (
+            <p className="px-1 text-win-dark">Nothing movable on the desktop.</p>
           ) : (
-            desktopFiles.map((file) => (
+            desktopItems.map((item) => (
               <button
-                key={file.id}
+                key={item.id}
                 type="button"
                 className="flex w-full items-center gap-2 px-1 py-0.5 text-left hover:bg-win-navy hover:text-white"
                 onClick={() => {
-                  moveIconToFolder(file.id, folderId);
+                  moveIconToFolder(item.id, folderId);
                   setAdding(false);
                 }}
               >
-                <TextFileIcon size={16} />
-                <span className="truncate">{file.label}</span>
+                {item.type === "folder" ? (
+                  <FolderIcon size={16} className="shrink-0" />
+                ) : (
+                  <TextFileIcon size={16} className="shrink-0" />
+                )}
+                <span className="min-w-0 flex-1 truncate pl-1">{item.label}</span>
               </button>
             ))
           )}
@@ -298,7 +359,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
           <div className="p-3 text-[12px] text-win-dark">
             {readOnly
               ? "This folder is empty."
-              : "This folder is empty. Drag files in from the desktop, or drag them out onto the desktop to remove them."}
+              : "This folder is empty. Use the toolbar to create a folder or text file, or drag files in from the desktop."}
           </div>
         ) : (
           <ul className="p-1">
@@ -390,14 +451,14 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
                     }}
                   >
                     {item.type === "folder" ? (
-                      <FolderIcon size={16} />
+                      <FolderIcon size={16} className="shrink-0" />
                     ) : (
-                      <TextFileIcon size={16} />
+                      <TextFileIcon size={16} className="shrink-0" />
                     )}
                     {isRenaming ? (
                       <input
                         ref={inputRef}
-                        className="win-icon-rename min-w-0 flex-1 text-left"
+                        className="win-icon-rename min-w-0 flex-1 pl-1 text-left"
                         value={draftName}
                         onChange={(event) => setDraftName(event.target.value)}
                         onClick={(event) => event.stopPropagation()}
@@ -415,7 +476,9 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
                         onBlur={() => renameIcon(item.id, draftName)}
                       />
                     ) : (
-                      <span className="truncate">{item.label}</span>
+                      <span className="min-w-0 flex-1 truncate pl-1">
+                        {item.label}
+                      </span>
                     )}
                   </button>
                 </li>
