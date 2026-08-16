@@ -20,6 +20,10 @@ describe("desktopStore", () => {
       isStartMenuOpen: false,
       nextZIndex: 1,
       hydrated: false,
+      viewMode: "local",
+      remoteUserId: null,
+      favorites: [],
+      localBbsNotes: [],
     });
     window.localStorage.clear();
   });
@@ -200,6 +204,8 @@ describe("desktopStore", () => {
     const { createFolder } = useDesktopStore.getState();
     const firstId = createFolder();
     const secondId = createFolder();
+    expect(firstId).toBeTruthy();
+    expect(secondId).toBeTruthy();
 
     const { icons, renamingIconId } = useDesktopStore.getState();
     const first = icons.find((icon) => icon.id === firstId);
@@ -216,8 +222,9 @@ describe("desktopStore", () => {
     const { createFolder, openWindow, renameIcon } =
       useDesktopStore.getState();
     const folderId = createFolder("Poems");
-    openWindow(folderId);
-    renameIcon(folderId, "Sonnets");
+    expect(folderId).toBeTruthy();
+    openWindow(folderId!);
+    renameIcon(folderId!, "Sonnets");
 
     const { icons, windows, renamingIconId } = useDesktopStore.getState();
     expect(icons.find((icon) => icon.id === folderId)?.label).toBe("Sonnets");
@@ -316,15 +323,16 @@ describe("desktopStore", () => {
       deleteIcon,
     } = useDesktopStore.getState();
     const folderId = createFolder("Bundle");
+    expect(folderId).toBeTruthy();
     openWindow("notepad");
     const windowId = useDesktopStore.getState().windows[0]?.id;
     saveDocumentFromWindow(windowId!, "inside", "nested");
     const fileId = useDesktopStore
       .getState()
       .icons.find((icon) => icon.type === "text")?.id;
-    moveIconToFolder(fileId!, folderId);
+    moveIconToFolder(fileId!, folderId!);
 
-    deleteIcon(folderId);
+    deleteIcon(folderId!);
     const state = useDesktopStore.getState();
     expect(state.icons.find((icon) => icon.id === folderId)).toBeUndefined();
     expect(state.icons.find((icon) => icon.id === fileId)).toBeUndefined();

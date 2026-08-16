@@ -1,18 +1,21 @@
 "use client";
 
 import { Clock } from "@/components/desktop/Clock";
-import { StartLogo, iconForType } from "@/components/desktop/icons";
+import { ComputerIcon, StartLogo, iconForType } from "@/components/desktop/icons";
 import { StartMenu } from "@/components/desktop/StartMenu";
 import { useDesktopStore } from "@/store/desktopStore";
 
 export function Taskbar() {
   const windows = useDesktopStore((state) => state.windows);
   const isStartMenuOpen = useDesktopStore((state) => state.isStartMenuOpen);
+  const viewMode = useDesktopStore((state) => state.viewMode);
   const toggleStartMenu = useDesktopStore((state) => state.toggleStartMenu);
   const focusWindow = useDesktopStore((state) => state.focusWindow);
   const minimizeWindow = useDesktopStore((state) => state.minimizeWindow);
+  const goHome = useDesktopStore((state) => state.goHome);
 
   const visibleTasks = windows.filter((window) => window.isOpen);
+  const isRemote = viewMode === "remote";
 
   return (
     <footer className="win-taskbar relative z-[150]">
@@ -26,6 +29,17 @@ export function Taskbar() {
         <StartLogo />
         Start
       </button>
+
+      {isRemote ? (
+        <button
+          type="button"
+          className="win-raised ml-1 flex items-center gap-1 px-2 py-0.5 text-[11px]"
+          onClick={goHome}
+        >
+          <ComputerIcon size={14} />
+          Go Home
+        </button>
+      ) : null}
 
       <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden px-1">
         {visibleTasks.map((window) => {
