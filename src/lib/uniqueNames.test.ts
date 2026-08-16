@@ -70,4 +70,23 @@ describe("uniqueFolderName", () => {
     expect(uniqueFolderName(icons, "Poems", "f1")).toBe("Poems");
     expect(uniqueFolderName(icons, "Poems")).toBe("Poems (2)");
   });
+
+  it("allows the same name in a different parent folder", () => {
+    const icons: DesktopIcon[] = [
+      {
+        id: "f1",
+        label: "New Folder",
+        type: "folder",
+        x: 0,
+        y: 0,
+        parentId: "parent-a",
+      },
+    ];
+    expect(uniqueFolderName(icons, "New Folder", null, "parent-b")).toBe(
+      "New Folder",
+    );
+    expect(uniqueFolderName(icons, "New Folder", null, "parent-a")).toBe(
+      "New Folder (2)",
+    );
+  });
 });

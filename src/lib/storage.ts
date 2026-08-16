@@ -234,11 +234,18 @@ export function uniqueFolderName(
   icons: DesktopIcon[],
   base = "New Folder",
   excludeIconId?: string | null,
+  parentId: string | null = null,
 ): string {
   const cleaned = base.trim() || "New Folder";
+  const parent = parentId ?? null;
   const names = new Set(
     icons
-      .filter((icon) => icon.type === "folder" && icon.id !== excludeIconId)
+      .filter(
+        (icon) =>
+          icon.type === "folder" &&
+          icon.id !== excludeIconId &&
+          (icon.parentId ?? null) === parent,
+      )
       .map((icon) => icon.label),
   );
   if (!names.has(cleaned)) {

@@ -94,6 +94,11 @@ interface DesktopStore {
   createFolder: (
     name?: string,
     position?: { x: number; y: number },
+    parentId?: string | null,
+  ) => string | null;
+  createTextFile: (
+    parentId?: string | null,
+    name?: string,
   ) => string | null;
   moveIconToFolder: (
     iconId: string,
@@ -664,14 +669,32 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
     set({ documents, icons, windows });
   },
 
-  createFolder: (name, position) => {
+  createFolder: (name, position, parentId) => {
     if (isRemote(get())) {
       return null;
     }
     const state = get();
-    const label = uniqueFolderName(state.icons, name?.trim() || "New Folder");
+    const parent = parentId ?? null;
+
+    if (parent !== null) {
+      const folder = state.icons.find(
+        (item) => item.id === parent && item.type === "folder",
+      );
+      if (!folder) {
+        return null;
+      }
+    }
+
+    const label = uniqueFolderName(
+      state.icons,
+      name?.trim() || "New Folder",
+      null,
+      parent,
+    );
     const place =
-      position ?? nextDesktopIconPosition(state.icons, "folder");
+      parent === null
+        ? (position ?? nextDesktopIconPosition(state.icons, "folder"))
+        : { x: 0, y: 0 };
     const id = createId("folder");
     const icon: DesktopIcon = {
       id,
@@ -679,7 +702,7 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       type: "folder",
       x: place.x,
       y: place.y,
-      parentId: null,
+      parentId: parent,
     };
     const icons = [...state.icons, icon];
     persist({
@@ -695,6 +718,69 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       isStartMenuOpen: false,
     });
     return id;
+  },
+
+  createTextFile: (parentId, name) => {
+    if (isRemote(get())) {
+      return null;
+    }
+    const state = get();
+    const parent = parentId ?? null;
+
+    if (parent !== null) {
+      const folder = state.icons.find(
+        (item) => item.id === parent && item.type === "folder",
+      );
+      if (!folder) {
+        return null;
+      }
+    }
+
+    const now = new Date().toISOString();
+    const label = uniqueTextFileName(
+      state.icons,
+      parent,
+      name?.trim() || "New Text Document",
+    );
+    const documentId = createId("doc");
+    const place =
+      parent === null
+        ? nextDesktopIconPosition(state.icons, "file")
+        : { x: 0, y: 0 };
+    const document: TextDocument = {
+      id: documentId,
+      title: label,
+      content: "",
+      createdAt: now,
+      updatedAt: now,
+    };
+    const iconId = `file-${documentId}`;
+    const icon: DesktopIcon = {
+      id: iconId,
+      label,
+      type: "text",
+      x: place.x,
+      y: place.y,
+      documentId,
+      parentId: parent,
+    };
+
+    const documents = [...state.documents, document];
+    const icons = [...state.icons, icon];
+    persist({
+      icons,
+      documents,
+      wallpaper: state.wallpaper,
+      titleBarColor: state.titleBarColor,
+    });
+    set({
+      documents,
+      icons,
+      selectedIconId: iconId,
+      renamingIconId: iconId,
+      isStartMenuOpen: false,
+    });
+    return iconId;
   },
 
   startRename: (iconId) => {
@@ -744,6 +830,7 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
             state.icons,
             label.trim() || icon.label,
             icon.id,
+            icon.parentId ?? null,
           );
 
     if (!nextLabel) {
@@ -865,7 +952,12 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
     }
     const state = get();
     const icon = state.icons.find((item) => item.id === iconId);
-    if (!icon || !icon.documentId) {
+    const movable =
+      icon &&
+      (icon.type === "folder" ||
+        icon.type === "text" ||
+        Boolean(icon.documentId));
+    if (!icon || !movable) {
       return;
     }
 
@@ -875,6 +967,17 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       );
       if (!folder) {
         return;
+      }
+      // Block moving a folder into itself or one of its descendants.
+      if (icon.type === "folder") {
+        let walk: string | null = folderId;
+        while (walk) {
+          if (walk === icon.id) {
+            return;
+          }
+          walk =
+            state.icons.find((item) => item.id === walk)?.parentId ?? null;
+        }
       }
     }
 
@@ -888,16 +991,14 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
         ? (dropPosition ??
           nextDesktopIconPosition(
             state.icons.filter((item) => item.id !== iconId),
-            "file",
+            icon.type === "folder" ? "folder" : "file",
           ))
         : { x: icon.x, y: icon.y };
 
-    const nextLabel = uniqueTextFileName(
-      state.icons,
-      folderId,
-      icon.label,
-      icon.id,
-    );
+    const nextLabel =
+      icon.type === "folder"
+        ? uniqueFolderName(state.icons, icon.label, icon.id, folderId)
+        : uniqueTextFileName(state.icons, folderId, icon.label, icon.id);
     const renamed = nextLabel !== icon.label;
 
     const icons = state.icons.map((item) =>
@@ -912,24 +1013,37 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
         : item,
     );
 
-    const documents = renamed
-      ? state.documents.map((doc) =>
-          doc.id === icon.documentId
-            ? {
-                ...doc,
-                title: nextLabel,
-                updatedAt: new Date().toISOString(),
-              }
-            : doc,
-        )
-      : state.documents;
+    const documents =
+      renamed && icon.documentId
+        ? state.documents.map((doc) =>
+            doc.id === icon.documentId
+              ? {
+                  ...doc,
+                  title: nextLabel,
+                  updatedAt: new Date().toISOString(),
+                }
+              : doc,
+          )
+        : state.documents;
 
     const windows = renamed
-      ? state.windows.map((window) =>
-          window.documentId === icon.documentId && window.type === "editor"
-            ? { ...window, title: `${nextLabel} - Notepad` }
-            : window,
-        )
+      ? state.windows.map((window) => {
+          if (
+            icon.type === "folder" &&
+            window.iconId === icon.id &&
+            window.type === "folder"
+          ) {
+            return { ...window, title: nextLabel };
+          }
+          if (
+            icon.documentId &&
+            window.documentId === icon.documentId &&
+            window.type === "editor"
+          ) {
+            return { ...window, title: `${nextLabel} - Notepad` };
+          }
+          return window;
+        })
       : state.windows;
 
     persist({

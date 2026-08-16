@@ -259,6 +259,38 @@ describe("desktopStore", () => {
     expect(renamingIconId).toBe(secondId);
   });
 
+  it("creates a folder and text file inside a parent folder", () => {
+    const { createFolder, createTextFile } = useDesktopStore.getState();
+    const parentId = createFolder("Bundle");
+    expect(parentId).toBeTruthy();
+
+    const nestedFolderId = createFolder(undefined, undefined, parentId);
+    const fileId = createTextFile(parentId);
+    expect(nestedFolderId).toBeTruthy();
+    expect(fileId).toBeTruthy();
+
+    const { icons, documents, renamingIconId } = useDesktopStore.getState();
+    const nested = icons.find((icon) => icon.id === nestedFolderId);
+    const file = icons.find((icon) => icon.id === fileId);
+    const doc = documents.find((item) => item.id === file?.documentId);
+
+    expect(nested?.parentId).toBe(parentId);
+    expect(nested?.label).toBe("New Folder");
+    expect(file?.parentId).toBe(parentId);
+    expect(file?.type).toBe("text");
+    expect(file?.label).toBe("New Text Document");
+    expect(doc?.content).toBe("");
+    expect(renamingIconId).toBe(fileId);
+
+    // Same name allowed on desktop vs inside folder
+    const desktopFolderId = createFolder();
+    const desktop = useDesktopStore
+      .getState()
+      .icons.find((icon) => icon.id === desktopFolderId);
+    expect(desktop?.label).toBe("New Folder");
+    expect(desktop?.parentId).toBeNull();
+  });
+
   it("renames a folder and open window title", () => {
     const { createFolder, openWindow, renameIcon } =
       useDesktopStore.getState();
@@ -383,6 +415,37 @@ describe("desktopStore", () => {
     moveIconToFolder(fileId!, null);
     file = useDesktopStore.getState().icons.find((icon) => icon.id === fileId);
     expect(file?.parentId).toBeNull();
+  });
+
+  it("moves a nested folder to the desktop and into another folder", () => {
+    const { createFolder, createTextFile, moveIconToFolder } =
+      useDesktopStore.getState();
+    const parentId = createFolder("Outer");
+    const nestedId = createFolder("Inner", undefined, parentId);
+    const fileId = createTextFile(nestedId!, "kept");
+    expect(parentId).toBeTruthy();
+    expect(nestedId).toBeTruthy();
+
+    moveIconToFolder(nestedId!, null, { x: 200, y: 120 });
+    let nested = useDesktopStore.getState().icons.find((icon) => icon.id === nestedId);
+    expect(nested?.parentId).toBeNull();
+    expect(nested?.x).toBe(200);
+    expect(nested?.y).toBe(120);
+    // Children stay with the folder
+    expect(
+      useDesktopStore.getState().icons.find((icon) => icon.id === fileId)?.parentId,
+    ).toBe(nestedId);
+
+    moveIconToFolder(nestedId!, parentId!);
+    nested = useDesktopStore.getState().icons.find((icon) => icon.id === nestedId);
+    expect(nested?.parentId).toBe(parentId);
+
+    // Refuse nesting a folder inside itself / its descendant
+    moveIconToFolder(parentId!, nestedId!);
+    expect(
+      useDesktopStore.getState().icons.find((icon) => icon.id === parentId)
+        ?.parentId,
+    ).toBeNull();
   });
 
   it("places a file at a drop position when moved to the desktop", () => {

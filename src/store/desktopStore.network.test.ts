@@ -124,6 +124,7 @@ describe("desktopStore network", () => {
     const before = useDesktopStore.getState().icons;
 
     expect(useDesktopStore.getState().createFolder()).toBeNull();
+    expect(useDesktopStore.getState().createTextFile("maya-folder")).toBeNull();
     useDesktopStore.getState().setWallpaper("#112233");
     useDesktopStore.getState().deleteIcon("maya-file-welcome");
 

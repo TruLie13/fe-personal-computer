@@ -69,7 +69,8 @@ export function DesktopIcon({
   const isRenaming = renamingIconId === icon.id;
   const readOnly = viewMode === "remote";
   const pinned = isPinnedProfileIcon(icon);
-  const canDropIntoFolders = Boolean(icon.documentId) && !readOnly;
+  const canDropIntoFolders =
+    !readOnly && (icon.type === "folder" || Boolean(icon.documentId));
   const remoteUser =
     viewMode === "remote" && remoteUserId
       ? getNetworkUser(remoteUserId)
