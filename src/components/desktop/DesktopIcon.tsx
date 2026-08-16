@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ContextMenuEntry } from "@/components/desktop/ContextMenu";
 import { iconForType } from "@/components/desktop/icons";
+import { ProfileAvatar } from "@/components/desktop/ProfileAvatar";
 import { clampIconPosition } from "@/lib/desktopBounds";
 import {
   clearDropTargetHighlight,
@@ -10,7 +11,8 @@ import {
   resolveFileDropTarget,
   setDropTargetHighlight,
 } from "@/lib/dragDrop";
-import { canDeleteIcon } from "@/lib/storage";
+import { getNetworkUser } from "@/lib/networkSeed";
+import { canDeleteIcon, isPinnedProfileIcon } from "@/lib/storage";
 import { useDesktopStore } from "@/store/desktopStore";
 import type { DesktopIcon as DesktopIconType } from "@/types/desktop";
 
@@ -51,6 +53,8 @@ export function DesktopIcon({
   const selectedIconId = useDesktopStore((state) => state.selectedIconId);
   const renamingIconId = useDesktopStore((state) => state.renamingIconId);
   const viewMode = useDesktopStore((state) => state.viewMode);
+  const remoteUserId = useDesktopStore((state) => state.remoteUserId);
+  const localProfile = useDesktopStore((state) => state.localProfile);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
   const openWindow = useDesktopStore((state) => state.openWindow);
   const startRename = useDesktopStore((state) => state.startRename);
@@ -64,7 +68,19 @@ export function DesktopIcon({
   const selected = selectedIconId === icon.id;
   const isRenaming = renamingIconId === icon.id;
   const readOnly = viewMode === "remote";
+  const pinned = isPinnedProfileIcon(icon);
   const canDropIntoFolders = Boolean(icon.documentId) && !readOnly;
+  const remoteUser =
+    viewMode === "remote" && remoteUserId
+      ? getNetworkUser(remoteUserId)
+      : undefined;
+  const profileAvatar =
+    icon.type === "profile"
+      ? {
+          displayName: remoteUser?.displayName ?? localProfile.displayName,
+          avatarUrl: remoteUser?.avatarUrl ?? localProfile.avatarUrl,
+        }
+      : null;
   const buttonRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dragging = useRef(false);
@@ -87,11 +103,11 @@ export function DesktopIcon({
     latest.current = clamped;
 
     if (clamped.x !== icon.x || clamped.y !== icon.y) {
-      if (viewMode !== "remote") {
+      if (viewMode !== "remote" && !isPinnedProfileIcon(icon)) {
         updateIconPosition(icon.id, clamped.x, clamped.y);
       }
     }
-  }, [icon.id, icon.x, icon.y, updateIconPosition, viewMode]);
+  }, [icon.id, icon.x, icon.y, icon.type, updateIconPosition, viewMode]);
 
   useEffect(() => {
     const onResize = () => {
@@ -135,7 +151,7 @@ export function DesktopIcon({
   };
 
   const onPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (event.button !== 0 || isRenaming || readOnly) {
+    if (event.button !== 0 || isRenaming || readOnly || pinned) {
       if (event.button === 0 && !isRenaming) {
         event.stopPropagation();
         selectIcon(icon.id);
@@ -264,7 +280,15 @@ export function DesktopIcon({
       aria-label={icon.label}
       {...dropProps}
     >
-      <Icon />
+      {profileAvatar ? (
+        <ProfileAvatar
+          displayName={profileAvatar.displayName}
+          avatarUrl={profileAvatar.avatarUrl}
+          size={32}
+        />
+      ) : (
+        <Icon />
+      )}
       {isRenaming ? (
         <input
           ref={inputRef}

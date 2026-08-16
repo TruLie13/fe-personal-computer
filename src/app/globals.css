@@ -237,13 +237,43 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: auto;
+}
+
+.win-tray-identity {
+  height: 22px;
+  background: var(--color-win-face);
+  color: var(--color-win-black);
+  cursor: default;
 }
 
 .win-menu {
   background: var(--color-win-face);
   min-width: 180px;
   padding: 2px;
+}
+
+.win-menu-spine {
+  position: relative;
+  display: flex;
+  width: 21px;
+  flex-shrink: 0;
+  align-items: flex-end;
+  justify-content: center;
+  background: #808080;
+  padding: 0 0 4px;
+}
+
+.win-menu-spine-label {
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #c0c0c0;
+  text-shadow: 1px 1px 0 #000000;
+  line-height: 1;
+  margin-bottom: 2px;
 }
 
 .win-menu-item {

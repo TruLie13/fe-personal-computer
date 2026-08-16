@@ -9,12 +9,19 @@ import {
   NotepadIcon,
   StoryExplorerIcon,
 } from "@/components/desktop/icons";
+import { ProfileAvatar } from "@/components/desktop/ProfileAvatar";
+import { getNetworkUser } from "@/lib/networkSeed";
+import { computerLabel } from "@/lib/profile";
+import { PROFILE_ICON_ID } from "@/lib/storage";
 import { useDesktopStore } from "@/store/desktopStore";
 
 export function StartMenu() {
   const isStartMenuOpen = useDesktopStore((state) => state.isStartMenuOpen);
   const viewMode = useDesktopStore((state) => state.viewMode);
+  const remoteUserId = useDesktopStore((state) => state.remoteUserId);
+  const localProfile = useDesktopStore((state) => state.localProfile);
   const openWindow = useDesktopStore((state) => state.openWindow);
+  const openProfile = useDesktopStore((state) => state.openProfile);
   const closeStartMenu = useDesktopStore((state) => state.closeStartMenu);
   const createFolder = useDesktopStore((state) => state.createFolder);
   const goHome = useDesktopStore((state) => state.goHome);
@@ -24,6 +31,11 @@ export function StartMenu() {
   }
 
   const isRemote = viewMode === "remote";
+  const remoteUser =
+    isRemote && remoteUserId ? getNetworkUser(remoteUserId) : undefined;
+  const identityName = remoteUser?.displayName ?? localProfile.displayName;
+  const identityAvatarUrl = remoteUser?.avatarUrl ?? localProfile.avatarUrl;
+  const identityLabel = computerLabel(identityName);
 
   return (
     <div
@@ -31,17 +43,28 @@ export function StartMenu() {
       role="menu"
       aria-label="Start"
     >
-      <div className="flex w-7 items-end justify-center bg-win-dark py-2">
-        <span
-          className="origin-center -rotate-90 whitespace-nowrap text-[12px] font-bold tracking-wide text-win-face-light"
-          aria-hidden="true"
-        >
-          Personal Computer
-        </span>
+      <div className="win-menu-spine" aria-hidden="true">
+        <span className="win-menu-spine-label">Personal Computer</span>
       </div>
-      <div className="flex min-w-[200px] flex-col py-1">
+      <div className="flex min-w-[220px] flex-col py-1">
         {isRemote ? (
           <>
+            <button
+              type="button"
+              className="win-menu-item"
+              role="menuitem"
+              onClick={() => {
+                openProfile();
+                closeStartMenu();
+              }}
+            >
+              <ProfileAvatar
+                displayName={identityName}
+                avatarUrl={identityAvatarUrl}
+                size={16}
+              />
+              {identityLabel}
+            </button>
             <button
               type="button"
               className="win-menu-item"
@@ -49,7 +72,7 @@ export function StartMenu() {
               onClick={() => goHome()}
             >
               <ComputerIcon size={16} />
-              Go Home (My Computer)
+              Go Home
             </button>
             <div className="win-menu-separator" />
             <button
@@ -67,10 +90,14 @@ export function StartMenu() {
               type="button"
               className="win-menu-item"
               role="menuitem"
-              onClick={() => openWindow("my-computer")}
+              onClick={() => openWindow(PROFILE_ICON_ID)}
             >
-              <ComputerIcon size={16} />
-              My Computer
+              <ProfileAvatar
+                displayName={identityName}
+                avatarUrl={identityAvatarUrl}
+                size={16}
+              />
+              {identityLabel}
             </button>
             <button
               type="button"

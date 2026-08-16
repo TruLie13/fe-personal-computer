@@ -2,6 +2,16 @@ import type { DesktopIcon, TextDocument } from "@/types/desktop";
 
 export type NetworkUserId = string;
 
+export interface UserProfile {
+  displayName: string;
+  computerName: string;
+  bio: string;
+  /** Solid Win95-style avatar swatch (fallback chrome / future UI). */
+  avatarColor: string;
+  /** Optional profile picture URL; when missing, UI uses the computer icon. */
+  avatarUrl: string | null;
+}
+
 export interface RemoteDesktopSnapshot {
   wallpaper: string;
   titleBarColor: string;
@@ -13,6 +23,9 @@ export interface NetworkUser {
   id: NetworkUserId;
   displayName: string;
   computerName: string;
+  bio: string;
+  avatarColor: string;
+  avatarUrl: string | null;
   snapshot: RemoteDesktopSnapshot;
 }
 

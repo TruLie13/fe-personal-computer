@@ -12,14 +12,17 @@ export const NETWORK_USERS: NetworkUser[] = [
     id: "maya",
     displayName: "Maya Chen",
     computerName: "MAYA-PC",
+    bio: "Poet of buses, rain, and bad pianos.\n\nI keep drafts in purple. Say hi on the Bulletin Board if you like quiet cities.",
+    avatarColor: "#800080",
+    avatarUrl: null,
     snapshot: {
       wallpaper: "#800080",
       titleBarColor: "#800080",
       icons: [
         {
-          id: "maya-my-computer",
-          label: "My Computer",
-          type: "system",
+          id: "maya-profile",
+          label: "Maya Chen's Computer",
+          type: "profile",
           x: 16,
           y: 16,
         },
@@ -97,14 +100,17 @@ export const NETWORK_USERS: NetworkUser[] = [
     id: "rex",
     displayName: "Rex Ortega",
     computerName: "REX-BOX",
+    bio: "Night writer. Horror-adjacent scraps about machines that remember people.\n\nBlack wallpaper. Green chrome. Favorites welcome if you survive the desktop.",
+    avatarColor: "#008000",
+    avatarUrl: null,
     snapshot: {
       wallpaper: "#000000",
       titleBarColor: "#008000",
       icons: [
         {
-          id: "rex-my-computer",
-          label: "My Computer",
-          type: "system",
+          id: "rex-profile",
+          label: "Rex Ortega's Computer",
+          type: "profile",
           x: 16,
           y: 16,
         },

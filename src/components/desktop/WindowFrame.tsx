@@ -6,6 +6,7 @@ import { DisplayProperties } from "@/components/desktop/DisplayProperties";
 import { FolderWindow } from "@/components/desktop/FolderWindow";
 import { iconForType } from "@/components/desktop/icons";
 import { NetworkNeighborhood } from "@/components/desktop/NetworkNeighborhood";
+import { ProfileWindow } from "@/components/desktop/ProfileWindow";
 import { StoryExplorer } from "@/components/desktop/StoryExplorer";
 import { TextEditor } from "@/components/desktop/TextEditor";
 import { getNetworkUser } from "@/lib/networkSeed";
@@ -50,6 +51,10 @@ function WindowBody({ window }: { window: DesktopWindow }) {
     return <NetworkNeighborhood />;
   }
 
+  if (window.type === "profile") {
+    return <ProfileWindow />;
+  }
+
   if (window.type === "system" && remoteUser) {
     return (
       <div className="flex h-full flex-col gap-3 p-3 text-[12px]">
@@ -72,8 +77,9 @@ function WindowBody({ window }: { window: DesktopWindow }) {
         machine.
       </p>
       <p className="text-win-dark">
-        Open Bulletin Board to leave a community note, Story Explorer to read
-        public writing, and Network Neighborhood to visit other PCs.
+        Open your Computer profile for bio, Bulletin Board for notes, Story
+        Explorer for public writing, and Network Neighborhood to visit other
+        PCs.
       </p>
     </div>
   );

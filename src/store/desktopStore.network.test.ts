@@ -41,6 +41,13 @@ describe("desktopStore network", () => {
       remoteUserId: null,
       favorites: [],
       localBbsNotes: [],
+      localProfile: {
+        displayName: "Writer",
+        computerName: "WRITER-PC",
+        bio: "test",
+        avatarColor: "#000080",
+        avatarUrl: null,
+      },
     });
     window.localStorage.clear();
   });
@@ -63,7 +70,7 @@ describe("desktopStore network", () => {
     ).toBe(true);
   });
 
-  it("visits a remote PC and exposes seed icons/wallpaper", () => {
+  it("visits a remote PC, opens their profile bio, and exposes seed icons", () => {
     const maya = getNetworkUser("maya");
     expect(maya).toBeDefined();
 
@@ -72,9 +79,30 @@ describe("desktopStore network", () => {
 
     expect(state.viewMode).toBe("remote");
     expect(state.remoteUserId).toBe("maya");
-    expect(state.windows).toHaveLength(0);
+    expect(state.windows.some((window) => window.type === "profile")).toBe(
+      true,
+    );
     expect(selectActiveWallpaper(state)).toBe(maya!.snapshot.wallpaper);
     expect(selectActiveIcons(state)).toEqual(maya!.snapshot.icons);
+  });
+
+  it("updates local profile name and desktop icon label", () => {
+    useDesktopStore.getState().updateLocalProfile({
+      displayName: "Truth",
+      bio: "Hello from my PC.",
+    });
+    const state = useDesktopStore.getState();
+    expect(state.localProfile.displayName).toBe("Truth");
+    expect(
+      state.icons.find((icon) => icon.id === "profile")?.label,
+    ).toBe("Truth's Computer");
+  });
+
+  it("adds and removes network favorites from profile actions", () => {
+    useDesktopStore.getState().addFavorite("maya");
+    expect(useDesktopStore.getState().favorites).toHaveLength(1);
+    useDesktopStore.getState().removeFavorite("maya");
+    expect(useDesktopStore.getState().favorites).toHaveLength(0);
   });
 
   it("returns home and restores local desktop selectors", () => {

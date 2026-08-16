@@ -1,4 +1,4 @@
-import { clampIconPosition } from "@/lib/desktopBounds";
+import { centeredWindowPosition, clampIconPosition } from "@/lib/desktopBounds";
 
 describe("clampIconPosition", () => {
   const icon = { width: 76, height: 64 };
@@ -29,6 +29,20 @@ describe("clampIconPosition", () => {
     expect(clampIconPosition({ x: -20, y: -40 }, icon, desktop)).toEqual({
       x: 0,
       y: 0,
+    });
+  });
+});
+
+describe("centeredWindowPosition", () => {
+  it("centers a window in the viewport above the taskbar", () => {
+    expect(
+      centeredWindowPosition(
+        { width: 420, height: 360 },
+        { width: 1000, height: 700 },
+      ),
+    ).toEqual({
+      x: 290,
+      y: 156,
     });
   });
 });
