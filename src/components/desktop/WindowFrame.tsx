@@ -131,9 +131,10 @@ export function WindowFrame({ window }: WindowFrameProps) {
     if (!dragging.current) {
       return;
     }
+    // Integer coords keep text crisp and stop SVG clip from flickering mid-drag.
     const next = {
-      x: Math.max(0, event.clientX - offset.current.x),
-      y: Math.max(0, event.clientY - offset.current.y),
+      x: Math.max(0, Math.round(event.clientX - offset.current.x)),
+      y: Math.max(0, Math.round(event.clientY - offset.current.y)),
     };
     latest.current = next;
     setPosition(next);
@@ -145,7 +146,11 @@ export function WindowFrame({ window }: WindowFrameProps) {
     }
     dragging.current = false;
     event.currentTarget.releasePointerCapture(event.pointerId);
-    updateWindowPosition(window.id, latest.current.x, latest.current.y);
+    updateWindowPosition(
+      window.id,
+      Math.round(latest.current.x),
+      Math.round(latest.current.y),
+    );
   };
 
   const stopChromePointer = (

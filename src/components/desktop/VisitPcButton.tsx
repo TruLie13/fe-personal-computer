@@ -18,7 +18,9 @@ export function VisitPcButton({ userId, className = "" }: VisitPcButtonProps) {
       className={`win-raised flex items-center gap-1 px-2 py-0.5 ${className}`.trim()}
       onClick={() => visitRemotePc(userId)}
     >
-      <ComputerIcon size={14} />
+      <span className="inline-block h-3.5 w-3.5 shrink-0 overflow-hidden">
+        <ComputerIcon size={14} />
+      </span>
       Visit PC
     </button>
   );
