@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ProfileAvatar } from "@/components/desktop/ProfileAvatar";
+import { useSavedFlash } from "@/hooks/useSavedFlash";
 import { isFavorite } from "@/lib/favorites";
 import { getNetworkUser } from "@/lib/networkSeed";
 import { computerLabel } from "@/lib/profile";
@@ -29,7 +30,7 @@ export function ProfileWindow() {
 
   const [draftName, setDraftName] = useState(localProfile.displayName);
   const [draftBio, setDraftBio] = useState(localProfile.bio);
-  const [savedFlash, setSavedFlash] = useState(false);
+  const { savedFlash, flashSaved } = useSavedFlash();
 
   useEffect(() => {
     if (!isRemote) {
@@ -48,8 +49,7 @@ export function ProfileWindow() {
       displayName: draftName,
       bio: draftBio,
     });
-    setSavedFlash(true);
-    window.setTimeout(() => setSavedFlash(false), 1200);
+    flashSaved();
   };
 
   return (

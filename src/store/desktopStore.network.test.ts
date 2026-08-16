@@ -11,6 +11,7 @@ import {
   LOCAL_USER_ID,
   mergeBbsPostsNewestFirst,
 } from "@/lib/networkSeed";
+import { PROFILE_STORAGE_KEY } from "@/lib/profile";
 import {
   DEFAULT_DOCUMENTS,
   DEFAULT_ICONS,
@@ -19,7 +20,9 @@ import {
   STORAGE_KEY,
 } from "@/lib/storage";
 import {
+  selectActiveDocuments,
   selectActiveIcons,
+  selectActiveTitleBarColor,
   selectActiveWallpaper,
   useDesktopStore,
 } from "@/store/desktopStore";
@@ -213,5 +216,150 @@ describe("desktopStore network", () => {
       { userId: "maya", addedAt: "2026-08-15T00:00:00.000Z" },
     ]);
     expect(state.localBbsNotes[0]?.title).toBe("Saved note");
+  });
+
+  it("opens a remote text file and exposes seed documents", () => {
+    useDesktopStore.getState().visitRemotePc("maya");
+    const maya = getNetworkUser("maya")!;
+
+    expect(selectActiveDocuments(useDesktopStore.getState())).toEqual(
+      maya.snapshot.documents,
+    );
+    expect(selectActiveTitleBarColor(useDesktopStore.getState())).toBe(
+      maya.snapshot.titleBarColor,
+    );
+
+    useDesktopStore.getState().openWindow("maya-file-welcome");
+    const { windows } = useDesktopStore.getState();
+    const editor = windows.find(
+      (window) => window.documentId === "maya-doc-welcome" && window.isOpen,
+    );
+    expect(editor).toBeDefined();
+    expect(editor?.type).toBe("editor");
+    expect(editor?.title).toBe("welcome - Notepad");
+  });
+
+  it("blocks live document edits while visiting a remote PC", () => {
+    useDesktopStore.getState().visitRemotePc("maya");
+    useDesktopStore.getState().openWindow("maya-file-welcome");
+    const windowId = useDesktopStore
+      .getState()
+      .windows.find((window) => window.documentId === "maya-doc-welcome")!.id;
+
+    useDesktopStore
+      .getState()
+      .updateDocumentContent(windowId, "tampered", "hacked");
+
+    expect(
+      selectActiveDocuments(useDesktopStore.getState()).find(
+        (doc) => doc.id === "maya-doc-welcome",
+      )?.content,
+    ).toContain("You found my machine");
+    expect(useDesktopStore.getState().documents).toEqual(DEFAULT_DOCUMENTS);
+  });
+
+  it("rejects empty bulletin board posts", () => {
+    expect(useDesktopStore.getState().postBbsNote("  ", "body")).toBe("");
+    expect(useDesktopStore.getState().postBbsNote("title", "  ")).toBe("");
+    expect(useDesktopStore.getState().localBbsNotes).toHaveLength(0);
+  });
+
+  it("hydrates profile label and merges missing app icons", () => {
+    window.localStorage.setItem(
+      PROFILE_STORAGE_KEY,
+      JSON.stringify({
+        displayName: "Ada",
+        computerName: "ADA-PC",
+        bio: "Hello",
+        avatarColor: "#008080",
+        avatarUrl: null,
+      }),
+    );
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        icons: [
+          {
+            id: "profile",
+            label: "Old Label",
+            type: "profile",
+            x: 16,
+            y: 16,
+          },
+        ],
+        documents: [],
+        wallpaper: "#abcdef",
+      }),
+    );
+
+    useDesktopStore.getState().hydrate();
+    const state = useDesktopStore.getState();
+    expect(state.localProfile.displayName).toBe("Ada");
+    expect(state.localProfile.bio).toBe("Hello");
+    expect(state.icons.find((icon) => icon.id === "profile")?.label).toBe(
+      "Ada's Computer",
+    );
+    expect(state.icons.some((icon) => icon.id === "notepad")).toBe(true);
+    expect(state.icons.some((icon) => icon.id === "bulletin-board")).toBe(
+      true,
+    );
+    expect(state.icons.some((icon) => icon.id === "network-neighborhood")).toBe(
+      true,
+    );
+    expect(state.wallpaper).toBe("#abcdef");
+  });
+
+  it("falls back to defaults when desktop localStorage is corrupt", () => {
+    window.localStorage.setItem(STORAGE_KEY, "{not-valid-json");
+    useDesktopStore.getState().hydrate();
+    const state = useDesktopStore.getState();
+    expect(state.hydrated).toBe(true);
+    expect(state.wallpaper).toBe(DEFAULT_WALLPAPER);
+    expect(state.icons).toEqual(DEFAULT_ICONS);
+    expect(state.documents).toEqual(DEFAULT_DOCUMENTS);
+  });
+
+  it("does not re-hydrate after the first successful load", () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        icons: DEFAULT_ICONS,
+        documents: DEFAULT_DOCUMENTS,
+        wallpaper: "#111111",
+        titleBarColor: DEFAULT_TITLE_BAR_COLOR,
+      }),
+    );
+    useDesktopStore.getState().hydrate();
+    expect(useDesktopStore.getState().wallpaper).toBe("#111111");
+
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        icons: DEFAULT_ICONS,
+        documents: DEFAULT_DOCUMENTS,
+        wallpaper: "#222222",
+        titleBarColor: DEFAULT_TITLE_BAR_COLOR,
+      }),
+    );
+    useDesktopStore.getState().hydrate();
+    expect(useDesktopStore.getState().wallpaper).toBe("#111111");
+  });
+
+  it("opens the remote profile via openProfile while visiting", () => {
+    useDesktopStore.getState().visitRemotePc("maya");
+    useDesktopStore.getState().goHome();
+    useDesktopStore.getState().visitRemotePc("maya");
+    useDesktopStore.setState({ windows: [], nextZIndex: 1 });
+
+    useDesktopStore.getState().openProfile();
+    const { windows } = useDesktopStore.getState();
+    expect(
+      windows.some(
+        (window) =>
+          window.type === "profile" &&
+          window.iconId === "maya-profile" &&
+          window.isOpen,
+      ),
+    ).toBe(true);
   });
 });

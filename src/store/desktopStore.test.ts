@@ -613,4 +613,92 @@ describe("desktopStore", () => {
     expect(windowState?.type).toBe("display");
     expect(windowState?.title).toBe("Display Properties");
   });
+
+  it("minimizes a window and restores it on focus", () => {
+    const { openWindow, minimizeWindow, focusWindow } =
+      useDesktopStore.getState();
+    openWindow("profile");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+
+    minimizeWindow(windowId);
+    let windowState = useDesktopStore.getState().windows[0];
+    expect(windowState?.isMinimized).toBe(true);
+    expect(windowState?.isFocused).toBe(false);
+    expect(windowState?.isOpen).toBe(true);
+
+    focusWindow(windowId);
+    windowState = useDesktopStore.getState().windows[0];
+    expect(windowState?.isMinimized).toBe(false);
+    expect(windowState?.isFocused).toBe(true);
+  });
+
+  it("selects icons and clears rename when selecting another", () => {
+    const { createFolder, startRename, selectIcon } =
+      useDesktopStore.getState();
+    const folderId = createFolder("Drafts")!;
+    startRename(folderId);
+    expect(useDesktopStore.getState().renamingIconId).toBe(folderId);
+    expect(useDesktopStore.getState().selectedIconId).toBe(folderId);
+
+    selectIcon("notepad");
+    expect(useDesktopStore.getState().selectedIconId).toBe("notepad");
+    expect(useDesktopStore.getState().renamingIconId).toBeNull();
+    expect(useDesktopStore.getState().isStartMenuOpen).toBe(false);
+  });
+
+  it("starts and cancels rename only for folders and text files", () => {
+    const { createFolder, startRename, cancelRename } =
+      useDesktopStore.getState();
+    const folderId = createFolder("Poems")!;
+    cancelRename();
+    expect(useDesktopStore.getState().renamingIconId).toBeNull();
+
+    startRename("notepad");
+    expect(useDesktopStore.getState().renamingIconId).toBeNull();
+
+    startRename(folderId);
+    expect(useDesktopStore.getState().renamingIconId).toBe(folderId);
+
+    cancelRename();
+    expect(useDesktopStore.getState().renamingIconId).toBeNull();
+  });
+
+  it("updates an existing document from the editor and persists", () => {
+    const { openWindow, saveDocumentFromWindow, updateDocumentContent } =
+      useDesktopStore.getState();
+    openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+    saveDocumentFromWindow(windowId, "draft", "first line");
+
+    updateDocumentContent(windowId, "second line", "draft-v2");
+
+    const { documents, icons } = useDesktopStore.getState();
+    expect(documents[0]?.content).toBe("second line");
+    expect(documents[0]?.title).toBe("draft-v2");
+
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    expect(raw).toBeTruthy();
+    const parsed = JSON.parse(raw!) as {
+      documents: Array<{ content: string; title: string }>;
+    };
+    expect(parsed.documents[0]?.content).toBe("second line");
+    expect(parsed.documents[0]?.title).toBe("draft-v2");
+    // Icon label is not rewritten by live content updates
+    expect(icons.find((icon) => icon.type === "text")?.label).toBe("draft");
+  });
+
+  it("ignores document updates without a linked document", () => {
+    const { openWindow, updateDocumentContent } = useDesktopStore.getState();
+    openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+    updateDocumentContent(windowId, "orphan", "nope");
+    expect(useDesktopStore.getState().documents).toHaveLength(0);
+  });
+
+  it("opens the local profile window via openProfile", () => {
+    useDesktopStore.getState().openProfile();
+    const { windows } = useDesktopStore.getState();
+    expect(windows.some((window) => window.type === "profile" && window.isOpen))
+      .toBe(true);
+  });
 });

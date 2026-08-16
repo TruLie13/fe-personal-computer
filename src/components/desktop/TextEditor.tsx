@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSavedFlash } from "@/hooks/useSavedFlash";
 import { stripTextExtension } from "@/lib/storage";
 import {
   selectActiveDocuments,
@@ -37,7 +38,7 @@ export function TextEditor({ windowId, documentId }: TextEditorProps) {
     stripTextExtension(document?.title ?? titleFromWindowTitle(windowTitle)),
   );
   const [content, setContent] = useState(document?.content ?? "");
-  const [savedFlash, setSavedFlash] = useState(false);
+  const { savedFlash, flashSaved } = useSavedFlash();
 
   useEffect(() => {
     if (document) {
@@ -51,8 +52,7 @@ export function TextEditor({ windowId, documentId }: TextEditorProps) {
       return;
     }
     saveDocumentFromWindow(windowId, title, content);
-    setSavedFlash(true);
-    window.setTimeout(() => setSavedFlash(false), 1200);
+    flashSaved();
   };
 
   return (

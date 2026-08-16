@@ -1,16 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useEffect, type CSSProperties } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
-import {
-  ContextMenu,
-  type ContextMenuEntry,
-} from "@/components/desktop/ContextMenu";
+import { ContextMenu } from "@/components/desktop/ContextMenu";
 import { DesktopIcon } from "@/components/desktop/DesktopIcon";
 import { Taskbar } from "@/components/desktop/Taskbar";
 import { WindowFrame } from "@/components/desktop/WindowFrame";
+import { useContextMenuState } from "@/hooks/useContextMenuState";
+import { useDeleteConfirm } from "@/hooks/useDeleteConfirm";
 import { clampIconPosition } from "@/lib/desktopBounds";
-import { buildDeleteConfirmMessage } from "@/lib/deleteConfirm";
 import { DESKTOP_ATTR } from "@/lib/dragDrop";
 import {
   selectActiveIcons,
@@ -19,12 +17,6 @@ import {
   selectDesktopIcons,
   useDesktopStore,
 } from "@/store/desktopStore";
-
-interface MenuState {
-  x: number;
-  y: number;
-  entries: ContextMenuEntry[];
-}
 
 export function Desktop() {
   const storeIcons = useDesktopStore((state) => state.icons);
@@ -44,34 +36,20 @@ export function Desktop() {
   const goHome = useDesktopStore((state) => state.goHome);
 
   const isRemote = viewMode === "remote";
-
   const desktopIcons = selectDesktopIcons(icons);
-  const [menu, setMenu] = useState<MenuState | null>(null);
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  const { menu, openMenu, closeMenu } = useContextMenuState();
+  const {
+    pendingDeleteId,
+    deletePrompt,
+    requestDelete,
+    cancelDelete,
+    confirmDelete,
+  } = useDeleteConfirm(storeIcons);
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
-
-  const closeMenu = useCallback(() => setMenu(null), []);
-
-  const openMenu = useCallback(
-    (event: React.MouseEvent, entries: ContextMenuEntry[]) => {
-      setMenu({
-        x: event.clientX,
-        y: event.clientY,
-        entries,
-      });
-    },
-    [],
-  );
-
-  const pendingDeleteIcon = pendingDeleteId
-    ? storeIcons.find((icon) => icon.id === pendingDeleteId)
-    : undefined;
-  const deletePrompt = pendingDeleteIcon
-    ? buildDeleteConfirmMessage(pendingDeleteIcon, storeIcons)
-    : null;
 
   return (
     <div
@@ -92,7 +70,7 @@ export function Desktop() {
         onMouseDown={() => {
           selectIcon(null);
           closeStartMenu();
-          setMenu(null);
+          closeMenu();
         }}
         onContextMenu={(event) => {
           event.preventDefault();
@@ -154,7 +132,7 @@ export function Desktop() {
             key={icon.id}
             icon={icon}
             onRequestMenu={openMenu}
-            onRequestDelete={(iconId) => setPendingDeleteId(iconId)}
+            onRequestDelete={requestDelete}
           />
         ))}
         {windows.map((window) => (
@@ -175,10 +153,12 @@ export function Desktop() {
           title={deletePrompt.title}
           message={deletePrompt.message}
           onConfirm={() => {
-            deleteIcon(pendingDeleteId);
-            setPendingDeleteId(null);
+            const id = confirmDelete();
+            if (id) {
+              deleteIcon(id);
+            }
           }}
-          onCancel={() => setPendingDeleteId(null)}
+          onCancel={cancelDelete}
         />
       ) : null}
     </div>
