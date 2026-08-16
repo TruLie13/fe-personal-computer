@@ -1,4 +1,11 @@
 import { create } from "zustand";
+import { loadLocalBbsNotes, saveLocalBbsNotes } from "@/lib/bbsNotes";
+import {
+  isFavorite,
+  loadFavorites,
+  saveFavorites,
+} from "@/lib/favorites";
+import { getNetworkUser, LOCAL_USER_ID } from "@/lib/networkSeed";
 import {
   DEFAULT_DOCUMENTS,
   DEFAULT_ICONS,
@@ -18,6 +25,12 @@ import type {
   TextDocument,
   WindowType,
 } from "@/types/desktop";
+import type {
+  BbsPost,
+  DesktopViewMode,
+  FavoritePc,
+  NetworkUserId,
+} from "@/types/network";
 
 const WINDOW_DEFAULTS: Record<
   WindowType,
@@ -29,6 +42,9 @@ const WINDOW_DEFAULTS: Record<
   editor: { title: "Untitled - Notepad", width: 440, height: 320 },
   system: { title: "My Computer", width: 380, height: 280 },
   display: { title: "Display Properties", width: 420, height: 460 },
+  bbs: { title: "Bulletin Board", width: 520, height: 440 },
+  network: { title: "Network Neighborhood", width: 480, height: 360 },
+  stories: { title: "Story Explorer", width: 560, height: 420 },
 };
 
 interface DesktopStore {
@@ -41,6 +57,10 @@ interface DesktopStore {
   isStartMenuOpen: boolean;
   nextZIndex: number;
   hydrated: boolean;
+  viewMode: DesktopViewMode;
+  remoteUserId: NetworkUserId | null;
+  favorites: FavoritePc[];
+  localBbsNotes: BbsPost[];
   hydrate: () => void;
   selectIcon: (iconId: string | null) => void;
   toggleStartMenu: () => void;
@@ -60,7 +80,7 @@ interface DesktopStore {
   createFolder: (
     name?: string,
     position?: { x: number; y: number },
-  ) => string;
+  ) => string | null;
   moveIconToFolder: (
     iconId: string,
     folderId: string | null,
@@ -74,6 +94,11 @@ interface DesktopStore {
   setWallpaper: (color: string) => void;
   setTitleBarColor: (color: string) => void;
   resetTheme: () => void;
+  visitRemotePc: (userId: NetworkUserId) => void;
+  goHome: () => void;
+  addFavorite: (userId: NetworkUserId) => void;
+  removeFavorite: (userId: NetworkUserId) => void;
+  postBbsNote: (title: string, content: string) => string;
 }
 
 function persist(state: {
@@ -88,6 +113,10 @@ function persist(state: {
     wallpaper: state.wallpaper,
     titleBarColor: state.titleBarColor,
   });
+}
+
+function persistFavorites(favorites: FavoritePc[]): void {
+  saveFavorites(favorites);
 }
 
 function createId(prefix: string): string {
@@ -130,6 +159,59 @@ function createWindowFromIcon(
   };
 }
 
+function isRemote(state: { viewMode: DesktopViewMode }): boolean {
+  return state.viewMode === "remote";
+}
+
+export function selectActiveIcons(state: {
+  viewMode: DesktopViewMode;
+  remoteUserId: NetworkUserId | null;
+  icons: DesktopIcon[];
+}): DesktopIcon[] {
+  if (state.viewMode === "remote" && state.remoteUserId) {
+    return getNetworkUser(state.remoteUserId)?.snapshot.icons ?? [];
+  }
+  return state.icons;
+}
+
+export function selectActiveDocuments(state: {
+  viewMode: DesktopViewMode;
+  remoteUserId: NetworkUserId | null;
+  documents: TextDocument[];
+}): TextDocument[] {
+  if (state.viewMode === "remote" && state.remoteUserId) {
+    return getNetworkUser(state.remoteUserId)?.snapshot.documents ?? [];
+  }
+  return state.documents;
+}
+
+export function selectActiveWallpaper(state: {
+  viewMode: DesktopViewMode;
+  remoteUserId: NetworkUserId | null;
+  wallpaper: string;
+}): string {
+  if (state.viewMode === "remote" && state.remoteUserId) {
+    return (
+      getNetworkUser(state.remoteUserId)?.snapshot.wallpaper ?? state.wallpaper
+    );
+  }
+  return state.wallpaper;
+}
+
+export function selectActiveTitleBarColor(state: {
+  viewMode: DesktopViewMode;
+  remoteUserId: NetworkUserId | null;
+  titleBarColor: string;
+}): string {
+  if (state.viewMode === "remote" && state.remoteUserId) {
+    return (
+      getNetworkUser(state.remoteUserId)?.snapshot.titleBarColor ??
+      state.titleBarColor
+    );
+  }
+  return state.titleBarColor;
+}
+
 export const useDesktopStore = create<DesktopStore>((set, get) => ({
   icons: DEFAULT_ICONS,
   documents: DEFAULT_DOCUMENTS,
@@ -141,6 +223,10 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
   isStartMenuOpen: false,
   nextZIndex: 1,
   hydrated: false,
+  viewMode: "local",
+  remoteUserId: null,
+  favorites: [],
+  localBbsNotes: [],
 
   hydrate: () => {
     if (get().hydrated) {
@@ -152,6 +238,8 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       documents: saved.documents,
       wallpaper: saved.wallpaper,
       titleBarColor: saved.titleBarColor,
+      favorites: loadFavorites(),
+      localBbsNotes: loadLocalBbsNotes(),
       hydrated: true,
     });
   },
@@ -177,12 +265,16 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
 
   openWindow: (iconId) => {
     const state = get();
-    const icon = state.icons.find((item) => item.id === iconId);
+    const icons = selectActiveIcons(state);
+    const icon = icons.find((item) => item.id === iconId);
     if (!icon) {
       return;
     }
 
     if (icon.type === "editor") {
+      if (isRemote(state)) {
+        return;
+      }
       const zIndex = state.nextZIndex;
       const openCount = state.windows.filter((window) => window.isOpen).length;
       const nextWindow = createWindowFromIcon(icon, zIndex, openCount);
@@ -195,6 +287,10 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
         selectedIconId: iconId,
         isStartMenuOpen: false,
       });
+      return;
+    }
+
+    if (icon.type === "display" && isRemote(state)) {
       return;
     }
 
@@ -345,17 +441,27 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
   },
 
   updateIconPosition: (iconId, x, y) => {
+    if (isRemote(get())) {
+      return;
+    }
     set((state) => {
       const icons = state.icons.map((icon) =>
         icon.id === iconId ? { ...icon, x, y } : icon,
       );
-      persist({ icons, documents: state.documents, wallpaper: state.wallpaper,
-        titleBarColor: state.titleBarColor });
+      persist({
+        icons,
+        documents: state.documents,
+        wallpaper: state.wallpaper,
+        titleBarColor: state.titleBarColor,
+      });
       return { icons };
     });
   },
 
   updateDocumentContent: (windowId, content, title) => {
+    if (isRemote(get())) {
+      return;
+    }
     set((state) => {
       const target = state.windows.find((window) => window.id === windowId);
       if (!target?.documentId) {
@@ -383,6 +489,9 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
   },
 
   saveDocumentFromWindow: (windowId, title, content) => {
+    if (isRemote(get())) {
+      return;
+    }
     const state = get();
     const target = state.windows.find((window) => window.id === windowId);
     if (!target) {
@@ -408,8 +517,12 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
           ? { ...window, title: `${fileTitle} - Notepad` }
           : window,
       );
-      persist({ icons, documents, wallpaper: state.wallpaper,
-        titleBarColor: state.titleBarColor });
+      persist({
+        icons,
+        documents,
+        wallpaper: state.wallpaper,
+        titleBarColor: state.titleBarColor,
+      });
       set({ documents, icons, windows });
       return;
     }
@@ -446,12 +559,19 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
         : window,
     );
 
-    persist({ icons, documents, wallpaper: state.wallpaper,
-        titleBarColor: state.titleBarColor });
+    persist({
+      icons,
+      documents,
+      wallpaper: state.wallpaper,
+      titleBarColor: state.titleBarColor,
+    });
     set({ documents, icons, windows });
   },
 
   createFolder: (name, position) => {
+    if (isRemote(get())) {
+      return null;
+    }
     const state = get();
     const label = uniqueFolderName(state.icons, name?.trim() || "New Folder");
     const place =
@@ -466,8 +586,12 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       parentId: null,
     };
     const icons = [...state.icons, icon];
-    persist({ icons, documents: state.documents, wallpaper: state.wallpaper,
-        titleBarColor: state.titleBarColor });
+    persist({
+      icons,
+      documents: state.documents,
+      wallpaper: state.wallpaper,
+      titleBarColor: state.titleBarColor,
+    });
     set({
       icons,
       selectedIconId: id,
@@ -478,6 +602,9 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
   },
 
   startRename: (iconId) => {
+    if (isRemote(get())) {
+      return;
+    }
     const icon = get().icons.find((item) => item.id === iconId);
     if (!icon) {
       return;
@@ -497,6 +624,9 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
   },
 
   renameIcon: (iconId, label) => {
+    if (isRemote(get())) {
+      return;
+    }
     const state = get();
     const icon = state.icons.find((item) => item.id === iconId);
     if (!icon) {
@@ -547,12 +677,19 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       return window;
     });
 
-    persist({ icons, documents, wallpaper: state.wallpaper,
-        titleBarColor: state.titleBarColor });
+    persist({
+      icons,
+      documents,
+      wallpaper: state.wallpaper,
+      titleBarColor: state.titleBarColor,
+    });
     set({ icons, documents, windows, renamingIconId: null });
   },
 
   deleteIcon: (iconId) => {
+    if (isRemote(get())) {
+      return;
+    }
     const state = get();
     const icon = state.icons.find((item) => item.id === iconId);
     if (!icon || !canDeleteIcon(icon)) {
@@ -598,8 +735,12 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       };
     });
 
-    persist({ icons, documents, wallpaper: state.wallpaper,
-        titleBarColor: state.titleBarColor });
+    persist({
+      icons,
+      documents,
+      wallpaper: state.wallpaper,
+      titleBarColor: state.titleBarColor,
+    });
     set({
       icons,
       documents,
@@ -614,6 +755,9 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
   },
 
   moveIconToFolder: (iconId, folderId, dropPosition) => {
+    if (isRemote(get())) {
+      return;
+    }
     const state = get();
     const icon = state.icons.find((item) => item.id === iconId);
     if (!icon || !icon.documentId) {
@@ -649,8 +793,12 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
         : item,
     );
 
-    persist({ icons, documents: state.documents, wallpaper: state.wallpaper,
-        titleBarColor: state.titleBarColor });
+    persist({
+      icons,
+      documents: state.documents,
+      wallpaper: state.wallpaper,
+      titleBarColor: state.titleBarColor,
+    });
     set({
       icons,
       selectedIconId:
@@ -661,6 +809,9 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
   },
 
   setWallpaper: (color) => {
+    if (isRemote(get())) {
+      return;
+    }
     set((state) => {
       const wallpaper = color.toLowerCase();
       persist({
@@ -674,6 +825,9 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
   },
 
   setTitleBarColor: (color) => {
+    if (isRemote(get())) {
+      return;
+    }
     set((state) => {
       const titleBarColor = color.toLowerCase();
       persist({
@@ -687,6 +841,9 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
   },
 
   resetTheme: () => {
+    if (isRemote(get())) {
+      return;
+    }
     set((state) => {
       persist({
         icons: state.icons,
@@ -699,6 +856,82 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
         titleBarColor: DEFAULT_TITLE_BAR_COLOR,
       };
     });
+  },
+
+  visitRemotePc: (userId) => {
+    const user = getNetworkUser(userId);
+    if (!user) {
+      return;
+    }
+    set({
+      viewMode: "remote",
+      remoteUserId: userId,
+      windows: [],
+      selectedIconId: null,
+      renamingIconId: null,
+      isStartMenuOpen: false,
+      nextZIndex: 1,
+    });
+  },
+
+  goHome: () => {
+    set({
+      viewMode: "local",
+      remoteUserId: null,
+      windows: [],
+      selectedIconId: null,
+      renamingIconId: null,
+      isStartMenuOpen: false,
+      nextZIndex: 1,
+    });
+  },
+
+  addFavorite: (userId) => {
+    if (!getNetworkUser(userId)) {
+      return;
+    }
+    set((state) => {
+      if (isFavorite(state.favorites, userId)) {
+        return state;
+      }
+      const favorites = [
+        ...state.favorites,
+        { userId, addedAt: new Date().toISOString() },
+      ];
+      persistFavorites(favorites);
+      return { favorites };
+    });
+  },
+
+  removeFavorite: (userId) => {
+    set((state) => {
+      const favorites = state.favorites.filter(
+        (favorite) => favorite.userId !== userId,
+      );
+      persistFavorites(favorites);
+      return { favorites };
+    });
+  },
+
+  postBbsNote: (title, content) => {
+    const trimmedTitle = title.trim();
+    const trimmedContent = content.trim();
+    if (!trimmedTitle || !trimmedContent) {
+      return "";
+    }
+    const note: BbsPost = {
+      id: createId("bbs"),
+      authorId: LOCAL_USER_ID,
+      title: trimmedTitle,
+      content: trimmedContent,
+      createdAt: new Date().toISOString(),
+    };
+    set((state) => {
+      const localBbsNotes = [note, ...state.localBbsNotes];
+      saveLocalBbsNotes(localBbsNotes);
+      return { localBbsNotes };
+    });
+    return note.id;
   },
 }));
 

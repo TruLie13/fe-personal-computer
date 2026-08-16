@@ -6,16 +6,41 @@ import type {
 
 export const STORAGE_KEY = "personal-computer-desktop-v2";
 
+/** Desktop grid pitch — leaves room for 2-line labels like "Network Neighborhood". */
+export const ICON_SLOT_WIDTH = 88;
+export const ICON_SLOT_HEIGHT = 96;
+
 export const DEFAULT_ICONS: DesktopIcon[] = [
   { id: "my-computer", label: "My Computer", type: "system", x: 16, y: 16 },
-  { id: "documents", label: "Documents", type: "folder", x: 16, y: 96 },
-  { id: "notepad", label: "Notepad", type: "editor", x: 16, y: 176 },
+  { id: "documents", label: "Documents", type: "folder", x: 16, y: 112 },
+  { id: "notepad", label: "Notepad", type: "editor", x: 16, y: 208 },
   {
     id: "display-properties",
     label: "Display",
     type: "display",
     x: 16,
-    y: 256,
+    y: 304,
+  },
+  {
+    id: "bulletin-board",
+    label: "Bulletin Board",
+    type: "bbs",
+    x: 104,
+    y: 16,
+  },
+  {
+    id: "story-explorer",
+    label: "Story Explorer",
+    type: "stories",
+    x: 104,
+    y: 112,
+  },
+  {
+    id: "network-neighborhood",
+    label: "Network Neighborhood",
+    type: "network",
+    x: 104,
+    y: 208,
   },
 ];
 
@@ -54,13 +79,57 @@ export function isOnDesktop(icon: DesktopIcon): boolean {
   return icon.parentId == null;
 }
 
+function iconsOverlap(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+): boolean {
+  return (
+    Math.abs(a.x - b.x) < ICON_SLOT_WIDTH &&
+    Math.abs(a.y - b.y) < ICON_SLOT_HEIGHT
+  );
+}
+
+/** Next free desktop slot scanning down columns (Win95-ish auto arrange). */
+export function findOpenDesktopSlot(
+  occupied: ReadonlyArray<{ x: number; y: number }>,
+  preferred?: { x: number; y: number },
+): { x: number; y: number } {
+  if (
+    preferred &&
+    !occupied.some((point) => iconsOverlap(preferred, point))
+  ) {
+    return preferred;
+  }
+
+  for (let col = 0; col < 8; col += 1) {
+    for (let row = 0; row < 12; row += 1) {
+      const candidate = {
+        x: 16 + col * ICON_SLOT_WIDTH,
+        y: 16 + row * ICON_SLOT_HEIGHT,
+      };
+      if (!occupied.some((point) => iconsOverlap(candidate, point))) {
+        return candidate;
+      }
+    }
+  }
+
+  return preferred ?? {
+    x: 16 + occupied.length * 12,
+    y: 16 + occupied.length * 12,
+  };
+}
+
 export function mergeAppIcons(icons: DesktopIcon[]): DesktopIcon[] {
   const byId = new Map(icons.map((icon) => [icon.id, icon]));
 
   for (const app of DEFAULT_ICONS) {
     const existing = byId.get(app.id);
     if (!existing) {
-      byId.set(app.id, app);
+      const occupied = Array.from(byId.values())
+        .filter(isOnDesktop)
+        .map((icon) => ({ x: icon.x, y: icon.y }));
+      const slot = findOpenDesktopSlot(occupied, { x: app.x, y: app.y });
+      byId.set(app.id, { ...app, x: slot.x, y: slot.y });
       continue;
     }
     byId.set(app.id, {
@@ -96,8 +165,8 @@ export function nextDesktopIconPosition(
   });
   const index = placed.length;
   return {
-    x: 100 + (index % 4) * 84,
-    y: 16 + Math.floor(index / 4) * 80,
+    x: 104 + (index % 4) * ICON_SLOT_WIDTH,
+    y: 16 + Math.floor(index / 4) * ICON_SLOT_HEIGHT,
   };
 }
 

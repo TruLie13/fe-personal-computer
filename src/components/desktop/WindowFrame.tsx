@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { BulletinBoard } from "@/components/desktop/BulletinBoard";
 import { DisplayProperties } from "@/components/desktop/DisplayProperties";
 import { FolderWindow } from "@/components/desktop/FolderWindow";
 import { iconForType } from "@/components/desktop/icons";
+import { NetworkNeighborhood } from "@/components/desktop/NetworkNeighborhood";
+import { StoryExplorer } from "@/components/desktop/StoryExplorer";
 import { TextEditor } from "@/components/desktop/TextEditor";
+import { getNetworkUser } from "@/lib/networkSeed";
 import { useDesktopStore } from "@/store/desktopStore";
 import type { DesktopWindow } from "@/types/desktop";
 
@@ -13,6 +17,13 @@ interface WindowFrameProps {
 }
 
 function WindowBody({ window }: { window: DesktopWindow }) {
+  const viewMode = useDesktopStore((state) => state.viewMode);
+  const remoteUserId = useDesktopStore((state) => state.remoteUserId);
+  const remoteUser =
+    viewMode === "remote" && remoteUserId
+      ? getNetworkUser(remoteUserId)
+      : undefined;
+
   if (window.type === "editor" || window.type === "text") {
     return (
       <TextEditor windowId={window.id} documentId={window.documentId} />
@@ -27,6 +38,33 @@ function WindowBody({ window }: { window: DesktopWindow }) {
     return <DisplayProperties />;
   }
 
+  if (window.type === "bbs") {
+    return <BulletinBoard />;
+  }
+
+  if (window.type === "stories") {
+    return <StoryExplorer />;
+  }
+
+  if (window.type === "network") {
+    return <NetworkNeighborhood />;
+  }
+
+  if (window.type === "system" && remoteUser) {
+    return (
+      <div className="flex h-full flex-col gap-3 p-3 text-[12px]">
+        <p>
+          You are viewing <strong>{remoteUser.displayName}</strong>&apos;s
+          computer ({remoteUser.computerName}).
+        </p>
+        <p className="text-win-dark">
+          This visit is read-only. Open folders and text files, then use Go Home
+          on the taskbar to return to your desktop.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full flex-col gap-3 p-3 text-[12px]">
       <p>
@@ -34,8 +72,8 @@ function WindowBody({ window }: { window: DesktopWindow }) {
         machine.
       </p>
       <p className="text-win-dark">
-        Open Notepad to write, Save to the desktop, then organize files into
-        folders. Use Display to change wallpaper and title bar colors.
+        Open Bulletin Board to leave a community note, Story Explorer to read
+        public writing, and Network Neighborhood to visit other PCs.
       </p>
     </div>
   );

@@ -16,6 +16,7 @@ import {
 } from "@/lib/dragDrop";
 import { isOnDesktop } from "@/lib/storage";
 import {
+  selectActiveIcons,
   selectFolderContents,
   useDesktopStore,
 } from "@/store/desktopStore";
@@ -40,7 +41,8 @@ interface MenuState {
 const DRAG_THRESHOLD_PX = 4;
 
 export function FolderWindow({ folderId }: FolderWindowProps) {
-  const icons = useDesktopStore((state) => state.icons);
+  const icons = useDesktopStore(selectActiveIcons);
+  const viewMode = useDesktopStore((state) => state.viewMode);
   const openWindow = useDesktopStore((state) => state.openWindow);
   const moveIconToFolder = useDesktopStore((state) => state.moveIconToFolder);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
@@ -50,6 +52,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
   const cancelRename = useDesktopStore((state) => state.cancelRename);
   const deleteIcon = useDesktopStore((state) => state.deleteIcon);
 
+  const readOnly = viewMode === "remote";
   const contents = selectFolderContents(icons, folderId);
   const desktopFiles = icons.filter(
     (icon) => icon.documentId && isOnDesktop(icon),
@@ -181,32 +184,38 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-win-face">
-      <div className="flex flex-wrap items-center gap-2 border-b border-win-dark px-2 py-1">
-        <button
-          type="button"
-          className="win-raised px-2 py-0.5 disabled:opacity-50"
-          disabled={!selected}
-          onClick={() => {
-            if (!selected) {
-              return;
-            }
-            moveIconToFolder(selected.id, null);
-            setSelectedId(null);
-          }}
-        >
-          Move to Desktop
-        </button>
-        <button
-          type="button"
-          className="win-raised px-2 py-0.5 disabled:opacity-50"
-          disabled={desktopFiles.length === 0}
-          onClick={() => setAdding((value) => !value)}
-        >
-          {adding ? "Cancel" : "Add from Desktop..."}
-        </button>
-      </div>
+      {readOnly ? (
+        <div className="border-b border-win-dark px-2 py-1 text-[12px] text-win-dark">
+          Read-only visit — open files to read
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2 border-b border-win-dark px-2 py-1">
+          <button
+            type="button"
+            className="win-raised px-2 py-0.5 disabled:opacity-50"
+            disabled={!selected}
+            onClick={() => {
+              if (!selected) {
+                return;
+              }
+              moveIconToFolder(selected.id, null);
+              setSelectedId(null);
+            }}
+          >
+            Move to Desktop
+          </button>
+          <button
+            type="button"
+            className="win-raised px-2 py-0.5 disabled:opacity-50"
+            disabled={desktopFiles.length === 0}
+            onClick={() => setAdding((value) => !value)}
+          >
+            {adding ? "Cancel" : "Add from Desktop..."}
+          </button>
+        </div>
+      )}
 
-      {adding ? (
+      {!readOnly && adding ? (
         <div className="win-sunken m-1 max-h-28 overflow-auto bg-white p-1">
           {desktopFiles.length === 0 ? (
             <p className="px-1 text-win-dark">No files on the desktop.</p>
@@ -231,12 +240,13 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
 
       <div
         className="win-sunken m-1 min-h-0 flex-1 overflow-auto bg-white"
-        {...{ [DROP_ATTR]: folderId }}
+        {...(readOnly ? {} : { [DROP_ATTR]: folderId })}
       >
         {contents.length === 0 ? (
           <div className="p-3 text-[12px] text-win-dark">
-            This folder is empty. Drag files in from the desktop, or drag them
-            out onto the desktop to remove them.
+            {readOnly
+              ? "This folder is empty."
+              : "This folder is empty. Drag files in from the desktop, or drag them out onto the desktop to remove them."}
           </div>
         ) : (
           <ul className="p-1">
@@ -273,21 +283,23 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
                           onSelect: () => openWindow(item.id),
                         },
                       ];
-                      if (item.type === "text" || item.type === "folder") {
-                        entries.push({ id: "sep", separator: true });
-                        entries.push({
-                          id: "rename",
-                          label: "Rename",
-                          onSelect: () => startRename(item.id),
-                        });
-                      }
-                      if (canDeleteIcon(item)) {
-                        entries.push({ id: "sep-delete", separator: true });
-                        entries.push({
-                          id: "delete",
-                          label: "Delete",
-                          onSelect: () => setPendingDeleteId(item.id),
-                        });
+                      if (!readOnly) {
+                        if (item.type === "text" || item.type === "folder") {
+                          entries.push({ id: "sep", separator: true });
+                          entries.push({
+                            id: "rename",
+                            label: "Rename",
+                            onSelect: () => startRename(item.id),
+                          });
+                        }
+                        if (canDeleteIcon(item)) {
+                          entries.push({ id: "sep-delete", separator: true });
+                          entries.push({
+                            id: "delete",
+                            label: "Delete",
+                            onSelect: () => setPendingDeleteId(item.id),
+                          });
+                        }
                       }
                       setMenu({
                         x: event.clientX,
@@ -295,9 +307,21 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
                         entries,
                       });
                     }}
-                    onPointerDown={(event) => onItemPointerDown(event, item)}
-                    onPointerMove={(event) => onItemPointerMove(event, item)}
-                    onPointerUp={(event) => onItemPointerUp(event, item)}
+                    onPointerDown={(event) => {
+                      if (!readOnly) {
+                        onItemPointerDown(event, item);
+                      }
+                    }}
+                    onPointerMove={(event) => {
+                      if (!readOnly) {
+                        onItemPointerMove(event, item);
+                      }
+                    }}
+                    onPointerUp={(event) => {
+                      if (!readOnly) {
+                        onItemPointerUp(event, item);
+                      }
+                    }}
                   >
                     {item.type === "folder" ? (
                       <FolderIcon size={16} />

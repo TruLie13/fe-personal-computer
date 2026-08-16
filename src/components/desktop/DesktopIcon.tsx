@@ -50,6 +50,7 @@ export function DesktopIcon({
 }: DesktopIconProps) {
   const selectedIconId = useDesktopStore((state) => state.selectedIconId);
   const renamingIconId = useDesktopStore((state) => state.renamingIconId);
+  const viewMode = useDesktopStore((state) => state.viewMode);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
   const openWindow = useDesktopStore((state) => state.openWindow);
   const startRename = useDesktopStore((state) => state.startRename);
@@ -62,7 +63,8 @@ export function DesktopIcon({
   const Icon = iconForType(icon.type);
   const selected = selectedIconId === icon.id;
   const isRenaming = renamingIconId === icon.id;
-  const canDropIntoFolders = Boolean(icon.documentId);
+  const readOnly = viewMode === "remote";
+  const canDropIntoFolders = Boolean(icon.documentId) && !readOnly;
   const buttonRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dragging = useRef(false);
@@ -85,14 +87,16 @@ export function DesktopIcon({
     latest.current = clamped;
 
     if (clamped.x !== icon.x || clamped.y !== icon.y) {
-      updateIconPosition(icon.id, clamped.x, clamped.y);
+      if (viewMode !== "remote") {
+        updateIconPosition(icon.id, clamped.x, clamped.y);
+      }
     }
-  }, [icon.id, icon.x, icon.y, updateIconPosition]);
+  }, [icon.id, icon.x, icon.y, updateIconPosition, viewMode]);
 
   useEffect(() => {
     const onResize = () => {
       const element = buttonRef.current;
-      if (!element || dragging.current) {
+      if (!element || dragging.current || viewMode === "remote") {
         return;
       }
       const clamped = measureAndClamp(element, latest.current);
@@ -106,7 +110,7 @@ export function DesktopIcon({
 
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [icon.id, updateIconPosition]);
+  }, [icon.id, updateIconPosition, viewMode]);
 
   useEffect(() => {
     return () => {
@@ -131,7 +135,11 @@ export function DesktopIcon({
   };
 
   const onPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (event.button !== 0 || isRenaming) {
+    if (event.button !== 0 || isRenaming || readOnly) {
+      if (event.button === 0 && !isRenaming) {
+        event.stopPropagation();
+        selectIcon(icon.id);
+      }
       return;
     }
     event.stopPropagation();
@@ -202,7 +210,7 @@ export function DesktopIcon({
   };
 
   const dropProps =
-    icon.type === "folder"
+    icon.type === "folder" && !readOnly
       ? { [DROP_ATTR]: icon.id }
       : undefined;
 
@@ -235,7 +243,7 @@ export function DesktopIcon({
             onSelect: () => openWindow(icon.id),
           },
         ];
-        if (canRename(icon)) {
+        if (!readOnly && canRename(icon)) {
           entries.push({ id: "sep-rename", separator: true });
           entries.push({
             id: "rename",
@@ -243,7 +251,7 @@ export function DesktopIcon({
             onSelect: () => startRename(icon.id),
           });
         }
-        if (canDeleteIcon(icon)) {
+        if (!readOnly && canDeleteIcon(icon)) {
           entries.push({ id: "sep-delete", separator: true });
           entries.push({
             id: "delete",

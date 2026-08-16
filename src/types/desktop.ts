@@ -4,7 +4,10 @@ export type WindowType =
   | "text"
   | "system"
   | "editor"
-  | "display";
+  | "display"
+  | "bbs"
+  | "network"
+  | "stories";
 
 export interface DesktopIcon {
   id: string;

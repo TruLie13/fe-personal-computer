@@ -12,7 +12,11 @@ import { WindowFrame } from "@/components/desktop/WindowFrame";
 import { clampIconPosition } from "@/lib/desktopBounds";
 import { buildDeleteConfirmMessage } from "@/lib/deleteConfirm";
 import { DESKTOP_ATTR } from "@/lib/dragDrop";
+import { getNetworkUser, remoteDesktopPath } from "@/lib/networkSeed";
 import {
+  selectActiveIcons,
+  selectActiveTitleBarColor,
+  selectActiveWallpaper,
   selectDesktopIcons,
   useDesktopStore,
 } from "@/store/desktopStore";
@@ -24,16 +28,24 @@ interface MenuState {
 }
 
 export function Desktop() {
-  const icons = useDesktopStore((state) => state.icons);
+  const storeIcons = useDesktopStore((state) => state.icons);
+  const viewMode = useDesktopStore((state) => state.viewMode);
+  const remoteUserId = useDesktopStore((state) => state.remoteUserId);
+  const icons = useDesktopStore(selectActiveIcons);
   const windows = useDesktopStore((state) => state.windows);
-  const wallpaper = useDesktopStore((state) => state.wallpaper);
-  const titleBarColor = useDesktopStore((state) => state.titleBarColor);
+  const wallpaper = useDesktopStore(selectActiveWallpaper);
+  const titleBarColor = useDesktopStore(selectActiveTitleBarColor);
   const hydrate = useDesktopStore((state) => state.hydrate);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
   const closeStartMenu = useDesktopStore((state) => state.closeStartMenu);
   const createFolder = useDesktopStore((state) => state.createFolder);
   const deleteIcon = useDesktopStore((state) => state.deleteIcon);
   const openWindow = useDesktopStore((state) => state.openWindow);
+  const goHome = useDesktopStore((state) => state.goHome);
+
+  const isRemote = viewMode === "remote";
+  const remoteUser =
+    isRemote && remoteUserId ? getNetworkUser(remoteUserId) : undefined;
 
   const desktopIcons = selectDesktopIcons(icons);
   const [menu, setMenu] = useState<MenuState | null>(null);
@@ -57,10 +69,10 @@ export function Desktop() {
   );
 
   const pendingDeleteIcon = pendingDeleteId
-    ? icons.find((icon) => icon.id === pendingDeleteId)
+    ? storeIcons.find((icon) => icon.id === pendingDeleteId)
     : undefined;
   const deletePrompt = pendingDeleteIcon
-    ? buildDeleteConfirmMessage(pendingDeleteIcon, icons)
+    ? buildDeleteConfirmMessage(pendingDeleteIcon, storeIcons)
     : null;
 
   return (
@@ -94,6 +106,17 @@ export function Desktop() {
           selectIcon(null);
           closeStartMenu();
 
+          if (isRemote) {
+            openMenu(event, [
+              {
+                id: "go-home",
+                label: "Go Home (My Computer)",
+                onSelect: () => goHome(),
+              },
+            ]);
+            return;
+          }
+
           const desktop = event.currentTarget;
           const rect = desktop.getBoundingClientRect();
           const place = clampIconPosition(
@@ -126,6 +149,11 @@ export function Desktop() {
           ]);
         }}
       >
+        {remoteUser ? (
+          <div className="pointer-events-none absolute left-2 top-2 z-[50] win-raised bg-win-face px-2 py-1 text-[11px]">
+            Visiting {remoteDesktopPath(remoteUser)} (read-only)
+          </div>
+        ) : null}
         {desktopIcons.map((icon) => (
           <DesktopIcon
             key={icon.id}
@@ -147,7 +175,7 @@ export function Desktop() {
           onClose={closeMenu}
         />
       ) : null}
-      {deletePrompt && pendingDeleteId ? (
+      {deletePrompt && pendingDeleteId && !isRemote ? (
         <ConfirmDialog
           title={deletePrompt.title}
           message={deletePrompt.message}
