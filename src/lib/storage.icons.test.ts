@@ -5,6 +5,7 @@ import {
   ICON_SLOT_WIDTH,
   mergeAppIcons,
   nextDesktopIconPosition,
+  PROFILE_ICON_POSITION,
 } from "@/lib/storage";
 import type { DesktopIcon } from "@/types/desktop";
 
@@ -75,5 +76,22 @@ describe("desktop icon placement", () => {
         Math.abs(slot.y - app.y) < ICON_SLOT_HEIGHT;
       expect(overlaps).toBe(false);
     }
+  });
+
+  it("keeps the profile computer icon pinned top-left", () => {
+    const moved: DesktopIcon = {
+      id: "profile",
+      label: "Writer's Computer",
+      type: "profile",
+      x: 200,
+      y: 300,
+    };
+    const merged = mergeAppIcons([
+      moved,
+      ...DEFAULT_ICONS.filter((icon) => icon.id !== "profile"),
+    ]);
+    const profile = merged.find((icon) => icon.type === "profile");
+    expect(profile?.x).toBe(PROFILE_ICON_POSITION.x);
+    expect(profile?.y).toBe(PROFILE_ICON_POSITION.y);
   });
 });

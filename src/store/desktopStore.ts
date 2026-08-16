@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { centeredWindowPosition } from "@/lib/desktopBounds";
 import { loadLocalBbsNotes, saveLocalBbsNotes } from "@/lib/bbsNotes";
 import {
   isFavorite,
@@ -7,12 +8,21 @@ import {
 } from "@/lib/favorites";
 import { getNetworkUser, LOCAL_USER_ID } from "@/lib/networkSeed";
 import {
+  computerLabel,
+  DEFAULT_LOCAL_PROFILE,
+  loadLocalProfile,
+  saveLocalProfile,
+} from "@/lib/profile";
+import {
   DEFAULT_DOCUMENTS,
   DEFAULT_ICONS,
   DEFAULT_TITLE_BAR_COLOR,
   DEFAULT_WALLPAPER,
+  PROFILE_ICON_ID,
+  PROFILE_ICON_POSITION,
   canDeleteIcon,
   isOnDesktop,
+  isPinnedProfileIcon,
   loadDesktopState,
   nextDesktopIconPosition,
   saveDesktopState,
@@ -31,6 +41,7 @@ import type {
   DesktopViewMode,
   FavoritePc,
   NetworkUserId,
+  UserProfile,
 } from "@/types/network";
 
 const WINDOW_DEFAULTS: Record<
@@ -46,6 +57,7 @@ const WINDOW_DEFAULTS: Record<
   bbs: { title: "Bulletin Board", width: 520, height: 440 },
   network: { title: "Network Neighborhood", width: 480, height: 360 },
   stories: { title: "Story Explorer", width: 560, height: 420 },
+  profile: { title: "Profile", width: 420, height: 360 },
 };
 
 interface DesktopStore {
@@ -62,6 +74,7 @@ interface DesktopStore {
   remoteUserId: NetworkUserId | null;
   favorites: FavoritePc[];
   localBbsNotes: BbsPost[];
+  localProfile: UserProfile;
   hydrate: () => void;
   selectIcon: (iconId: string | null) => void;
   toggleStartMenu: () => void;
@@ -100,6 +113,8 @@ interface DesktopStore {
   addFavorite: (userId: NetworkUserId) => void;
   removeFavorite: (userId: NetworkUserId) => void;
   postBbsNote: (title: string, content: string) => string;
+  updateLocalProfile: (patch: Partial<UserProfile>) => void;
+  openProfile: () => void;
 }
 
 function persist(state: {
@@ -138,7 +153,9 @@ function createWindowFromIcon(
         ? `${stripTextExtension(icon.label)} - Notepad`
         : icon.type === "folder"
           ? icon.label
-          : defaults.title;
+          : icon.type === "profile"
+            ? icon.label
+            : defaults.title;
 
   return {
     id:
@@ -152,8 +169,15 @@ function createWindowFromIcon(
     isOpen: true,
     isFocused: true,
     isMinimized: false,
-    x: 80 + offset * 24,
-    y: 48 + offset * 24,
+    ...(icon.type === "profile"
+      ? centeredWindowPosition({
+          width: defaults.width,
+          height: defaults.height,
+        })
+      : {
+          x: 80 + offset * 24,
+          y: 48 + offset * 24,
+        }),
     width: defaults.width,
     height: defaults.height,
     zIndex,
@@ -164,15 +188,60 @@ function isRemote(state: { viewMode: DesktopViewMode }): boolean {
   return state.viewMode === "remote";
 }
 
+const EMPTY_ICONS: DesktopIcon[] = [];
+const EMPTY_DOCUMENTS: TextDocument[] = [];
+
+let lastActiveIconsSource: DesktopIcon[] | null = null;
+let lastActiveIconsResult: DesktopIcon[] | null = null;
+
 export function selectActiveIcons(state: {
   viewMode: DesktopViewMode;
   remoteUserId: NetworkUserId | null;
   icons: DesktopIcon[];
 }): DesktopIcon[] {
-  if (state.viewMode === "remote" && state.remoteUserId) {
-    return getNetworkUser(state.remoteUserId)?.snapshot.icons ?? [];
+  const source =
+    state.viewMode === "remote" && state.remoteUserId
+      ? (getNetworkUser(state.remoteUserId)?.snapshot.icons ?? EMPTY_ICONS)
+      : state.icons;
+
+  // Cache by source identity — .map() would return a new array every
+  // getSnapshot and trip useSyncExternalStore into an infinite loop.
+  if (source === lastActiveIconsSource && lastActiveIconsResult) {
+    return lastActiveIconsResult;
   }
-  return state.icons;
+
+  const needsPin = source.some(
+    (icon) =>
+      isPinnedProfileIcon(icon) &&
+      (icon.x !== PROFILE_ICON_POSITION.x ||
+        icon.y !== PROFILE_ICON_POSITION.y ||
+        icon.parentId != null),
+  );
+
+  const result = needsPin
+    ? source.map((icon) => {
+        if (!isPinnedProfileIcon(icon)) {
+          return icon;
+        }
+        if (
+          icon.x === PROFILE_ICON_POSITION.x &&
+          icon.y === PROFILE_ICON_POSITION.y &&
+          icon.parentId == null
+        ) {
+          return icon;
+        }
+        return {
+          ...icon,
+          x: PROFILE_ICON_POSITION.x,
+          y: PROFILE_ICON_POSITION.y,
+          ...(icon.parentId != null ? { parentId: null } : {}),
+        };
+      })
+    : source;
+
+  lastActiveIconsSource = source;
+  lastActiveIconsResult = result;
+  return result;
 }
 
 export function selectActiveDocuments(state: {
@@ -181,7 +250,9 @@ export function selectActiveDocuments(state: {
   documents: TextDocument[];
 }): TextDocument[] {
   if (state.viewMode === "remote" && state.remoteUserId) {
-    return getNetworkUser(state.remoteUserId)?.snapshot.documents ?? [];
+    return (
+      getNetworkUser(state.remoteUserId)?.snapshot.documents ?? EMPTY_DOCUMENTS
+    );
   }
   return state.documents;
 }
@@ -228,19 +299,27 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
   remoteUserId: null,
   favorites: [],
   localBbsNotes: [],
+  localProfile: DEFAULT_LOCAL_PROFILE,
 
   hydrate: () => {
     if (get().hydrated) {
       return;
     }
     const saved = loadDesktopState();
+    const localProfile = loadLocalProfile();
+    const icons = saved.icons.map((icon) =>
+      icon.id === PROFILE_ICON_ID
+        ? { ...icon, label: computerLabel(localProfile.displayName) }
+        : icon,
+    );
     set({
-      icons: saved.icons,
+      icons,
       documents: saved.documents,
       wallpaper: saved.wallpaper,
       titleBarColor: saved.titleBarColor,
       favorites: loadFavorites(),
       localBbsNotes: loadLocalBbsNotes(),
+      localProfile,
       hydrated: true,
     });
   },
@@ -449,6 +528,10 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       return;
     }
     set((state) => {
+      const target = state.icons.find((icon) => icon.id === iconId);
+      if (!target || isPinnedProfileIcon(target)) {
+        return state;
+      }
       const icons = state.icons.map((icon) =>
         icon.id === iconId ? { ...icon, x, y } : icon,
       );
@@ -921,14 +1004,23 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
     if (!user) {
       return;
     }
+    const profileIcon = user.snapshot.icons.find(
+      (icon) => icon.type === "profile",
+    );
+    const windows: DesktopWindow[] = [];
+    let nextZIndex = 1;
+    if (profileIcon) {
+      windows.push(createWindowFromIcon(profileIcon, 1, 0));
+      nextZIndex = 2;
+    }
     set({
       viewMode: "remote",
       remoteUserId: userId,
-      windows: [],
-      selectedIconId: null,
+      windows,
+      selectedIconId: profileIcon?.id ?? null,
       renamingIconId: null,
       isStartMenuOpen: false,
-      nextZIndex: 1,
+      nextZIndex,
     });
   },
 
@@ -990,6 +1082,68 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       return { localBbsNotes };
     });
     return note.id;
+  },
+
+  updateLocalProfile: (patch) => {
+    if (isRemote(get())) {
+      return;
+    }
+    set((state) => {
+      const localProfile: UserProfile = {
+        ...state.localProfile,
+        ...patch,
+        displayName:
+          patch.displayName !== undefined
+            ? patch.displayName.trim() || state.localProfile.displayName
+            : state.localProfile.displayName,
+        computerName:
+          patch.computerName !== undefined
+            ? patch.computerName.trim().toUpperCase() ||
+              state.localProfile.computerName
+            : state.localProfile.computerName,
+        bio: patch.bio !== undefined ? patch.bio : state.localProfile.bio,
+        avatarColor:
+          patch.avatarColor !== undefined
+            ? patch.avatarColor
+            : state.localProfile.avatarColor,
+        avatarUrl:
+          patch.avatarUrl !== undefined
+            ? patch.avatarUrl
+            : state.localProfile.avatarUrl,
+      };
+      saveLocalProfile(localProfile);
+      const label = computerLabel(localProfile.displayName);
+      const icons = state.icons.map((icon) =>
+        icon.id === PROFILE_ICON_ID ? { ...icon, label } : icon,
+      );
+      const windows = state.windows.map((window) =>
+        window.type === "profile" && window.iconId === PROFILE_ICON_ID
+          ? { ...window, title: label }
+          : window,
+      );
+      persist({
+        icons,
+        documents: state.documents,
+        wallpaper: state.wallpaper,
+        titleBarColor: state.titleBarColor,
+      });
+      return { localProfile, icons, windows };
+    });
+  },
+
+  openProfile: () => {
+    const state = get();
+    const icons = selectActiveIcons(state);
+    const profileIcon =
+      icons.find((icon) => icon.type === "profile") ??
+      icons.find((icon) => icon.id === PROFILE_ICON_ID);
+    if (profileIcon) {
+      get().openWindow(profileIcon.id);
+      return;
+    }
+    if (state.viewMode === "local") {
+      get().openWindow(PROFILE_ICON_ID);
+    }
   },
 }));
 

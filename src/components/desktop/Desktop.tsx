@@ -12,7 +12,6 @@ import { WindowFrame } from "@/components/desktop/WindowFrame";
 import { clampIconPosition } from "@/lib/desktopBounds";
 import { buildDeleteConfirmMessage } from "@/lib/deleteConfirm";
 import { DESKTOP_ATTR } from "@/lib/dragDrop";
-import { getNetworkUser, remoteDesktopPath } from "@/lib/networkSeed";
 import {
   selectActiveIcons,
   selectActiveTitleBarColor,
@@ -30,7 +29,6 @@ interface MenuState {
 export function Desktop() {
   const storeIcons = useDesktopStore((state) => state.icons);
   const viewMode = useDesktopStore((state) => state.viewMode);
-  const remoteUserId = useDesktopStore((state) => state.remoteUserId);
   const icons = useDesktopStore(selectActiveIcons);
   const windows = useDesktopStore((state) => state.windows);
   const wallpaper = useDesktopStore(selectActiveWallpaper);
@@ -44,8 +42,6 @@ export function Desktop() {
   const goHome = useDesktopStore((state) => state.goHome);
 
   const isRemote = viewMode === "remote";
-  const remoteUser =
-    isRemote && remoteUserId ? getNetworkUser(remoteUserId) : undefined;
 
   const desktopIcons = selectDesktopIcons(icons);
   const [menu, setMenu] = useState<MenuState | null>(null);
@@ -149,11 +145,6 @@ export function Desktop() {
           ]);
         }}
       >
-        {remoteUser ? (
-          <div className="pointer-events-none absolute left-2 top-2 z-[50] win-raised bg-win-face px-2 py-1 text-[11px]">
-            Visiting {remoteDesktopPath(remoteUser)} (read-only)
-          </div>
-        ) : null}
         {desktopIcons.map((icon) => (
           <DesktopIcon
             key={icon.id}

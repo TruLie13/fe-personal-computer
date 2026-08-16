@@ -191,6 +191,8 @@ export function iconForType(type: string) {
       return StoryExplorerIcon;
     case "network":
       return NetworkIcon;
+    case "profile":
+      return ComputerIcon;
     case "system":
     case "about":
     default:

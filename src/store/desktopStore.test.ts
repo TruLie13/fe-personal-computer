@@ -24,21 +24,29 @@ describe("desktopStore", () => {
       remoteUserId: null,
       favorites: [],
       localBbsNotes: [],
+      localProfile: {
+        displayName: "Writer",
+        computerName: "WRITER-PC",
+        bio: "test",
+        avatarColor: "#000080",
+        avatarUrl: null,
+      },
     });
     window.localStorage.clear();
   });
 
   it("opens a window from an icon and focuses it", () => {
     const { openWindow } = useDesktopStore.getState();
-    openWindow("my-computer");
+    openWindow("profile");
 
     const { windows, selectedIconId } = useDesktopStore.getState();
     expect(windows).toHaveLength(1);
-    expect(windows[0]?.iconId).toBe("my-computer");
+    expect(windows[0]?.iconId).toBe("profile");
+    expect(windows[0]?.type).toBe("profile");
     expect(windows[0]?.isOpen).toBe(true);
     expect(windows[0]?.isFocused).toBe(true);
     expect(windows[0]?.zIndex).toBe(1);
-    expect(selectedIconId).toBe("my-computer");
+    expect(selectedIconId).toBe("profile");
   });
 
   it("opens a fresh Notepad window every time", () => {
@@ -58,12 +66,12 @@ describe("desktopStore", () => {
 
   it("reuses an existing window and raises z-index on reopen", () => {
     const { openWindow, closeWindow } = useDesktopStore.getState();
-    openWindow("my-computer");
+    openWindow("profile");
     const firstId = useDesktopStore.getState().windows[0]?.id;
     expect(firstId).toBeDefined();
 
     closeWindow(firstId!);
-    openWindow("my-computer");
+    openWindow("profile");
 
     const { windows, nextZIndex } = useDesktopStore.getState();
     expect(windows).toHaveLength(1);
@@ -75,7 +83,7 @@ describe("desktopStore", () => {
 
   it("closes a window", () => {
     const { openWindow, closeWindow } = useDesktopStore.getState();
-    openWindow("my-computer");
+    openWindow("profile");
     const windowId = useDesktopStore.getState().windows[0]?.id;
     closeWindow(windowId!);
 
@@ -86,7 +94,7 @@ describe("desktopStore", () => {
 
   it("does not refocus a closed window", () => {
     const { openWindow, closeWindow, focusWindow } = useDesktopStore.getState();
-    openWindow("my-computer");
+    openWindow("profile");
     const windowId = useDesktopStore.getState().windows[0]?.id;
     closeWindow(windowId!);
     focusWindow(windowId!);
@@ -96,7 +104,7 @@ describe("desktopStore", () => {
 
   it("focuses a window and bumps its z-index", () => {
     const { openWindow, focusWindow } = useDesktopStore.getState();
-    openWindow("my-computer");
+    openWindow("profile");
     openWindow("documents");
 
     const [first, second] = useDesktopStore.getState().windows;

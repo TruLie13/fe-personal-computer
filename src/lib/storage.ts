@@ -3,6 +3,7 @@ import type {
   DesktopPersistedState,
   TextDocument,
 } from "@/types/desktop";
+import { computerLabel, DEFAULT_LOCAL_PROFILE } from "@/lib/profile";
 
 export const STORAGE_KEY = "personal-computer-desktop-v2";
 
@@ -10,8 +11,19 @@ export const STORAGE_KEY = "personal-computer-desktop-v2";
 export const ICON_SLOT_WIDTH = 88;
 export const ICON_SLOT_HEIGHT = 96;
 
+export const PROFILE_ICON_ID = "profile";
+
+/** Locked top-left slot for every user's Computer identity icon. */
+export const PROFILE_ICON_POSITION = { x: 16, y: 16 } as const;
+
 export const DEFAULT_ICONS: DesktopIcon[] = [
-  { id: "my-computer", label: "My Computer", type: "system", x: 16, y: 16 },
+  {
+    id: PROFILE_ICON_ID,
+    label: computerLabel(DEFAULT_LOCAL_PROFILE.displayName),
+    type: "profile",
+    x: PROFILE_ICON_POSITION.x,
+    y: PROFILE_ICON_POSITION.y,
+  },
   { id: "documents", label: "Documents", type: "folder", x: 16, y: 112 },
   { id: "notepad", label: "Notepad", type: "editor", x: 16, y: 208 },
   {
@@ -79,6 +91,29 @@ export function isOnDesktop(icon: DesktopIcon): boolean {
   return icon.parentId == null;
 }
 
+/** Profile / "{Name}'s Computer" stays pinned top-left on every PC. */
+export function isPinnedProfileIcon(icon: DesktopIcon): boolean {
+  return icon.type === "profile";
+}
+
+function pinProfileIcon(icon: DesktopIcon): DesktopIcon {
+  if (!isPinnedProfileIcon(icon)) {
+    return icon;
+  }
+  const needsMove =
+    icon.x !== PROFILE_ICON_POSITION.x || icon.y !== PROFILE_ICON_POSITION.y;
+  const needsParentClear = icon.parentId != null;
+  if (!needsMove && !needsParentClear) {
+    return icon;
+  }
+  return {
+    ...icon,
+    x: PROFILE_ICON_POSITION.x,
+    y: PROFILE_ICON_POSITION.y,
+    ...(needsParentClear ? { parentId: null } : {}),
+  };
+}
+
 function iconsOverlap(
   a: { x: number; y: number },
   b: { x: number; y: number },
@@ -122,30 +157,57 @@ export function findOpenDesktopSlot(
 export function mergeAppIcons(icons: DesktopIcon[]): DesktopIcon[] {
   const byId = new Map(icons.map((icon) => [icon.id, icon]));
 
+  // Migrate legacy My Computer → profile identity icon.
+  const legacy = byId.get("my-computer");
+  if (legacy && !byId.has(PROFILE_ICON_ID)) {
+    byId.set(PROFILE_ICON_ID, {
+      ...legacy,
+      id: PROFILE_ICON_ID,
+      type: "profile",
+      label: computerLabel(DEFAULT_LOCAL_PROFILE.displayName),
+      parentId: null,
+      x: PROFILE_ICON_POSITION.x,
+      y: PROFILE_ICON_POSITION.y,
+    });
+  }
+  byId.delete("my-computer");
+
   for (const app of DEFAULT_ICONS) {
     const existing = byId.get(app.id);
     if (!existing) {
       const occupied = Array.from(byId.values())
         .filter(isOnDesktop)
         .map((icon) => ({ x: icon.x, y: icon.y }));
-      const slot = findOpenDesktopSlot(occupied, { x: app.x, y: app.y });
-      byId.set(app.id, { ...app, x: slot.x, y: slot.y });
+      const preferred =
+        app.id === PROFILE_ICON_ID
+          ? { ...PROFILE_ICON_POSITION }
+          : { x: app.x, y: app.y };
+      const slot = findOpenDesktopSlot(occupied, preferred);
+      byId.set(
+        app.id,
+        pinProfileIcon({ ...app, x: slot.x, y: slot.y }),
+      );
       continue;
     }
-    byId.set(app.id, {
-      ...existing,
-      type: app.type,
-      label: existing.label || app.label,
-      parentId: null,
-    });
+    byId.set(
+      app.id,
+      pinProfileIcon({
+        ...existing,
+        type: app.type,
+        label: existing.label || app.label,
+        parentId: null,
+      }),
+    );
   }
 
-  const merged = Array.from(byId.values()).filter((icon) => {
-    if (icon.id === "readme" && !icon.documentId) {
-      return false;
-    }
-    return true;
-  });
+  const merged = Array.from(byId.values())
+    .filter((icon) => {
+      if (icon.id === "readme" && !icon.documentId) {
+        return false;
+      }
+      return true;
+    })
+    .map(pinProfileIcon);
 
   return merged;
 }

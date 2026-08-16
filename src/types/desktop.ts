@@ -7,7 +7,8 @@ export type WindowType =
   | "display"
   | "bbs"
   | "network"
-  | "stories";
+  | "stories"
+  | "profile";
 
 export interface DesktopIcon {
   id: string;
