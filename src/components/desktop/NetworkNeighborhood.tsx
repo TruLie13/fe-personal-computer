@@ -6,6 +6,27 @@ import { isFavorite } from "@/lib/favorites";
 import { NETWORK_USERS, remoteDesktopPath } from "@/lib/networkSeed";
 import { useDesktopStore } from "@/store/desktopStore";
 
+const PC_ICON_SIZE = 20;
+
+/** Full-size list icon that cannot paint over neighboring text. */
+function PcListIcon() {
+  return (
+    <span
+      className="shrink-0"
+      style={{
+        display: "inline-block",
+        width: PC_ICON_SIZE,
+        height: PC_ICON_SIZE,
+        overflow: "hidden",
+        contain: "paint",
+        lineHeight: 0,
+      }}
+    >
+      <ComputerIcon size={PC_ICON_SIZE} />
+    </span>
+  );
+}
+
 export function NetworkNeighborhood() {
   const favorites = useDesktopStore((state) => state.favorites);
   const addFavorite = useDesktopStore((state) => state.addFavorite);
@@ -38,8 +59,8 @@ export function NetworkNeighborhood() {
                     key={user.id}
                     className="flex items-center gap-2 px-1 py-1 hover:bg-win-paper-hover"
                   >
-                    <ComputerIcon size={16} />
-                    <div className="min-w-0 flex-1">
+                    <PcListIcon />
+                    <div className="min-w-0 flex-1 pl-2">
                       <div className="truncate font-bold">{user.displayName}</div>
                       <div className="truncate text-win-paper-muted">
                         {remoteDesktopPath(user)}
@@ -65,8 +86,8 @@ export function NetworkNeighborhood() {
           <div className="win-sunken bg-win-paper p-1 text-win-ink">
             <ul>
               <li className="flex items-center gap-2 px-1 py-1 text-win-paper-muted">
-                <ComputerIcon size={16} />
-                <div className="min-w-0 flex-1">
+                <PcListIcon />
+                <div className="min-w-0 flex-1 pl-2">
                   <div className="font-bold text-win-ink">This PC (you)</div>
                   <div>Local desktop — use Go Home while visiting others</div>
                 </div>
@@ -78,8 +99,8 @@ export function NetworkNeighborhood() {
                     key={user.id}
                     className="flex items-center gap-2 px-1 py-1 hover:bg-win-paper-hover"
                   >
-                    <ComputerIcon size={16} />
-                    <div className="min-w-0 flex-1">
+                    <PcListIcon />
+                    <div className="min-w-0 flex-1 pl-2">
                       <div className="truncate font-bold">{user.displayName}</div>
                       <div className="truncate text-win-paper-muted">
                         {remoteDesktopPath(user)}

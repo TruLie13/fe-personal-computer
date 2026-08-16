@@ -10,12 +10,15 @@ export function ComputerIcon({ className, size = 32 }: IconProps) {
       width={size}
       height={size}
       viewBox="0 0 32 32"
+      // SVG strokes can paint past the layout box; clip so neighbors stay readable.
+      style={{ display: "block", overflow: "hidden", flexShrink: 0 }}
       aria-hidden="true"
     >
-      <rect x="3" y="4" width="26" height="18" fill="#c0c0c0" stroke="#000" />
-      <rect x="6" y="7" width="20" height="12" fill="#008080" />
-      <rect x="11" y="22" width="10" height="3" fill="#c0c0c0" stroke="#000" />
-      <rect x="7" y="25" width="18" height="3" fill="#c0c0c0" stroke="#000" />
+      {/* Inset so 1px strokes stay inside the 32×32 viewBox when scaled. */}
+      <rect x="4" y="5" width="24" height="16" fill="#c0c0c0" stroke="#000" />
+      <rect x="7" y="8" width="18" height="10" fill="#008080" />
+      <rect x="12" y="22" width="8" height="3" fill="#c0c0c0" stroke="#000" />
+      <rect x="8" y="25" width="16" height="3" fill="#c0c0c0" stroke="#000" />
     </svg>
   );
 }

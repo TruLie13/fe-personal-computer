@@ -175,8 +175,8 @@ export function DesktopIcon({
       return;
     }
     const next = measureAndClamp(event.currentTarget, {
-      x: event.clientX - offset.current.x,
-      y: event.clientY - offset.current.y,
+      x: Math.round(event.clientX - offset.current.x),
+      y: Math.round(event.clientY - offset.current.y),
     });
     latest.current = next;
     setPosition(next);
