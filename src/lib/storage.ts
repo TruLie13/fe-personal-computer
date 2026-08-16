@@ -60,6 +60,7 @@ export const DEFAULT_DOCUMENTS: TextDocument[] = [];
 
 export const DEFAULT_WALLPAPER = "#008080";
 export const DEFAULT_TITLE_BAR_COLOR = "#000080";
+export const DEFAULT_CONTENT_DARK = false;
 
 export const WALLPAPER_PRESETS: ReadonlyArray<{ label: string; color: string }> =
   [
@@ -258,6 +259,39 @@ export function uniqueFolderName(
   return `${cleaned} (${n})`;
 }
 
+/** Win95-style path for a folder window title: `Documents\\Poems`. */
+export function folderWindowTitle(
+  icons: ReadonlyArray<DesktopIcon>,
+  folderId: string,
+): string {
+  const byId = new Map(icons.map((icon) => [icon.id, icon]));
+  const segments: string[] = [];
+  let walk: string | null = folderId;
+  const seen = new Set<string>();
+
+  while (walk && !seen.has(walk)) {
+    seen.add(walk);
+    const folder = byId.get(walk);
+    if (!folder || folder.type !== "folder") {
+      break;
+    }
+    segments.unshift(folder.label);
+    walk = folder.parentId ?? null;
+  }
+
+  return segments.join("\\") || "Folder";
+}
+
+export function displayWindowTitle(
+  window: { type: string; title: string; iconId: string },
+  icons: ReadonlyArray<DesktopIcon>,
+): string {
+  if (window.type === "folder") {
+    return folderWindowTitle(icons, window.iconId);
+  }
+  return window.title;
+}
+
 /**
  * Unique text filename among siblings (same parent / desktop).
  * Collision → `name (2)`, `name (3)`, … Matching is case-insensitive.
@@ -300,6 +334,10 @@ function normalizeHexColor(value: unknown, fallback: string): string {
   return /^#[0-9a-fA-F]{6}$/.test(trimmed) ? trimmed.toLowerCase() : fallback;
 }
 
+function normalizeBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
 export function loadDesktopState(): DesktopPersistedState {
   if (typeof window === "undefined") {
     return {
@@ -307,6 +345,7 @@ export function loadDesktopState(): DesktopPersistedState {
       documents: DEFAULT_DOCUMENTS,
       wallpaper: DEFAULT_WALLPAPER,
       titleBarColor: DEFAULT_TITLE_BAR_COLOR,
+      contentDark: DEFAULT_CONTENT_DARK,
     };
   }
 
@@ -320,6 +359,7 @@ export function loadDesktopState(): DesktopPersistedState {
         documents: DEFAULT_DOCUMENTS,
         wallpaper: DEFAULT_WALLPAPER,
         titleBarColor: DEFAULT_TITLE_BAR_COLOR,
+        contentDark: DEFAULT_CONTENT_DARK,
       };
     }
 
@@ -341,6 +381,7 @@ export function loadDesktopState(): DesktopPersistedState {
         parsed.titleBarColor,
         DEFAULT_TITLE_BAR_COLOR,
       ),
+      contentDark: normalizeBoolean(parsed.contentDark, DEFAULT_CONTENT_DARK),
     };
   } catch {
     return {
@@ -348,6 +389,7 @@ export function loadDesktopState(): DesktopPersistedState {
       documents: DEFAULT_DOCUMENTS,
       wallpaper: DEFAULT_WALLPAPER,
       titleBarColor: DEFAULT_TITLE_BAR_COLOR,
+      contentDark: DEFAULT_CONTENT_DARK,
     };
   }
 }

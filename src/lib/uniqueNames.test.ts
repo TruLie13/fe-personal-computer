@@ -1,4 +1,5 @@
 import {
+  folderWindowTitle,
   uniqueFolderName,
   uniqueTextFileName,
 } from "@/lib/storage";
@@ -88,5 +89,30 @@ describe("uniqueFolderName", () => {
     expect(uniqueFolderName(icons, "New Folder", null, "parent-a")).toBe(
       "New Folder (2)",
     );
+  });
+});
+
+describe("folderWindowTitle", () => {
+  it("joins nested folder labels with backslashes", () => {
+    const icons: DesktopIcon[] = [
+      {
+        id: "outer",
+        label: "Documents",
+        type: "folder",
+        x: 0,
+        y: 0,
+        parentId: null,
+      },
+      {
+        id: "inner",
+        label: "Poems",
+        type: "folder",
+        x: 0,
+        y: 0,
+        parentId: "outer",
+      },
+    ];
+    expect(folderWindowTitle(icons, "outer")).toBe("Documents");
+    expect(folderWindowTitle(icons, "inner")).toBe("Documents\\Poems");
   });
 });

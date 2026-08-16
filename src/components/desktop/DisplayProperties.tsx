@@ -20,7 +20,7 @@ function ColorSwatches({
   return (
     <fieldset className="min-w-0">
       <legend className="px-1 text-[12px] font-bold">{label}</legend>
-      <div className="win-sunken mt-1 bg-white p-2">
+      <div className="win-sunken mt-1 bg-win-paper p-2 text-win-ink">
         <div className="flex flex-wrap gap-2">
           {presets.map((preset) => {
             const selected = value.toLowerCase() === preset.color.toLowerCase();
@@ -58,18 +58,20 @@ function ColorSwatches({
 export function DisplayProperties() {
   const wallpaper = useDesktopStore((state) => state.wallpaper);
   const titleBarColor = useDesktopStore((state) => state.titleBarColor);
+  const contentDark = useDesktopStore((state) => state.contentDark);
   const setWallpaper = useDesktopStore((state) => state.setWallpaper);
   const setTitleBarColor = useDesktopStore((state) => state.setTitleBarColor);
+  const setContentDark = useDesktopStore((state) => state.setContentDark);
   const resetTheme = useDesktopStore((state) => state.resetTheme);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 bg-win-face p-3">
       <p className="text-[12px] leading-5">
-        Change your desktop wallpaper and the active window title bar color.
+        Change your desktop wallpaper, window title bar, and content colors.
         Settings are saved on this computer.
       </p>
 
-      <div className="win-sunken bg-white p-2">
+      <div className="win-sunken bg-win-paper p-2 text-win-ink">
         <div className="text-[11px] font-bold">Preview</div>
         <div
           className="win-sunken relative mt-1 h-24 overflow-hidden"
@@ -85,7 +87,15 @@ export function DisplayProperties() {
             >
               Untitled
             </div>
-            <div className="p-1 text-[10px] text-win-dark">Sample window</div>
+            <div
+              className="p-1 text-[10px]"
+              style={{
+                background: contentDark ? "#121212" : "#ffffff",
+                color: contentDark ? "#f5f5f5" : "#808080",
+              }}
+            >
+              Sample window
+            </div>
           </div>
         </div>
       </div>
@@ -103,6 +113,25 @@ export function DisplayProperties() {
         value={titleBarColor}
         onChange={setTitleBarColor}
       />
+
+      <fieldset className="min-w-0">
+        <legend className="px-1 text-[12px] font-bold">Appearance</legend>
+        <div className="win-sunken mt-1 bg-win-paper p-2 text-win-ink">
+          <label className="flex items-center gap-2 text-[12px]">
+            <input
+              type="checkbox"
+              className="h-3.5 w-3.5 accent-win-navy"
+              checked={contentDark}
+              onChange={(event) => setContentDark(event.target.checked)}
+            />
+            <span>Dark mode (app / folder / file content)</span>
+          </label>
+          <p className="mt-1 text-[11px] text-win-paper-muted">
+            Near-black writing surfaces with light text. Window chrome stays
+            classic grey.
+          </p>
+        </div>
+      </fieldset>
 
       <div className="mt-auto flex justify-end gap-2">
         <button

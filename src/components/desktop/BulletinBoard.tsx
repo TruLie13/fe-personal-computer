@@ -80,7 +80,7 @@ export function BulletinBoard() {
           <label className="flex items-center gap-2">
             <span className="w-12 shrink-0">Title</span>
             <input
-              className="win-sunken min-w-0 flex-1 bg-white px-1 py-0.5 outline-none"
+              className="win-sunken min-w-0 flex-1 bg-win-paper px-1 py-0.5 text-win-ink outline-none"
               value={draftTitle}
               onChange={(event) => setDraftTitle(event.target.value)}
               maxLength={80}
@@ -88,7 +88,7 @@ export function BulletinBoard() {
             />
           </label>
           <textarea
-            className="win-sunken min-h-[88px] resize-none bg-white p-2 outline-none"
+            className="win-sunken min-h-[88px] resize-none bg-win-paper p-2 text-win-ink outline-none"
             value={draftBody}
             onChange={(event) => setDraftBody(event.target.value)}
             placeholder="Say hello, ask for readers, share what you're working on…"
@@ -108,9 +108,9 @@ export function BulletinBoard() {
       ) : null}
 
       <div className="flex min-h-0 flex-1">
-        <div className="win-sunken m-1 w-[42%] overflow-auto bg-white">
+        <div className="win-sunken m-1 w-[42%] overflow-auto bg-win-paper text-win-ink">
           {posts.length === 0 ? (
-            <p className="p-2 text-win-dark">No notes yet. Post the first one.</p>
+            <p className="p-2 text-win-paper-muted">No notes yet. Post the first one.</p>
           ) : (
             <ul>
               {posts.map((post) => {
@@ -122,7 +122,7 @@ export function BulletinBoard() {
                       className={`flex w-full flex-col gap-0.5 px-2 py-1.5 text-left ${
                         active
                           ? "bg-win-navy text-white"
-                          : "hover:bg-win-face-light"
+                          : "hover:bg-win-paper-hover"
                       }`}
                       onClick={() => setSelectedId(post.id)}
                     >
@@ -132,7 +132,7 @@ export function BulletinBoard() {
                       </span>
                       <span
                         className={`truncate text-[11px] ${
-                          active ? "text-white/90" : "text-win-dark"
+                          active ? "text-white/90" : "text-win-paper-muted"
                         }`}
                       >
                         {authorDisplayName(post.authorId)} ·{" "}
@@ -164,12 +164,12 @@ export function BulletinBoard() {
                   </button>
                 ) : null}
               </div>
-              <div className="win-sunken min-h-0 flex-1 overflow-auto whitespace-pre-wrap bg-white p-2 leading-5">
+              <div className="win-sunken min-h-0 flex-1 overflow-auto whitespace-pre-wrap bg-win-paper p-2 leading-5 text-win-ink">
                 {selected.content}
               </div>
             </>
           ) : (
-            <div className="win-sunken flex flex-1 items-center justify-center bg-white text-win-dark">
+            <div className="win-sunken flex flex-1 items-center justify-center bg-win-paper text-win-paper-muted">
               Select a note to read.
             </div>
           )}

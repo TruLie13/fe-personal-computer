@@ -5,10 +5,12 @@ import { ComputerIcon, StartLogo, iconForType } from "@/components/desktop/icons
 import { ProfileAvatar } from "@/components/desktop/ProfileAvatar";
 import { StartMenu } from "@/components/desktop/StartMenu";
 import { getNetworkUser } from "@/lib/networkSeed";
-import { useDesktopStore } from "@/store/desktopStore";
+import { displayWindowTitle } from "@/lib/storage";
+import { selectActiveIcons, useDesktopStore } from "@/store/desktopStore";
 
 export function Taskbar() {
   const windows = useDesktopStore((state) => state.windows);
+  const icons = useDesktopStore(selectActiveIcons);
   const isStartMenuOpen = useDesktopStore((state) => state.isStartMenuOpen);
   const viewMode = useDesktopStore((state) => state.viewMode);
   const remoteUserId = useDesktopStore((state) => state.remoteUserId);
@@ -54,6 +56,7 @@ export function Taskbar() {
         {visibleTasks.map((window) => {
           const Icon = iconForType(window.type);
           const active = window.isFocused && !window.isMinimized;
+          const title = displayWindowTitle(window, icons);
           return (
             <button
               key={window.id}
@@ -68,7 +71,7 @@ export function Taskbar() {
               }}
             >
               <Icon className="shrink-0" size={16} />
-              <span className="truncate">{window.title}</span>
+              <span className="truncate">{title}</span>
             </button>
           );
         })}

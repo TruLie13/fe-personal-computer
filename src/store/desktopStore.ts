@@ -18,9 +18,11 @@ import {
   DEFAULT_ICONS,
   DEFAULT_TITLE_BAR_COLOR,
   DEFAULT_WALLPAPER,
+  DEFAULT_CONTENT_DARK,
   PROFILE_ICON_ID,
   PROFILE_ICON_POSITION,
   canDeleteIcon,
+  folderWindowTitle,
   isOnDesktop,
   isPinnedProfileIcon,
   loadDesktopState,
@@ -66,6 +68,7 @@ interface DesktopStore {
   windows: DesktopWindow[];
   wallpaper: string;
   titleBarColor: string;
+  contentDark: boolean;
   selectedIconId: string | null;
   isStartMenuOpen: boolean;
   nextZIndex: number;
@@ -112,6 +115,7 @@ interface DesktopStore {
   deleteIcon: (iconId: string) => void;
   setWallpaper: (color: string) => void;
   setTitleBarColor: (color: string) => void;
+  setContentDark: (enabled: boolean) => void;
   resetTheme: () => void;
   visitRemotePc: (userId: NetworkUserId) => void;
   goHome: () => void;
@@ -133,6 +137,7 @@ function persist(state: {
     documents: state.documents,
     wallpaper: state.wallpaper,
     titleBarColor: state.titleBarColor,
+    contentDark: useDesktopStore.getState().contentDark,
   });
 }
 
@@ -148,6 +153,7 @@ function createWindowFromIcon(
   icon: DesktopIcon,
   zIndex: number,
   offset: number,
+  allIcons: DesktopIcon[] = [],
 ): DesktopWindow {
   const isEditor = icon.type === "editor" || icon.type === "text";
   const defaults = WINDOW_DEFAULTS[isEditor ? "editor" : icon.type];
@@ -157,7 +163,10 @@ function createWindowFromIcon(
       : icon.type === "text"
         ? `${stripTextExtension(icon.label)} - Notepad`
         : icon.type === "folder"
-          ? icon.label
+          ? folderWindowTitle(
+              allIcons.length > 0 ? allIcons : [icon],
+              icon.id,
+            )
           : icon.type === "profile"
             ? icon.label
             : defaults.title;
@@ -295,6 +304,7 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
   windows: [],
   wallpaper: DEFAULT_WALLPAPER,
   titleBarColor: DEFAULT_TITLE_BAR_COLOR,
+  contentDark: DEFAULT_CONTENT_DARK,
   selectedIconId: null,
   renamingIconId: null,
   isStartMenuOpen: false,
@@ -322,6 +332,7 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       documents: saved.documents,
       wallpaper: saved.wallpaper,
       titleBarColor: saved.titleBarColor,
+      contentDark: saved.contentDark,
       favorites: loadFavorites(),
       localBbsNotes: loadLocalBbsNotes(),
       localProfile,
@@ -362,7 +373,7 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
       }
       const zIndex = state.nextZIndex;
       const openCount = state.windows.filter((window) => window.isOpen).length;
-      const nextWindow = createWindowFromIcon(icon, zIndex, openCount);
+      const nextWindow = createWindowFromIcon(icon, zIndex, openCount, icons);
       set({
         windows: [
           ...state.windows.map((window) => ({ ...window, isFocused: false })),
@@ -449,7 +460,9 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
                 isFocused: true,
                 zIndex,
                 title:
-                  icon.type === "folder" ? icon.label : window.title,
+                  icon.type === "folder"
+                    ? folderWindowTitle(icons, icon.id)
+                    : window.title,
               }
             : { ...window, isFocused: false },
         ),
@@ -462,7 +475,7 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
 
     const zIndex = state.nextZIndex;
     const openCount = state.windows.filter((window) => window.isOpen).length;
-    const nextWindow = createWindowFromIcon(icon, zIndex, openCount);
+    const nextWindow = createWindowFromIcon(icon, zIndex, openCount, icons);
 
     set({
       windows: [
@@ -856,8 +869,11 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
         : state.documents;
 
     const windows = state.windows.map((window) => {
-      if (icon.type === "folder" && window.iconId === iconId) {
-        return { ...window, title: nextLabel };
+      if (window.type === "folder") {
+        return {
+          ...window,
+          title: folderWindowTitle(icons, window.iconId),
+        };
       }
       if (
         icon.documentId &&
@@ -1028,12 +1044,11 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
 
     const windows = renamed
       ? state.windows.map((window) => {
-          if (
-            icon.type === "folder" &&
-            window.iconId === icon.id &&
-            window.type === "folder"
-          ) {
-            return { ...window, title: nextLabel };
+          if (window.type === "folder") {
+            return {
+              ...window,
+              title: folderWindowTitle(icons, window.iconId),
+            };
           }
           if (
             icon.documentId &&
@@ -1044,7 +1059,16 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
           }
           return window;
         })
-      : state.windows;
+      : icon.type === "folder"
+        ? state.windows.map((window) =>
+            window.type === "folder"
+              ? {
+                  ...window,
+                  title: folderWindowTitle(icons, window.iconId),
+                }
+              : window,
+          )
+        : state.windows;
 
     persist({
       icons,
@@ -1095,20 +1119,38 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
     });
   },
 
+  setContentDark: (enabled) => {
+    if (isRemote(get())) {
+      return;
+    }
+    set((state) => {
+      saveDesktopState({
+        icons: state.icons,
+        documents: state.documents,
+        wallpaper: state.wallpaper,
+        titleBarColor: state.titleBarColor,
+        contentDark: enabled,
+      });
+      return { contentDark: enabled };
+    });
+  },
+
   resetTheme: () => {
     if (isRemote(get())) {
       return;
     }
     set((state) => {
-      persist({
+      saveDesktopState({
         icons: state.icons,
         documents: state.documents,
         wallpaper: DEFAULT_WALLPAPER,
         titleBarColor: DEFAULT_TITLE_BAR_COLOR,
+        contentDark: DEFAULT_CONTENT_DARK,
       });
       return {
         wallpaper: DEFAULT_WALLPAPER,
         titleBarColor: DEFAULT_TITLE_BAR_COLOR,
+        contentDark: DEFAULT_CONTENT_DARK,
       };
     });
   },
@@ -1124,7 +1166,7 @@ export const useDesktopStore = create<DesktopStore>((set, get) => ({
     const windows: DesktopWindow[] = [];
     let nextZIndex = 1;
     if (profileIcon) {
-      windows.push(createWindowFromIcon(profileIcon, 1, 0));
+      windows.push(createWindowFromIcon(profileIcon, 1, 0, user.snapshot.icons));
       nextZIndex = 2;
     }
     set({

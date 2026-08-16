@@ -76,7 +76,7 @@ export function ProfileWindow() {
               <label className="flex flex-col gap-1">
                 <span className="text-win-dark">Display name</span>
                 <input
-                  className="win-sunken bg-white px-1 py-0.5 outline-none"
+                  className="win-sunken bg-win-paper px-1 py-0.5 text-win-ink outline-none"
                   value={draftName}
                   onChange={(event) => setDraftName(event.target.value)}
                   maxLength={40}
@@ -95,12 +95,12 @@ export function ProfileWindow() {
       <div className="flex min-h-0 flex-1 flex-col p-2">
         <div className="mb-1 font-bold">Bio</div>
         {isRemote ? (
-          <div className="win-sunken min-h-0 flex-1 overflow-auto whitespace-pre-wrap bg-white p-2 leading-5">
+          <div className="win-sunken min-h-0 flex-1 overflow-auto whitespace-pre-wrap bg-win-paper p-2 leading-5 text-win-ink">
             {seedBio}
           </div>
         ) : (
           <textarea
-            className="win-sunken min-h-0 flex-1 resize-none bg-white p-2 leading-5 outline-none"
+            className="win-sunken min-h-0 flex-1 resize-none bg-win-paper p-2 leading-5 text-win-ink outline-none"
             value={draftBio}
             onChange={(event) => setDraftBio(event.target.value)}
             spellCheck={false}

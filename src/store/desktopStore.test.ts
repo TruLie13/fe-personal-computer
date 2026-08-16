@@ -4,6 +4,7 @@ import {
   DEFAULT_TITLE_BAR_COLOR,
   DEFAULT_WALLPAPER,
   STORAGE_KEY,
+  folderWindowTitle,
 } from "@/lib/storage";
 import { useDesktopStore } from "@/store/desktopStore";
 
@@ -15,6 +16,7 @@ describe("desktopStore", () => {
       windows: [],
       wallpaper: DEFAULT_WALLPAPER,
       titleBarColor: DEFAULT_TITLE_BAR_COLOR,
+      contentDark: false,
       selectedIconId: null,
       renamingIconId: null,
       isStartMenuOpen: false,
@@ -307,6 +309,30 @@ describe("desktopStore", () => {
     expect(renamingIconId).toBeNull();
   });
 
+  it("shows a path title for nested folders and Up opens the parent", () => {
+    const { createFolder, openWindow } = useDesktopStore.getState();
+    const parentId = createFolder("Archive");
+    const childId = createFolder("Poems", undefined, parentId);
+    expect(parentId).toBeTruthy();
+    expect(childId).toBeTruthy();
+
+    openWindow(childId!);
+    const { icons, windows } = useDesktopStore.getState();
+    expect(windows.find((window) => window.iconId === childId)?.title).toBe(
+      folderWindowTitle(icons, childId!),
+    );
+    expect(folderWindowTitle(icons, childId!)).toBe("Archive\\Poems");
+
+    openWindow(parentId!);
+    const after = useDesktopStore.getState().windows;
+    expect(after.find((window) => window.iconId === parentId)?.isOpen).toBe(
+      true,
+    );
+    expect(after.find((window) => window.iconId === parentId)?.isFocused).toBe(
+      true,
+    );
+  });
+
   it("renames a text file and its document", () => {
     const { openWindow, saveDocumentFromWindow, renameIcon } =
       useDesktopStore.getState();
@@ -550,6 +576,19 @@ describe("desktopStore", () => {
     expect(useDesktopStore.getState().titleBarColor).toBe(
       DEFAULT_TITLE_BAR_COLOR,
     );
+    expect(useDesktopStore.getState().contentDark).toBe(false);
+  });
+
+  it("toggles content dark mode in localStorage", () => {
+    const { setContentDark, resetTheme } = useDesktopStore.getState();
+    setContentDark(true);
+    expect(useDesktopStore.getState().contentDark).toBe(true);
+    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY)!) as {
+      contentDark: boolean;
+    };
+    expect(parsed.contentDark).toBe(true);
+    resetTheme();
+    expect(useDesktopStore.getState().contentDark).toBe(false);
   });
 
   it("opens Display Properties", () => {
