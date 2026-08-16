@@ -80,10 +80,16 @@ describe("TextEditor", () => {
 
     expect(screen.getByText("Read-only (visiting)")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Document content")).toBeDisabled();
-    expect(screen.getByDisplayValue("welcome")).toBeDisabled();
-    expect(
-      (screen.getByLabelText("Document content") as HTMLTextAreaElement).value,
-    ).toContain("You found my machine");
+    const content = screen.getByLabelText(
+      "Document content",
+    ) as HTMLTextAreaElement;
+    const title = screen.getByDisplayValue("welcome") as HTMLInputElement;
+    // readOnly (not disabled) so contentDark / bg-win-paper still applies when visiting
+    expect(content).toHaveAttribute("readonly");
+    expect(title).toHaveAttribute("readonly");
+    expect(content).not.toBeDisabled();
+    expect(title).not.toBeDisabled();
+    expect(content.className).toContain("bg-win-paper");
+    expect(content.value).toContain("You found my machine");
   });
 });

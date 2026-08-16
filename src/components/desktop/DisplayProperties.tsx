@@ -127,8 +127,8 @@ export function DisplayProperties() {
             <span>Dark mode (app / folder / file content)</span>
           </label>
           <p className="mt-1 text-[11px] text-win-paper-muted">
-            Near-black writing surfaces with light text. Window chrome stays
-            classic grey.
+            Near-black writing surfaces with light text on your PC and when
+            visiting others. Window chrome stays classic grey.
           </p>
         </div>
       </fieldset>
