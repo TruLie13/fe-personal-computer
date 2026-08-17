@@ -4,6 +4,7 @@ interface IconProps {
 }
 
 export function ComputerIcon({ className, size = 32 }: IconProps) {
+  // Favicon mirrors this art: `src/app/icon.svg`
   return (
     <svg
       className={className}
