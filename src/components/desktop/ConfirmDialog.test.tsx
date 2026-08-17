@@ -45,4 +45,32 @@ describe("ConfirmDialog", () => {
     await user.keyboard("{Escape}");
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
+
+  it("supports Yes / No / Cancel for unsaved changes", async () => {
+    const user = userEvent.setup();
+    const onConfirm = jest.fn();
+    const onDiscard = jest.fn();
+    const onCancel = jest.fn();
+
+    render(
+      <ConfirmDialog
+        title="Notepad"
+        message="Save the changes?"
+        confirmLabel="Yes"
+        discardLabel="No"
+        onConfirm={onConfirm}
+        onDiscard={onDiscard}
+        onCancel={onCancel}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Yes" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "No" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "No" }));
+    expect(onDiscard).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
 });

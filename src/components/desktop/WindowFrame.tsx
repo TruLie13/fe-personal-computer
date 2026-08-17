@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from "react";
 import { BulletinBoard } from "@/components/desktop/BulletinBoard";
 import { DisplayProperties } from "@/components/desktop/DisplayProperties";
 import { FolderWindow } from "@/components/desktop/FolderWindow";
@@ -18,7 +23,13 @@ interface WindowFrameProps {
   window: DesktopWindow;
 }
 
-function WindowBody({ window }: { window: DesktopWindow }) {
+function WindowBody({
+  window,
+  closeInterceptorRef,
+}: {
+  window: DesktopWindow;
+  closeInterceptorRef: MutableRefObject<(() => boolean) | null>;
+}) {
   const viewMode = useDesktopStore((state) => state.viewMode);
   const remoteUserId = useDesktopStore((state) => state.remoteUserId);
   const remoteUser =
@@ -28,7 +39,11 @@ function WindowBody({ window }: { window: DesktopWindow }) {
 
   if (window.type === "editor" || window.type === "text") {
     return (
-      <TextEditor windowId={window.id} documentId={window.documentId} />
+      <TextEditor
+        windowId={window.id}
+        documentId={window.documentId}
+        closeInterceptorRef={closeInterceptorRef}
+      />
     );
   }
 
@@ -74,13 +89,13 @@ function WindowBody({ window }: { window: DesktopWindow }) {
   return (
     <div className="flex h-full flex-col gap-3 p-3 text-[12px]">
       <p>
-        Personal Computer is a retro desktop for writers. Your profile is this
-        machine.
+        Personal Computer (MyPC) is a retro desktop for writers. Your profile is
+        this machine.
       </p>
       <p className="text-win-dark">
-        Open your Computer profile for bio, Bulletin Board for notes, Story
-        Explorer for public writing, and Network Neighborhood to visit other
-        PCs.
+        Open your PC profile for bio, Bulletin Board for notes, Story Explorer
+        for public writing, and Network Neighborhood to visit other PCs on the
+        intranet.
       </p>
     </div>
   );
@@ -99,6 +114,7 @@ export function WindowFrame({ window }: WindowFrameProps) {
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
   const latest = useRef({ x: window.x, y: window.y });
+  const closeInterceptorRef = useRef<(() => boolean) | null>(null);
   const [position, setPosition] = useState({ x: window.x, y: window.y });
 
   useEffect(() => {
@@ -212,6 +228,9 @@ export function WindowFrame({ window }: WindowFrameProps) {
           onMouseDown={stopChromePointer}
           onClick={(event) => {
             event.stopPropagation();
+            if (closeInterceptorRef.current?.()) {
+              return;
+            }
             closeWindow(window.id);
           }}
         >
@@ -219,7 +238,10 @@ export function WindowFrame({ window }: WindowFrameProps) {
         </button>
       </div>
       <div className="mt-[2px] min-h-0 flex-1 p-[2px]">
-        <WindowBody window={window} />
+        <WindowBody
+          window={window}
+          closeInterceptorRef={closeInterceptorRef}
+        />
       </div>
     </div>
   );

@@ -4,6 +4,10 @@ import { Desktop } from "@/components/desktop/Desktop";
 import { LOCAL_USER_ID } from "@/lib/networkSeed";
 import { DEFAULT_LOCAL_PROFILE } from "@/lib/profile";
 import {
+  notFoundMetaTitle,
+  profileMetaTitle,
+} from "@/lib/seo/brand";
+import {
   JsonLd,
   profileJsonLd,
   truncateDescription,
@@ -43,7 +47,7 @@ export async function generateMetadata({
   if (isLocalUsername(username)) {
     const local = localUserAsNetwork();
     return {
-      title: `${local.displayName}'s Computer`,
+      title: profileMetaTitle(local.displayName),
       description: truncateDescription(local.bio),
       alternates: { canonical: profileUrl(LOCAL_USER_ID) },
       robots: { index: false, follow: false },
@@ -51,10 +55,10 @@ export async function generateMetadata({
   }
   const user = resolvePublicUser(username);
   if (!user) {
-    return { title: "Computer not found" };
+    return { title: notFoundMetaTitle("pc") };
   }
   return {
-    title: `${user.displayName}'s Computer`,
+    title: profileMetaTitle(user.displayName),
     description: truncateDescription(user.bio),
     alternates: { canonical: profileUrl(user.id) },
   };

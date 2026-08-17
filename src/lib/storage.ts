@@ -14,7 +14,7 @@ export const ICON_SLOT_HEIGHT = 96;
 
 export const PROFILE_ICON_ID = "profile";
 
-/** Locked top-left slot for every user's Computer identity icon. */
+/** Locked top-left slot for every user's PC identity icon. */
 export const PROFILE_ICON_POSITION = { x: 16, y: 16 } as const;
 
 export const DEFAULT_ICONS: DesktopIcon[] = [
@@ -106,7 +106,7 @@ export function isOnDesktop(icon: DesktopIcon): boolean {
   return icon.parentId == null;
 }
 
-/** Profile / "{Name}'s Computer" stays pinned top-left on every PC. */
+/** Profile / "{Name}'s PC" stays pinned top-left on every PC. */
 export function isPinnedProfileIcon(icon: DesktopIcon): boolean {
   return icon.type === "profile";
 }

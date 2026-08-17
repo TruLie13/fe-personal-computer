@@ -1,5 +1,6 @@
 import type { TextDocument } from "@/types/desktop";
 import type { NetworkUser } from "@/types/network";
+import { profileMetaTitle, PRODUCT_NAME, SPOKEN_NAME } from "@/lib/seo/brand";
 import { fileUrl, profileUrl } from "@/lib/seo/paths";
 
 export function JsonLd({ data }: { data: Record<string, unknown> }) {
@@ -16,7 +17,8 @@ export function profileJsonLd(user: NetworkUser): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "ProfilePage",
-    name: `${user.displayName}'s Computer`,
+    name: profileMetaTitle(user.displayName),
+    description: `${SPOKEN_NAME} — ${PRODUCT_NAME}`,
     url,
     mainEntity: {
       "@type": "Person",

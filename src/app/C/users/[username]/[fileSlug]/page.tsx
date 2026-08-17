@@ -3,6 +3,10 @@ import { notFound } from "next/navigation";
 import { Desktop } from "@/components/desktop/Desktop";
 import { LOCAL_USER_ID } from "@/lib/networkSeed";
 import {
+  fileMetaTitle,
+  notFoundMetaTitle,
+} from "@/lib/seo/brand";
+import {
   fileJsonLd,
   JsonLd,
   truncateDescription,
@@ -10,6 +14,7 @@ import {
 import { fileUrl, isLocalUsername } from "@/lib/seo/paths";
 import { resolvePublicFile } from "@/lib/seo/publicContent";
 import { isReservedFileSlug } from "@/lib/seo/slugs";
+import { DEFAULT_LOCAL_PROFILE } from "@/lib/profile";
 
 interface FilePageProps {
   params: Promise<{ username: string; fileSlug: string }>;
@@ -21,20 +26,20 @@ export async function generateMetadata({
   const { username, fileSlug } = await params;
   if (isLocalUsername(username)) {
     if (isReservedFileSlug(fileSlug)) {
-      return { title: "File not found" };
+      return { title: notFoundMetaTitle("file") };
     }
     return {
-      title: fileSlug,
+      title: fileMetaTitle(fileSlug, DEFAULT_LOCAL_PROFILE.displayName),
       robots: { index: false, follow: false },
       alternates: { canonical: fileUrl(LOCAL_USER_ID, fileSlug) },
     };
   }
   const record = resolvePublicFile(username, fileSlug);
   if (!record) {
-    return { title: "File not found" };
+    return { title: notFoundMetaTitle("file") };
   }
   return {
-    title: `${record.document.title} — ${record.user.displayName}`,
+    title: fileMetaTitle(record.document.title, record.user.displayName),
     description: truncateDescription(record.document.content),
     alternates: {
       canonical: fileUrl(record.user.id, record.document.slug),
