@@ -6,11 +6,12 @@ import {
   PRODUCT_NAME,
   SPOKEN_NAME,
 } from "@/lib/seo/brand";
-import { samplePcPath, signInPath } from "@/lib/seo/paths";
+import { samplePcPath, setupPath, signInPath } from "@/lib/seo/paths";
 
 export function LandingPage() {
   const sampleHref = samplePcPath();
   const signInHref = signInPath();
+  const setupHref = setupPath();
 
   return (
     <div className="landing-95">
@@ -21,7 +22,7 @@ export function LandingPage() {
             {" · "}
             <a href={signInHref}>Sign in</a>
             {" · "}
-            <a href={signInHref}>Get your PC</a>
+            <a href={setupHref}>Get your PC</a>
           </p>
           <h1 className="mt-2 text-[1.75em] leading-tight">
             Welcome to {SPOKEN_NAME}!
@@ -39,11 +40,11 @@ export function LandingPage() {
             own.
           </p>
           <p className="mt-3">
-            <a href={signInHref}>
+            <a href={setupHref}>
               <strong>Get your PC</strong>
             </a>
             {" — "}
-            claim a username and start writing.
+            run Setup and claim a username.
             <br />
             {/* Plain <a>: full load into the desktop shell (no soft-nav race). */}
             <a href={sampleHref}>
@@ -79,7 +80,7 @@ export function LandingPage() {
         <section className="mb-4">
           <h2 className="landing-section-title">Features</h2>
           <p>
-            <a href={signInHref}>Your own PC</a>
+            <a href={setupHref}>Your own PC</a>
             <br />
             A retro desktop that <em>is</em> your writer profile — wallpaper,
             folders, and story files.
@@ -110,8 +111,8 @@ export function LandingPage() {
           <p>
             Please note: you do not need an account to visit a PC and read.
             When you are ready to write and publish,{" "}
-            <a href={signInHref}>get your PC</a> (mock sign-in for now — real
-            Setup Wizard soon).
+            <a href={setupHref}>get your PC</a> (local Setup Wizard — no real
+            accounts yet).
           </p>
         </section>
 
@@ -126,7 +127,7 @@ export function LandingPage() {
             {" | "}
             <a href={signInHref}>Sign in</a>
             {" | "}
-            <a href={signInHref}>Get your PC</a>]
+            <a href={setupHref}>Get your PC</a>]
           </p>
           <p className="mt-3 text-[13px]">
             Copyright © {new Date().getFullYear()} {SPOKEN_NAME} /{" "}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { PRODUCT_NAME, SPOKEN_NAME } from "@/lib/seo/brand";
-import { homePath } from "@/lib/seo/paths";
+import { homePath, setupPath } from "@/lib/seo/paths";
 
 export function MockSignInForm() {
   const router = useRouter();
@@ -29,8 +29,8 @@ export function MockSignInForm() {
         </p>
         <h1 className="mt-2 text-[1.5em]">Sign in to {SPOKEN_NAME}</h1>
         <p className="landing-muted mt-1">
-          Mock form — real accounts and the {PRODUCT_NAME} Setup Wizard come
-          next. Submitting opens your local desktop for now.
+          Mock form — submitting opens your local desktop. New PCs use the{" "}
+          {PRODUCT_NAME} Setup Wizard.
         </p>
 
         <hr />
@@ -68,13 +68,14 @@ export function MockSignInForm() {
             type="submit"
             className="border border-[#808080] bg-[#c0c0c0] px-3 py-1 font-serif text-[16px] text-black"
           >
-            Sign in / Get your PC
+            Sign in
           </button>
         </form>
 
         <p className="mt-4 text-[14px]">
-          New here? Same button for now. Later this becomes the Windows 95–style
-          Setup Wizard (choose username, confirm email).
+          New here?{" "}
+          <Link href={setupPath()}>Get your PC</Link> — run the Setup Wizard
+          (local preview; {PRODUCT_NAME} accounts come later).
         </p>
         <p className="mt-2 text-[14px]">
           <Link href="/">← Back to home</Link>

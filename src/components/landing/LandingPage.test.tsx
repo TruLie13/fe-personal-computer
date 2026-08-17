@@ -16,12 +16,15 @@ describe("LandingPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("links to sample PC and sign-in", () => {
+  it("links to sample PC, sign-in, and Setup", () => {
     render(<LandingPage />);
     const sample = screen.getAllByRole("link", { name: /sample pc|visit a sample pc|maya/i });
     expect(sample.length).toBeGreaterThan(0);
     expect(
-      screen.getAllByRole("link", { name: /sign in|get your pc/i }).length,
-    ).toBeGreaterThan(0);
+      screen.getAllByRole("link", { name: /^sign in$/i })[0],
+    ).toHaveAttribute("href", "/sign-in");
+    expect(
+      screen.getAllByRole("link", { name: /get your pc/i })[0],
+    ).toHaveAttribute("href", "/setup");
   });
 });
