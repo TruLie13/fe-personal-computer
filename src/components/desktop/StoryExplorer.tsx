@@ -8,6 +8,7 @@ import {
   MasterDetailPane,
 } from "@/components/desktop/MasterDetail";
 import { VisitPcButton } from "@/components/desktop/VisitPcButton";
+import { usePcRoutes } from "@/hooks/usePcRoutes";
 import { formatShortDateTime } from "@/lib/formatDate";
 import {
   authorDisplayName,
@@ -15,6 +16,7 @@ import {
   listPublicStoriesNewestFirst,
   LOCAL_USER_ID,
 } from "@/lib/networkSeed";
+import { findDocumentSlugForUser } from "@/lib/seo/publicContent";
 import type { PublicStory } from "@/types/network";
 
 function snippet(content: string, max = 80): string {
@@ -30,6 +32,7 @@ export function StoryExplorer() {
   const [selectedId, setSelectedId] = useState<string | null>(
     stories[0]?.id ?? null,
   );
+  const { openPublicFile } = usePcRoutes();
 
   const selected: PublicStory | undefined = stories.find(
     (story) => story.id === selectedId,
@@ -37,6 +40,10 @@ export function StoryExplorer() {
   const author =
     selected && selected.authorId !== LOCAL_USER_ID
       ? getNetworkUser(selected.authorId)
+      : undefined;
+  const fileSlug =
+    selected && author
+      ? findDocumentSlugForUser(author.id, selected.documentId)
       : undefined;
 
   return (
@@ -93,7 +100,19 @@ export function StoryExplorer() {
           emptyMessage="Select a story to read."
           action={
             author ? (
-              <VisitPcButton userId={author.id} className="ml-auto" />
+              <div className="ml-auto flex flex-wrap items-center gap-1">
+                {fileSlug ? (
+                  <button
+                    type="button"
+                    className="win-raised flex items-center gap-1 px-2 py-0.5"
+                    onClick={() => openPublicFile(author.id, fileSlug)}
+                  >
+                    <TextFileIcon size={14} />
+                    Open file
+                  </button>
+                ) : null}
+                <VisitPcButton userId={author.id} />
+              </div>
             ) : null
           }
         />

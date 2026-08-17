@@ -6,6 +6,7 @@ import { useSavedFlash } from "@/hooks/useSavedFlash";
 import { isFavorite } from "@/lib/favorites";
 import { getNetworkUser } from "@/lib/networkSeed";
 import { computerLabel } from "@/lib/profile";
+import { usePcRoutes } from "@/hooks/usePcRoutes";
 import { useDesktopStore } from "@/store/desktopStore";
 
 export function ProfileWindow() {
@@ -18,7 +19,7 @@ export function ProfileWindow() {
   );
   const addFavorite = useDesktopStore((state) => state.addFavorite);
   const removeFavorite = useDesktopStore((state) => state.removeFavorite);
-  const goHome = useDesktopStore((state) => state.goHome);
+  const { goHome } = usePcRoutes();
 
   const isRemote = viewMode === "remote" && remoteUserId != null;
   const remoteUser = isRemote ? getNetworkUser(remoteUserId) : undefined;

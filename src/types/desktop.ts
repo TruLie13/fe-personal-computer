@@ -28,6 +28,8 @@ export interface DesktopIcon {
 export interface TextDocument {
   id: string;
   title: string;
+  /** Stable public URL segment; set at create and not changed on rename. */
+  slug: string;
   content: string;
   createdAt: string;
   updatedAt: string;

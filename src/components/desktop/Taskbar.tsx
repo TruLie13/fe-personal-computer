@@ -13,6 +13,7 @@ import {
   MIN_TASKBAR_HEIGHT,
 } from "@/lib/storage";
 import { selectActiveIcons, useDesktopStore } from "@/store/desktopStore";
+import { usePcRoutes } from "@/hooks/usePcRoutes";
 
 export function Taskbar() {
   const windows = useDesktopStore((state) => state.windows);
@@ -26,8 +27,8 @@ export function Taskbar() {
   const toggleStartMenu = useDesktopStore((state) => state.toggleStartMenu);
   const focusWindow = useDesktopStore((state) => state.focusWindow);
   const minimizeWindow = useDesktopStore((state) => state.minimizeWindow);
-  const goHome = useDesktopStore((state) => state.goHome);
   const openProfile = useDesktopStore((state) => state.openProfile);
+  const { goHome } = usePcRoutes();
 
   const dragOrigin = useRef<{ y: number; height: number } | null>(null);
 

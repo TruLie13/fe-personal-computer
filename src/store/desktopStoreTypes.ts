@@ -74,6 +74,11 @@ export interface DesktopStore {
   resetTheme: () => void;
   visitRemotePc: (userId: NetworkUserId) => void;
   goHome: () => void;
+  /** Deep-link entry: visit PC and optionally open a file (+ parent folder). */
+  applyDeepLink: (input: {
+    username: string;
+    fileSlug?: string;
+  }) => void;
   addFavorite: (userId: NetworkUserId) => void;
   removeFavorite: (userId: NetworkUserId) => void;
   postBbsNote: (title: string, content: string) => string;

@@ -13,6 +13,7 @@ import { ProfileAvatar } from "@/components/desktop/ProfileAvatar";
 import { getNetworkUser } from "@/lib/networkSeed";
 import { computerLabel } from "@/lib/profile";
 import { PROFILE_ICON_ID } from "@/lib/storage";
+import { usePcRoutes } from "@/hooks/usePcRoutes";
 import { useDesktopStore } from "@/store/desktopStore";
 
 export function StartMenu() {
@@ -25,7 +26,7 @@ export function StartMenu() {
   const openProfile = useDesktopStore((state) => state.openProfile);
   const closeStartMenu = useDesktopStore((state) => state.closeStartMenu);
   const createFolder = useDesktopStore((state) => state.createFolder);
-  const goHome = useDesktopStore((state) => state.goHome);
+  const { goHome } = usePcRoutes();
 
   if (!isStartMenuOpen) {
     return null;

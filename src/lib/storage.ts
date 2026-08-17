@@ -4,6 +4,7 @@ import type {
   TextDocument,
 } from "@/types/desktop";
 import { computerLabel, DEFAULT_LOCAL_PROFILE } from "@/lib/profile";
+import { ensureDocumentSlugs } from "@/lib/seo/slugs";
 
 export const STORAGE_KEY = "personal-computer-desktop-v2";
 
@@ -357,6 +358,38 @@ function normalizeTaskbarHeight(value: unknown): number {
     : DEFAULT_TASKBAR_HEIGHT;
 }
 
+function normalizeDocuments(value: unknown): TextDocument[] {
+  if (!Array.isArray(value)) {
+    return DEFAULT_DOCUMENTS;
+  }
+  const raw = value.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      return [];
+    }
+    const doc = item as Partial<TextDocument>;
+    if (
+      typeof doc.id !== "string" ||
+      typeof doc.title !== "string" ||
+      typeof doc.content !== "string" ||
+      typeof doc.createdAt !== "string" ||
+      typeof doc.updatedAt !== "string"
+    ) {
+      return [];
+    }
+    return [
+      {
+        id: doc.id,
+        title: doc.title,
+        content: doc.content,
+        createdAt: doc.createdAt,
+        updatedAt: doc.updatedAt,
+        slug: typeof doc.slug === "string" ? doc.slug : undefined,
+      },
+    ];
+  });
+  return ensureDocumentSlugs(raw);
+}
+
 export function loadDesktopState(): DesktopPersistedState {
   if (typeof window === "undefined") {
     return {
@@ -394,9 +427,7 @@ export function loadDesktopState(): DesktopPersistedState {
           ? parsed.icons
           : DEFAULT_ICONS,
       ),
-      documents: Array.isArray(parsed.documents)
-        ? parsed.documents
-        : DEFAULT_DOCUMENTS,
+      documents: normalizeDocuments(parsed.documents),
       wallpaper: normalizeHexColor(parsed.wallpaper, DEFAULT_WALLPAPER),
       titleBarColor: normalizeHexColor(
         parsed.titleBarColor,

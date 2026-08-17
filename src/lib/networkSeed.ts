@@ -72,6 +72,7 @@ export const NETWORK_USERS: NetworkUser[] = [
         {
           id: "maya-doc-welcome",
           title: "welcome",
+          slug: "welcome",
           content:
             "You found my machine.\n\nI keep drafts in the Drafts folder.\nLeave the wallpaper alone — purple is intentional.",
           createdAt: "2026-08-01T10:00:00.000Z",
@@ -80,6 +81,7 @@ export const NETWORK_USERS: NetworkUser[] = [
         {
           id: "maya-doc-rain",
           title: "rain-notes",
+          slug: "rain-notes",
           content:
             "City rain on the fire escape.\nSomeone downstairs plays piano badly and I love it.\n\n— M",
           createdAt: "2026-08-05T18:30:00.000Z",
@@ -88,6 +90,7 @@ export const NETWORK_USERS: NetworkUser[] = [
         {
           id: "maya-doc-poem",
           title: "window-seat",
+          slug: "window-seat",
           content:
             "The bus window holds the whole afternoon.\nSteam rises from cups I cannot smell.\nI am writing toward home.",
           createdAt: "2026-08-08T09:00:00.000Z",
@@ -162,6 +165,7 @@ export const NETWORK_USERS: NetworkUser[] = [
         {
           id: "rex-doc-readme",
           title: "readme-first",
+          slug: "readme-first",
           content:
             "REX-BOX // public desktop\n\nBlack wallpaper. Green chrome.\nOpen Projects for the WIP novel scraps.\nDo not rearrange my icons. I mean it.",
           createdAt: "2026-07-20T08:00:00.000Z",
@@ -170,6 +174,7 @@ export const NETWORK_USERS: NetworkUser[] = [
         {
           id: "rex-doc-log",
           title: "night-log",
+          slug: "night-log",
           content:
             "02:14 — Wrote 400 words. Deleted 600.\n03:02 — Coffee was a mistake.\n04:10 — Kept the one paragraph that scared me.",
           createdAt: "2026-08-11T04:10:00.000Z",
@@ -178,6 +183,7 @@ export const NETWORK_USERS: NetworkUser[] = [
         {
           id: "rex-doc-outline",
           title: "chapter-zero",
+          slug: "chapter-zero",
           content:
             "CHAPTER ZERO\n\nA stranger inherits a personal computer that still boots into someone else's life.\nThe files update overnight.\nNobody claims the machine.",
           createdAt: "2026-08-02T16:00:00.000Z",
@@ -186,6 +192,7 @@ export const NETWORK_USERS: NetworkUser[] = [
         {
           id: "rex-doc-cast",
           title: "cast-list",
+          slug: "cast-list",
           content:
             "THE HOST — never appears on camera\nTHE INHERITOR — our POV\nTHE BOARD — anonymous posts that know too much",
           createdAt: "2026-08-03T12:00:00.000Z",
