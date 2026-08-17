@@ -8,13 +8,25 @@ import {
   useDesktopStore,
 } from "@/store/desktopStore";
 
+export interface UseDesktopUrlSyncOptions {
+  /**
+   * When false, do not touch the address bar.
+   * Desktop waits until hydrate + deep-link apply finish so we never
+   * clobber `/C/users/maya` back to `/C/users/local` on first paint.
+   */
+  enabled?: boolean;
+}
+
 /**
  * Keep the address bar in sync without remounting the App Router page:
  * focused text file → `/C/users/[user]/[slug]`
  * anything else → `/C/users/[user]`
  * Works for both your desktop and a visited remote PC.
  */
-export function useDesktopUrlSync() {
+export function useDesktopUrlSync(
+  options: UseDesktopUrlSyncOptions = {},
+) {
+  const enabled = options.enabled ?? true;
   const viewMode = useDesktopStore((state) => state.viewMode);
   const remoteUserId = useDesktopStore((state) => state.remoteUserId);
   const windows = useDesktopStore((state) => state.windows);
@@ -22,6 +34,10 @@ export function useDesktopUrlSync() {
   const lastSyncedPath = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     const username =
       viewMode === "remote" && remoteUserId
         ? remoteUserId
@@ -51,5 +67,5 @@ export function useDesktopUrlSync() {
     }
     lastSyncedPath.current = target;
     window.history.replaceState(window.history.state, "", target);
-  }, [viewMode, remoteUserId, windows, documents]);
+  }, [enabled, viewMode, remoteUserId, windows, documents]);
 }

@@ -36,14 +36,66 @@ html,
 body {
   margin: 0;
   padding: 0;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
   font-family: var(--font-win);
   font-size: 11px;
   color: var(--color-win-black);
   background: var(--color-win-desktop);
   -webkit-font-smoothing: none;
   image-rendering: pixelated;
+}
+
+/* 1995 marketing pages (Amazon-era web, not Win95 chrome) */
+.landing-95 {
+  min-height: 100dvh;
+  overflow: auto;
+  background: #c0c0c0;
+  color: #000000;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 16px;
+  line-height: 1.35;
+  -webkit-font-smoothing: auto;
+  image-rendering: auto;
+}
+
+.landing-95 a {
+  color: #0000ee;
+  text-decoration: underline;
+}
+
+.landing-95 a:visited {
+  color: #551a8b;
+}
+
+.landing-95 h1,
+.landing-95 h2 {
+  font-family: "Times New Roman", Times, serif;
+  font-weight: bold;
+}
+
+.landing-95 hr {
+  border: none;
+  border-top: 1px solid #808080;
+  border-bottom: 1px solid #ffffff;
+  margin: 1em 0;
+}
+
+.landing-95 .landing-section-title {
+  color: #0000ee;
+  text-decoration: underline;
+  text-transform: uppercase;
+  font-size: 1.1em;
+  margin: 0 0 0.4em;
+}
+
+.landing-95 .landing-muted {
+  color: #000080;
+  font-style: italic;
+}
+
+.landing-95 .landing-footer-nav {
+  text-align: center;
+  font-size: 0.95em;
 }
 
 button,

@@ -84,4 +84,17 @@ describe("useDesktopUrlSync", () => {
       "/C/users/local/local-notes",
     );
   });
+
+  it("does not rewrite the address bar while disabled", () => {
+    const { rerender } = renderHook(() =>
+      useDesktopUrlSync({ enabled: false }),
+    );
+
+    act(() => {
+      useDesktopStore.getState().visitRemotePc("maya");
+    });
+    rerender();
+
+    expect(replaceState).not.toHaveBeenCalled();
+  });
 });
