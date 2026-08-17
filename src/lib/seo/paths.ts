@@ -44,3 +44,12 @@ export function fileUrl(
 export function isLocalUsername(username: string): boolean {
   return username === LOCAL_USER_ID;
 }
+
+export function signInPath(): string {
+  return "/sign-in";
+}
+
+/** Public sample PC for guests exploring before signup. */
+export function samplePcPath(): string {
+  return profilePath("maya");
+}

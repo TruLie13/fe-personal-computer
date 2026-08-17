@@ -1,10 +1,9 @@
-import { redirect } from "next/navigation";
-import { homePath } from "@/lib/seo/paths";
+import { LandingPage } from "@/components/landing/LandingPage";
 
 /**
- * Logged-in users land on their PC. When auth exists, unauthenticated
- * visitors should see a marketing / sign-up landing here instead.
+ * Logged-out homepage (1995 web aesthetic).
+ * Signed-in home remains `/C/users/{username}` once auth exists.
  */
 export default function Home() {
-  redirect(homePath());
+  return <LandingPage />;
 }

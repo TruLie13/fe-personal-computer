@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
 import { ContextMenu } from "@/components/desktop/ContextMenu";
 import { DesktopIcon } from "@/components/desktop/DesktopIcon";
@@ -49,8 +49,9 @@ export function Desktop({
   const openWindow = useDesktopStore((state) => state.openWindow);
   const { goHome } = usePcRoutes();
   const appliedDeepLinkKey = useRef<string | null>(null);
+  const [urlSyncReady, setUrlSyncReady] = useState(!deepLinkUsername);
 
-  useDesktopUrlSync();
+  useDesktopUrlSync({ enabled: hydrated && urlSyncReady });
 
   const isRemote = viewMode === "remote";
   const desktopIcons = selectDesktopIcons(icons);
@@ -69,18 +70,22 @@ export function Desktop({
   }, [hydrate]);
 
   useEffect(() => {
-    if (!hydrated || !deepLinkUsername) {
+    if (!hydrated) {
+      return;
+    }
+    if (!deepLinkUsername) {
+      setUrlSyncReady(true);
       return;
     }
     const key = `${deepLinkUsername}:${deepLinkFileSlug ?? ""}`;
-    if (appliedDeepLinkKey.current === key) {
-      return;
+    if (appliedDeepLinkKey.current !== key) {
+      appliedDeepLinkKey.current = key;
+      applyDeepLink({
+        username: deepLinkUsername,
+        fileSlug: deepLinkFileSlug,
+      });
     }
-    appliedDeepLinkKey.current = key;
-    applyDeepLink({
-      username: deepLinkUsername,
-      fileSlug: deepLinkFileSlug,
-    });
+    setUrlSyncReady(true);
   }, [hydrated, deepLinkUsername, deepLinkFileSlug, applyDeepLink]);
 
   return (

@@ -16,7 +16,7 @@ describe("seo brand", () => {
     expect(SITE_TITLE).toBe("MyPC — Personal Computer");
     expect(TITLE_TEMPLATE).toBe("%s — MyPC");
     expect(SITE_DESCRIPTION).toContain("MyPC");
-    expect(SITE_DESCRIPTION).toContain("Personal Computer");
+    expect(SITE_DESCRIPTION).toContain("social network for writers");
   });
 
   it("builds profile and file meta titles", () => {
