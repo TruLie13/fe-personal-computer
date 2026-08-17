@@ -395,6 +395,56 @@ textarea {
   border-bottom: 1px solid var(--color-win-white);
 }
 
+.win-wizard-title {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--color-win-black);
+  -webkit-font-smoothing: auto;
+}
+
+.win-wizard {
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: auto;
+  image-rendering: auto;
+}
+
+.win-wizard .win-titlebar {
+  height: 24px;
+  font-size: 13px;
+}
+
+.win-wizard .win-btn {
+  min-width: 88px;
+  padding: 4px 16px;
+  font-size: 15px;
+}
+
+.win-wizard .win-btn-default {
+  outline-offset: -6px;
+}
+
+.win-btn {
+  min-width: 75px;
+  padding: 2px 14px;
+  background: var(--color-win-face);
+  color: var(--color-win-black);
+  cursor: default;
+}
+
+.win-btn:disabled {
+  color: var(--color-win-dark);
+  text-shadow: 1px 1px 0 var(--color-win-white);
+}
+
+.win-btn-default {
+  box-shadow: 0 0 0 1px var(--color-win-black);
+  outline: 1px dotted var(--color-win-black);
+  outline-offset: -5px;
+}
+
 /* Crawlable copy of public file text (paired with on-screen Notepad). */
 .seo-crawl-article {
   position: absolute;

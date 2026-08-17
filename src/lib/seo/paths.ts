@@ -49,6 +49,11 @@ export function signInPath(): string {
   return "/sign-in";
 }
 
+/** Local Setup Wizard (Get your PC). */
+export function setupPath(): string {
+  return "/setup";
+}
+
 /** Public sample PC for guests exploring before signup. */
 export function samplePcPath(): string {
   return profilePath("maya");
