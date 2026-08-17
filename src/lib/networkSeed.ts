@@ -21,7 +21,7 @@ export const NETWORK_USERS: NetworkUser[] = [
       icons: [
         {
           id: "maya-profile",
-          label: "Maya Chen's Computer",
+          label: "Maya Chen's PC",
           type: "profile",
           x: 16,
           y: 16,
@@ -112,7 +112,7 @@ export const NETWORK_USERS: NetworkUser[] = [
       icons: [
         {
           id: "rex-profile",
-          label: "Rex Ortega's Computer",
+          label: "Rex Ortega's PC",
           type: "profile",
           x: 16,
           y: 16,

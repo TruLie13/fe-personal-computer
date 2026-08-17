@@ -81,7 +81,7 @@ describe("desktop icon placement", () => {
   it("keeps the profile computer icon pinned top-left", () => {
     const moved: DesktopIcon = {
       id: "profile",
-      label: "Writer's Computer",
+      label: "Writer's PC",
       type: "profile",
       x: 200,
       y: 300,

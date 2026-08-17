@@ -54,7 +54,7 @@ describe("ProfileWindow", () => {
     expect(localProfile.displayName).toBe("Truth");
     expect(localProfile.bio).toBe("Hello from my PC.");
     expect(icons.find((icon) => icon.id === "profile")?.label).toBe(
-      "Truth's Computer",
+      "Truth's PC",
     );
     expect(screen.getByText("Saved")).toBeInTheDocument();
   });

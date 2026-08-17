@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TextEditor } from "@/components/desktop/TextEditor";
 import {
@@ -91,5 +91,70 @@ describe("TextEditor", () => {
     expect(title).not.toBeDisabled();
     expect(content.className).toContain("bg-win-paper");
     expect(content.value).toContain("You found my machine");
+  });
+
+  it("prompts before closing with unsaved changes", async () => {
+    const user = userEvent.setup();
+    useDesktopStore.getState().openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+    const closeInterceptorRef = { current: null as (() => boolean) | null };
+
+    render(
+      <TextEditor
+        windowId={windowId}
+        documentId={null}
+        closeInterceptorRef={closeInterceptorRef}
+      />,
+    );
+
+    await user.type(
+      screen.getByLabelText("Document content"),
+      "unsaved verse",
+    );
+
+    act(() => {
+      expect(closeInterceptorRef.current?.()).toBe(true);
+    });
+    expect(
+      await screen.findByRole("alertdialog", { name: "Notepad" }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "No" }));
+    expect(
+      useDesktopStore.getState().windows.find((item) => item.id === windowId)
+        ?.isOpen,
+    ).toBe(false);
+  });
+
+  it("saves empty content when confirming Yes on close", async () => {
+    const user = userEvent.setup();
+    useDesktopStore.getState().openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+    const closeInterceptorRef = { current: null as (() => boolean) | null };
+
+    render(
+      <TextEditor
+        windowId={windowId}
+        documentId={null}
+        closeInterceptorRef={closeInterceptorRef}
+      />,
+    );
+
+    const titleInput = screen.getByDisplayValue("Untitled");
+    await user.clear(titleInput);
+    await user.type(titleInput, "blank-page");
+
+    act(() => {
+      expect(closeInterceptorRef.current?.()).toBe(true);
+    });
+    await user.click(
+      await screen.findByRole("button", { name: "Yes" }),
+    );
+
+    const { documents, windows } = useDesktopStore.getState();
+    expect(documents.some((doc) => doc.title === "blank-page" && doc.content === "")).toBe(
+      true,
+    );
+    expect(windows.find((item) => item.id === windowId)?.isOpen).toBe(false);
   });
 });

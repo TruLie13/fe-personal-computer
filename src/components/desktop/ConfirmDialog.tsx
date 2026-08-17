@@ -7,8 +7,11 @@ interface ConfirmDialogProps {
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
+  /** When set, shows a third action (e.g. Notepad “Don't Save”). */
+  onDiscard?: () => void;
   confirmLabel?: string;
   cancelLabel?: string;
+  discardLabel?: string;
 }
 
 export function ConfirmDialog({
@@ -16,10 +19,13 @@ export function ConfirmDialog({
   message,
   onConfirm,
   onCancel,
+  onDiscard,
   confirmLabel = "Yes",
   cancelLabel = "No",
+  discardLabel = "No",
 }: ConfirmDialogProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const threeWay = typeof onDiscard === "function";
 
   useEffect(() => {
     confirmRef.current?.focus();
@@ -70,7 +76,10 @@ export function ConfirmDialog({
           >
             !
           </div>
-          <p id="confirm-dialog-message" className="text-[12px] leading-5">
+          <p
+            id="confirm-dialog-message"
+            className="whitespace-pre-wrap text-[12px] leading-5"
+          >
             {message}
           </p>
         </div>
@@ -83,12 +92,21 @@ export function ConfirmDialog({
           >
             {confirmLabel}
           </button>
+          {threeWay ? (
+            <button
+              type="button"
+              className="win-raised min-w-[75px] px-4 py-1"
+              onClick={onDiscard}
+            >
+              {discardLabel}
+            </button>
+          ) : null}
           <button
             type="button"
             className="win-raised min-w-[75px] px-4 py-1"
             onClick={onCancel}
           >
-            {cancelLabel}
+            {threeWay ? "Cancel" : cancelLabel}
           </button>
         </div>
       </div>

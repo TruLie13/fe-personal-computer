@@ -100,7 +100,7 @@ describe("desktopStore network", () => {
     expect(state.localProfile.displayName).toBe("Truth");
     expect(
       state.icons.find((icon) => icon.id === "profile")?.label,
-    ).toBe("Truth's Computer");
+    ).toBe("Truth's PC");
   });
 
   it("adds and removes network favorites from profile actions", () => {
@@ -391,7 +391,7 @@ describe("desktopStore network", () => {
     expect(state.localProfile.displayName).toBe("Ada");
     expect(state.localProfile.bio).toBe("Hello");
     expect(state.icons.find((icon) => icon.id === "profile")?.label).toBe(
-      "Ada's Computer",
+      "Ada's PC",
     );
     expect(state.icons.some((icon) => icon.id === "notepad")).toBe(true);
     expect(state.icons.some((icon) => icon.id === "bulletin-board")).toBe(

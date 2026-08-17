@@ -1,9 +1,17 @@
 import type { Metadata } from "next";
+import {
+  SITE_DESCRIPTION,
+  SITE_TITLE,
+  TITLE_TEMPLATE,
+} from "@/lib/seo/brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Personal Computer",
-  description: "A retro desktop for writers, poets, and creatives.",
+  title: {
+    default: SITE_TITLE,
+    template: TITLE_TEMPLATE,
+  },
+  description: SITE_DESCRIPTION,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
