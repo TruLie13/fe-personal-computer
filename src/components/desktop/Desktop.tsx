@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
 import { ContextMenu } from "@/components/desktop/ContextMenu";
 import { DesktopIcon } from "@/components/desktop/DesktopIcon";
@@ -8,6 +8,8 @@ import { Taskbar } from "@/components/desktop/Taskbar";
 import { WindowFrame } from "@/components/desktop/WindowFrame";
 import { useContextMenuState } from "@/hooks/useContextMenuState";
 import { useDeleteConfirm } from "@/hooks/useDeleteConfirm";
+import { usePcRoutes } from "@/hooks/usePcRoutes";
+import { useDesktopUrlSync } from "@/hooks/useDesktopUrlSync";
 import { clampIconPosition } from "@/lib/desktopBounds";
 import { DESKTOP_ATTR } from "@/lib/dragDrop";
 import {
@@ -18,7 +20,17 @@ import {
   useDesktopStore,
 } from "@/store/desktopStore";
 
-export function Desktop() {
+export interface DesktopProps {
+  /** Public PC username from `/C/users/[username]`. */
+  deepLinkUsername?: string;
+  /** Optional file slug from `/C/users/[username]/[fileSlug]`. */
+  deepLinkFileSlug?: string;
+}
+
+export function Desktop({
+  deepLinkUsername,
+  deepLinkFileSlug,
+}: DesktopProps = {}) {
   const storeIcons = useDesktopStore((state) => state.icons);
   const viewMode = useDesktopStore((state) => state.viewMode);
   const icons = useDesktopStore(selectActiveIcons);
@@ -28,12 +40,17 @@ export function Desktop() {
   const contentDark = useDesktopStore((state) => state.contentDark);
   const taskbarHeight = useDesktopStore((state) => state.taskbarHeight);
   const hydrate = useDesktopStore((state) => state.hydrate);
+  const hydrated = useDesktopStore((state) => state.hydrated);
+  const applyDeepLink = useDesktopStore((state) => state.applyDeepLink);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
   const closeStartMenu = useDesktopStore((state) => state.closeStartMenu);
   const createFolder = useDesktopStore((state) => state.createFolder);
   const deleteIcon = useDesktopStore((state) => state.deleteIcon);
   const openWindow = useDesktopStore((state) => state.openWindow);
-  const goHome = useDesktopStore((state) => state.goHome);
+  const { goHome } = usePcRoutes();
+  const appliedDeepLinkKey = useRef<string | null>(null);
+
+  useDesktopUrlSync();
 
   const isRemote = viewMode === "remote";
   const desktopIcons = selectDesktopIcons(icons);
@@ -50,6 +67,21 @@ export function Desktop() {
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  useEffect(() => {
+    if (!hydrated || !deepLinkUsername) {
+      return;
+    }
+    const key = `${deepLinkUsername}:${deepLinkFileSlug ?? ""}`;
+    if (appliedDeepLinkKey.current === key) {
+      return;
+    }
+    appliedDeepLinkKey.current = key;
+    applyDeepLink({
+      username: deepLinkUsername,
+      fileSlug: deepLinkFileSlug,
+    });
+  }, [hydrated, deepLinkUsername, deepLinkFileSlug, applyDeepLink]);
 
   return (
     <div

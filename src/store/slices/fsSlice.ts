@@ -9,6 +9,7 @@ import {
   uniqueFolderName,
   uniqueTextFileName,
 } from "@/lib/storage";
+import { uniqueDocumentSlug } from "@/lib/seo/slugs";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
 import {
   assertLocalWritable,
@@ -16,6 +17,16 @@ import {
 } from "@/store/desktopWrite";
 import { createId } from "@/store/desktopWindowFactory";
 import type { DesktopIcon, TextDocument } from "@/types/desktop";
+
+function slugForNewDocument(
+  documents: TextDocument[],
+  title: string,
+): string {
+  return uniqueDocumentSlug(
+    title,
+    documents.map((doc) => doc.slug),
+  );
+}
 
 export type FsSlice = Pick<
   DesktopStore,
@@ -126,6 +137,7 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
     const document: TextDocument = {
       id: documentId,
       title: fileTitle,
+      slug: slugForNewDocument(state.documents, fileTitle),
       content,
       createdAt: now,
       updatedAt: now,
@@ -231,6 +243,7 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
     const document: TextDocument = {
       id: documentId,
       title: label,
+      slug: slugForNewDocument(state.documents, label),
       content: "",
       createdAt: now,
       updatedAt: now,

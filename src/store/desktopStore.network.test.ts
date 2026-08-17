@@ -124,6 +124,100 @@ describe("desktopStore network", () => {
     expect(selectActiveIcons(state)).toEqual(DEFAULT_ICONS);
   });
 
+  it("deep-links a desktop-root file without opening a folder", () => {
+    useDesktopStore.getState().applyDeepLink({
+      username: "maya",
+      fileSlug: "welcome",
+    });
+    const { windows } = useDesktopStore.getState();
+    expect(useDesktopStore.getState().viewMode).toBe("remote");
+    expect(windows.some((window) => window.type === "folder")).toBe(false);
+    expect(
+      windows.some(
+        (window) =>
+          window.isOpen &&
+          window.documentId === "maya-doc-welcome" &&
+          window.isFocused,
+      ),
+    ).toBe(true);
+  });
+
+  it("deep-links a file inside a folder and focuses the file", () => {
+    useDesktopStore.getState().applyDeepLink({
+      username: "maya",
+      fileSlug: "window-seat",
+    });
+    const { windows } = useDesktopStore.getState();
+    expect(
+      windows.some(
+        (window) =>
+          window.isOpen && window.iconId === "maya-drafts" && window.type === "folder",
+      ),
+    ).toBe(true);
+    const fileWindow = windows.find(
+      (window) => window.documentId === "maya-doc-poem",
+    );
+    expect(fileWindow?.isOpen).toBe(true);
+    expect(fileWindow?.isFocused).toBe(true);
+  });
+
+  it("still opens the file when parent folder id is missing", () => {
+    const folderId = useDesktopStore.getState().createFolder("Box");
+    const fileIconId = useDesktopStore.getState().createTextFile(
+      folderId,
+      "orphan-me",
+    );
+    expect(folderId).toBeTruthy();
+    expect(fileIconId).toBeTruthy();
+
+    const documentId = useDesktopStore
+      .getState()
+      .icons.find((icon) => icon.id === fileIconId)?.documentId;
+    const slug = useDesktopStore
+      .getState()
+      .documents.find((doc) => doc.id === documentId)?.slug;
+    expect(slug).toBeTruthy();
+
+    useDesktopStore.setState((state) => ({
+      icons: state.icons.map((icon) =>
+        icon.id === fileIconId
+          ? { ...icon, parentId: "missing-folder" }
+          : icon,
+      ),
+    }));
+
+    expect(() =>
+      useDesktopStore.getState().applyDeepLink({
+        username: LOCAL_USER_ID,
+        fileSlug: slug!,
+      }),
+    ).not.toThrow();
+
+    expect(
+      useDesktopStore
+        .getState()
+        .windows.some(
+          (window) =>
+            window.isOpen && window.documentId === documentId && window.isFocused,
+        ),
+    ).toBe(true);
+  });
+
+  it("ignores unknown deep-link slugs without throwing", () => {
+    expect(() =>
+      useDesktopStore.getState().applyDeepLink({
+        username: "maya",
+        fileSlug: "does-not-exist",
+      }),
+    ).not.toThrow();
+    expect(useDesktopStore.getState().viewMode).toBe("remote");
+    expect(
+      useDesktopStore
+        .getState()
+        .windows.some((window) => window.type === "text"),
+    ).toBe(false);
+  });
+
   it("blocks mutations while visiting a remote PC", () => {
     useDesktopStore.getState().visitRemotePc("maya");
     const before = useDesktopStore.getState().icons;
