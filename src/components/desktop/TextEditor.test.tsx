@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TextEditor } from "@/components/desktop/TextEditor";
 import {
@@ -6,8 +6,11 @@ import {
   DEFAULT_ICONS,
   DEFAULT_TITLE_BAR_COLOR,
   DEFAULT_WALLPAPER,
+  MAX_TEXT_FILE_CHARS,
+  MAX_TEXT_FILES_PER_USER,
 } from "@/lib/storage";
 import { useDesktopStore } from "@/store/desktopStore";
+import { seedTextFilesInStore } from "@/test/seedTextFiles";
 
 function resetStore() {
   useDesktopStore.setState({
@@ -156,5 +159,82 @@ describe("TextEditor", () => {
       true,
     );
     expect(windows.find((item) => item.id === windowId)?.isOpen).toBe(false);
+  });
+
+  it("shows the character count as current/max", () => {
+    useDesktopStore.getState().openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+
+    render(<TextEditor windowId={windowId} documentId={null} />);
+
+    expect(
+      screen.getByLabelText("Character count"),
+    ).toHaveTextContent(`0/${MAX_TEXT_FILE_CHARS}`);
+  });
+
+  it("blocks content beyond the character limit", async () => {
+    useDesktopStore.getState().openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+
+    render(<TextEditor windowId={windowId} documentId={null} />);
+
+    const content = screen.getByLabelText(
+      "Document content",
+    ) as HTMLTextAreaElement;
+    const overLimit = "x".repeat(MAX_TEXT_FILE_CHARS + 500);
+
+    fireEvent.change(content, { target: { value: overLimit } });
+
+    expect(content.value).toHaveLength(MAX_TEXT_FILE_CHARS);
+    expect(
+      screen.getByLabelText("Character count"),
+    ).toHaveTextContent(
+      `${MAX_TEXT_FILE_CHARS}/${MAX_TEXT_FILE_CHARS} (limit reached)`,
+    );
+  });
+
+  it("shows a banner and disables save when the text file limit is reached", async () => {
+    seedTextFilesInStore();
+    useDesktopStore.getState().openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+
+    render(<TextEditor windowId={windowId} documentId={null} />);
+
+    expect(
+      screen.getByRole("status"),
+    ).toHaveTextContent(
+      `You will not be able to save — you have reached the limit of ${MAX_TEXT_FILES_PER_USER} text files (${MAX_TEXT_FILES_PER_USER}/${MAX_TEXT_FILES_PER_USER}).`,
+    );
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+  });
+
+  it("still allows saving an existing text file when at the file limit", async () => {
+    const user = userEvent.setup();
+    seedTextFilesInStore();
+    const existingDocumentId =
+      useDesktopStore.getState().documents[0]?.id ?? null;
+    expect(existingDocumentId).toBeTruthy();
+
+    useDesktopStore.getState().openWindow(`file-${existingDocumentId}`);
+    const editor = useDesktopStore
+      .getState()
+      .windows.find((window) => window.documentId === existingDocumentId)!;
+
+    render(
+      <TextEditor
+        windowId={editor.id}
+        documentId={editor.documentId}
+      />,
+    );
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).not.toBeDisabled();
+
+    await user.type(screen.getByLabelText("Document content"), "!");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(
+      useDesktopStore.getState().documents[0]?.content,
+    ).toContain("!");
   });
 });

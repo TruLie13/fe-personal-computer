@@ -13,6 +13,7 @@ export type { DesktopStore } from "@/store/desktopStoreTypes";
 export {
   selectActiveIcons,
   selectActiveDocuments,
+  selectActiveTextFileCount,
   selectActiveTitleBarColor,
   selectActiveWallpaper,
   selectDesktopIcons,

@@ -65,6 +65,26 @@ export const DEFAULT_CONTENT_DARK = false;
 export const DEFAULT_TASKBAR_HEIGHT = 36;
 export const MIN_TASKBAR_HEIGHT = 28;
 export const MAX_TASKBAR_HEIGHT = 72;
+export const MAX_TEXT_FILE_CHARS = 20_000;
+/** Text documents only — folders are not counted. */
+export const MAX_TEXT_FILES_PER_USER = 50;
+
+export function countTextFiles(documents: ReadonlyArray<TextDocument>): number {
+  return documents.length;
+}
+
+export function canCreateTextFile(
+  documents: ReadonlyArray<TextDocument>,
+): boolean {
+  return countTextFiles(documents) < MAX_TEXT_FILES_PER_USER;
+}
+
+export function clampTextFileContent(content: string): string {
+  if (content.length <= MAX_TEXT_FILE_CHARS) {
+    return content;
+  }
+  return content.slice(0, MAX_TEXT_FILE_CHARS);
+}
 
 export function clampTaskbarHeight(value: number): number {
   if (!Number.isFinite(value)) {
@@ -380,7 +400,7 @@ function normalizeDocuments(value: unknown): TextDocument[] {
       {
         id: doc.id,
         title: doc.title,
-        content: doc.content,
+        content: clampTextFileContent(doc.content),
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
         slug: typeof doc.slug === "string" ? doc.slug : undefined,
