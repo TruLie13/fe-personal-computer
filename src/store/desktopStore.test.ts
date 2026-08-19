@@ -4,9 +4,12 @@ import {
   DEFAULT_TITLE_BAR_COLOR,
   DEFAULT_WALLPAPER,
   STORAGE_KEY,
+  MAX_TEXT_FILE_CHARS,
+  MAX_TEXT_FILES_PER_USER,
   folderWindowTitle,
 } from "@/lib/storage";
 import { useDesktopStore } from "@/store/desktopStore";
+import { seedTextFilesInStore } from "@/test/seedTextFiles";
 
 describe("desktopStore", () => {
   beforeEach(() => {
@@ -685,6 +688,45 @@ describe("desktopStore", () => {
     expect(parsed.documents[0]?.title).toBe("draft-v2");
     // Icon label is not rewritten by live content updates
     expect(icons.find((icon) => icon.type === "text")?.label).toBe("draft");
+  });
+
+  it("clamps saved document content to the text file limit", () => {
+    const { openWindow, saveDocumentFromWindow } = useDesktopStore.getState();
+    openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+    const overLimit = "a".repeat(MAX_TEXT_FILE_CHARS + 100);
+
+    saveDocumentFromWindow(windowId, "long-piece", overLimit);
+
+    expect(useDesktopStore.getState().documents[0]?.content).toHaveLength(
+      MAX_TEXT_FILE_CHARS,
+    );
+  });
+
+  it("blocks createTextFile when the text file limit is reached", () => {
+    seedTextFilesInStore();
+    expect(useDesktopStore.getState().createTextFile(null)).toBeNull();
+    expect(useDesktopStore.getState().documents).toHaveLength(
+      MAX_TEXT_FILES_PER_USER,
+    );
+  });
+
+  it("blocks saving a new Notepad document when the text file limit is reached", () => {
+    seedTextFilesInStore();
+    const { openWindow, saveDocumentFromWindow } = useDesktopStore.getState();
+    openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+
+    saveDocumentFromWindow(windowId, "one-too-many", "cannot save");
+
+    expect(useDesktopStore.getState().documents).toHaveLength(
+      MAX_TEXT_FILES_PER_USER,
+    );
+    expect(
+      useDesktopStore
+        .getState()
+        .documents.some((doc) => doc.title === "one-too-many"),
+    ).toBe(false);
   });
 
   it("ignores document updates without a linked document", () => {

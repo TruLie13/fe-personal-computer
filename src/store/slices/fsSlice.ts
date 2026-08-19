@@ -2,7 +2,9 @@ import type { StateCreator } from "zustand";
 import {
   DEFAULT_DOCUMENTS,
   DEFAULT_ICONS,
+  canCreateTextFile,
   canDeleteIcon,
+  clampTextFileContent,
   folderWindowTitle,
   isPinnedProfileIcon,
   nextDesktopIconPosition,
@@ -70,6 +72,7 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
     if (!assertLocalWritable(get)) {
       return;
     }
+    const nextContent = clampTextFileContent(content);
     set((state) => {
       const target = state.windows.find((window) => window.id === windowId);
       if (!target?.documentId) {
@@ -80,7 +83,7 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
         doc.id === target.documentId
           ? {
               ...doc,
-              content,
+              content: nextContent,
               title: title ?? doc.title,
               updatedAt: new Date().toISOString(),
             }
@@ -101,6 +104,11 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
     }
 
     const now = new Date().toISOString();
+    const nextContent = clampTextFileContent(content);
+
+    if (!target.documentId && !canCreateTextFile(state.documents)) {
+      return;
+    }
 
     if (target.documentId) {
       const existingIcon = state.icons.find(
@@ -114,7 +122,7 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
       );
       const documents = state.documents.map((doc) =>
         doc.id === target.documentId
-          ? { ...doc, title: fileTitle, content, updatedAt: now }
+          ? { ...doc, title: fileTitle, content: nextContent, updatedAt: now }
           : doc,
       );
       const icons = state.icons.map((icon) =>
@@ -138,7 +146,7 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
       id: documentId,
       title: fileTitle,
       slug: slugForNewDocument(state.documents, fileTitle),
-      content,
+      content: nextContent,
       createdAt: now,
       updatedAt: now,
     };
@@ -218,6 +226,9 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
       return null;
     }
     const state = get();
+    if (!canCreateTextFile(state.documents)) {
+      return null;
+    }
     const parent = parentId ?? null;
 
     if (parent !== null) {

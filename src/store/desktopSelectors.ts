@@ -80,6 +80,14 @@ export function selectActiveDocuments(state: {
   return state.documents;
 }
 
+export function selectActiveTextFileCount(state: {
+  viewMode: DesktopViewMode;
+  remoteUserId: NetworkUserId | null;
+  documents: TextDocument[];
+}): number {
+  return selectActiveDocuments(state).length;
+}
+
 export function selectActiveWallpaper(state: {
   viewMode: DesktopViewMode;
   remoteUserId: NetworkUserId | null;
