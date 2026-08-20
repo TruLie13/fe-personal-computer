@@ -27,6 +27,7 @@ function resetStore(localBbsNotes: BbsPost[] = []) {
     contentDark: false,
     taskbarHeight: 36,
     selectedIconId: null,
+    selectedIconIds: [],
     renamingIconId: null,
     isStartMenuOpen: false,
     nextZIndex: 1,
@@ -51,11 +52,11 @@ describe("BulletinBoard", () => {
     resetStore();
   });
 
-  it("composes and posts a community note", async () => {
+  it("composes and posts a community post", async () => {
     const user = userEvent.setup();
     render(<BulletinBoard />);
 
-    await user.click(screen.getByRole("button", { name: "New Note" }));
+    await user.click(screen.getByRole("button", { name: "New Post" }));
     await user.type(screen.getByLabelText("Title"), "Looking for readers");
     await user.type(
       screen.getByPlaceholderText(/Say hello/i),
@@ -64,7 +65,7 @@ describe("BulletinBoard", () => {
     expect(screen.getByLabelText("Character count")).toHaveTextContent(
       `Anyone want to swap poems?`.length + `/${MAX_BBS_NOTE_CHARS}`,
     );
-    expect(screen.getByLabelText("Daily note count")).toHaveTextContent(
+    expect(screen.getByLabelText("Daily post count")).toHaveTextContent(
       `0/${MAX_BBS_NOTES_PER_UTC_DAY} today`,
     );
     await user.click(screen.getByRole("button", { name: "Post" }));
@@ -80,8 +81,8 @@ describe("BulletinBoard", () => {
     const user = userEvent.setup();
     render(<BulletinBoard />);
 
-    await user.click(screen.getByRole("button", { name: "New Note" }));
-    const body = screen.getByLabelText("Note content");
+    await user.click(screen.getByRole("button", { name: "New Post" }));
+    const body = screen.getByLabelText("Post content");
     const overLimit = "x".repeat(MAX_BBS_NOTE_CHARS + 500);
     await user.click(body);
     await user.paste(overLimit);
@@ -92,7 +93,7 @@ describe("BulletinBoard", () => {
     );
   });
 
-  it("shows a limit dialog when New Note is clicked at the daily cap", async () => {
+  it("shows a limit dialog when New Post is clicked at the daily cap", async () => {
     const user = userEvent.setup();
     const day = utcDayKey();
     const localBbsNotes: BbsPost[] = Array.from(
@@ -100,7 +101,7 @@ describe("BulletinBoard", () => {
       (_, i) => ({
         id: `bbs-cap-${i}`,
         authorId: LOCAL_USER_ID,
-        title: `Note ${i}`,
+        title: `Post ${i}`,
         content: "body",
         createdAt: `${day}T0${i}:00:00.000Z`,
       }),
@@ -108,13 +109,13 @@ describe("BulletinBoard", () => {
     resetStore(localBbsNotes);
 
     render(<BulletinBoard />);
-    await user.click(screen.getByRole("button", { name: "New Note" }));
+    await user.click(screen.getByRole("button", { name: "New Post" }));
 
     expect(
       screen.getByRole("alertdialog", { name: "Bulletin Board" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/daily limit of 5 notes \(5\/5\)/i),
+      screen.getByText(/daily limit of 5 posts \(5\/5\)/i),
     ).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/Say hello/i)).not.toBeInTheDocument();
 

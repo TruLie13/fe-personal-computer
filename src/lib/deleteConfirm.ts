@@ -30,4 +30,30 @@ export function buildDeleteConfirmMessage(
   };
 }
 
+export function buildBulkDeleteConfirmMessage(
+  targets: DesktopIcon[],
+): { title: string; message: string } {
+  if (targets.length === 1 && targets[0]) {
+    return buildDeleteConfirmMessage(targets[0], targets);
+  }
+  const count = targets.length;
+  return {
+    title: "Confirm Delete",
+    message: `Are you sure you want to delete these ${count} items?`,
+  };
+}
+
+/** Deletable icons from a selection, for confirm / menu enablement. */
+export function deletableSelection(
+  icons: DesktopIcon[],
+  selectedIds: ReadonlyArray<string>,
+): DesktopIcon[] {
+  return selectedIds
+    .map((id) => icons.find((icon) => icon.id === id))
+    .filter(
+      (icon): icon is DesktopIcon =>
+        icon !== undefined && canDeleteIcon(icon),
+    );
+}
+
 export { canDeleteIcon };

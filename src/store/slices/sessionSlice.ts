@@ -11,15 +11,21 @@ import {
 } from "@/lib/storage";
 import { loadWindowSession } from "@/lib/windowSession";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
+import {
+  selectionFromIcon,
+  selectionFromIds,
+} from "@/store/selectionState";
 
 export type SessionSlice = Pick<
   DesktopStore,
   | "selectedIconId"
+  | "selectedIconIds"
   | "renamingIconId"
   | "isStartMenuOpen"
   | "hydrated"
   | "hydrate"
   | "selectIcon"
+  | "setSelectedIcons"
   | "toggleStartMenu"
   | "closeStartMenu"
 >;
@@ -31,6 +37,7 @@ export const createSessionSlice: StateCreator<
   SessionSlice
 > = (set, get) => ({
   selectedIconId: null,
+  selectedIconIds: [],
   renamingIconId: null,
   isStartMenuOpen: false,
   hydrated: false,
@@ -72,13 +79,21 @@ export const createSessionSlice: StateCreator<
 
   selectIcon: (iconId) => {
     set((state) => ({
-      selectedIconId: iconId,
+      ...selectionFromIcon(iconId),
       isStartMenuOpen: false,
       renamingIconId:
         iconId != null && state.renamingIconId === iconId
           ? state.renamingIconId
           : null,
     }));
+  },
+
+  setSelectedIcons: (iconIds) => {
+    set({
+      ...selectionFromIds(iconIds),
+      isStartMenuOpen: false,
+      renamingIconId: null,
+    });
   },
 
   toggleStartMenu: () => {

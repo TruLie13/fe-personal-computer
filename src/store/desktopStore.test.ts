@@ -24,6 +24,7 @@ describe("desktopStore", () => {
       contentDark: false,
       taskbarHeight: 36,
       selectedIconId: null,
+      selectedIconIds: [],
       renamingIconId: null,
       isStartMenuOpen: false,
       nextZIndex: 1,
@@ -544,6 +545,39 @@ describe("desktopStore", () => {
     const state = useDesktopStore.getState();
     expect(state.icons.find((icon) => icon.id === folderId)).toBeUndefined();
     expect(state.icons.find((icon) => icon.id === fileId)).toBeUndefined();
+    expect(state.documents).toHaveLength(0);
+  });
+
+  it("tracks multi-select via setSelectedIcons", () => {
+    useDesktopStore.getState().setSelectedIcons(["documents", "notepad"]);
+    const state = useDesktopStore.getState();
+    expect(state.selectedIconIds).toEqual(["documents", "notepad"]);
+    expect(state.selectedIconId).toBe("notepad");
+
+    useDesktopStore.getState().selectIcon(null);
+    expect(useDesktopStore.getState().selectedIconIds).toEqual([]);
+  });
+
+  it("deletes multiple selected desktop items in one action", () => {
+    const { createFolder, openWindow, saveDocumentFromWindow, deleteIcons } =
+      useDesktopStore.getState();
+    const folderA = createFolder("Alpha");
+    const folderB = createFolder("Beta");
+    openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]?.id;
+    saveDocumentFromWindow(windowId!, "poem", "verse");
+    const fileId = useDesktopStore
+      .getState()
+      .icons.find((icon) => icon.type === "text")?.id;
+
+    useDesktopStore.getState().setSelectedIcons([folderA!, folderB!, fileId!]);
+    deleteIcons([folderA!, folderB!, fileId!]);
+
+    const state = useDesktopStore.getState();
+    expect(state.icons.find((icon) => icon.id === folderA)).toBeUndefined();
+    expect(state.icons.find((icon) => icon.id === folderB)).toBeUndefined();
+    expect(state.icons.find((icon) => icon.id === fileId)).toBeUndefined();
+    expect(state.selectedIconIds).toEqual([]);
     expect(state.documents).toHaveLength(0);
   });
 

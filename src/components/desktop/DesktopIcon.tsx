@@ -23,6 +23,7 @@ interface DesktopIconProps {
     entries: ContextMenuEntry[],
   ) => void;
   onRequestDelete: (iconId: string) => void;
+  onRequestDeleteMany?: (iconIds: string[]) => void;
 }
 
 function measureAndClamp(
@@ -49,8 +50,9 @@ export function DesktopIcon({
   icon,
   onRequestMenu,
   onRequestDelete,
+  onRequestDeleteMany,
 }: DesktopIconProps) {
-  const selectedIconId = useDesktopStore((state) => state.selectedIconId);
+  const selectedIconIds = useDesktopStore((state) => state.selectedIconIds);
   const renamingIconId = useDesktopStore((state) => state.renamingIconId);
   const viewMode = useDesktopStore((state) => state.viewMode);
   const remoteUserId = useDesktopStore((state) => state.remoteUserId);
@@ -65,7 +67,7 @@ export function DesktopIcon({
   );
   const moveIconToFolder = useDesktopStore((state) => state.moveIconToFolder);
   const Icon = iconForType(icon.type);
-  const selected = selectedIconId === icon.id;
+  const selected = selectedIconIds.includes(icon.id);
   const isRenaming = renamingIconId === icon.id;
   const readOnly = viewMode === "remote";
   const pinned = isPinnedProfileIcon(icon);
@@ -252,7 +254,34 @@ export function DesktopIcon({
       onContextMenu={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        selectIcon(icon.id);
+        const multi =
+          selectedIconIds.length > 1 && selectedIconIds.includes(icon.id);
+        if (!multi) {
+          selectIcon(icon.id);
+        }
+
+        if (multi) {
+          const deletable = selectedIconIds.filter((id) => {
+            const target = useDesktopStore
+              .getState()
+              .icons.find((item) => item.id === id);
+            return target ? canDeleteIcon(target) : false;
+          });
+          const entries: ContextMenuEntry[] = [];
+          if (!readOnly && deletable.length > 0 && onRequestDeleteMany) {
+            entries.push({
+              id: "delete-many",
+              label: `Delete (${deletable.length})`,
+              onSelect: () => onRequestDeleteMany(deletable),
+            });
+          }
+          if (entries.length === 0) {
+            return;
+          }
+          onRequestMenu(event, entries);
+          return;
+        }
+
         const entries: ContextMenuEntry[] = [
           {
             id: "open",
@@ -279,6 +308,7 @@ export function DesktopIcon({
         onRequestMenu(event, entries);
       }}
       aria-label={icon.label}
+      data-icon-id={icon.id}
       {...dropProps}
     >
       {profileAvatar ? (

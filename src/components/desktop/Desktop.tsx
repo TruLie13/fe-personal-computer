@@ -8,6 +8,7 @@ import { Taskbar } from "@/components/desktop/Taskbar";
 import { WindowFrame } from "@/components/desktop/WindowFrame";
 import { useContextMenuState } from "@/hooks/useContextMenuState";
 import { useDeleteConfirm } from "@/hooks/useDeleteConfirm";
+import { useDesktopMarquee } from "@/hooks/useDesktopMarquee";
 import { useFolderCreateGuard } from "@/hooks/useFolderCreateGuard";
 import { usePcRoutes } from "@/hooks/usePcRoutes";
 import { useDesktopUrlSync } from "@/hooks/useDesktopUrlSync";
@@ -45,8 +46,9 @@ export function Desktop({
   const hydrated = useDesktopStore((state) => state.hydrated);
   const applyDeepLink = useDesktopStore((state) => state.applyDeepLink);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
+  const setSelectedIcons = useDesktopStore((state) => state.setSelectedIcons);
   const closeStartMenu = useDesktopStore((state) => state.closeStartMenu);
-  const deleteIcon = useDesktopStore((state) => state.deleteIcon);
+  const deleteIcons = useDesktopStore((state) => state.deleteIcons);
   const openWindow = useDesktopStore((state) => state.openWindow);
   const closeAllWindows = useDesktopStore((state) => state.closeAllWindows);
   const { goHome } = usePcRoutes();
@@ -60,13 +62,24 @@ export function Desktop({
 
   const { menu, openMenu, closeMenu } = useContextMenuState();
   const {
-    pendingDeleteId,
+    pendingDeleteIds,
     deletePrompt,
     requestDelete,
+    requestDeleteMany,
     cancelDelete,
     confirmDelete,
   } = useDeleteConfirm(storeIcons);
   const { tryCreateFolder, folderLimitDialog } = useFolderCreateGuard();
+
+  const marquee = useDesktopMarquee({
+    enabled: true,
+    onClearSelection: () => selectIcon(null),
+    onSelectIds: setSelectedIcons,
+    onCloseMenus: () => {
+      closeStartMenu();
+      closeMenu();
+    },
+  });
 
   useEffect(() => {
     hydrate();
@@ -150,11 +163,10 @@ export function Desktop({
         className="relative min-h-0 flex-1 overflow-hidden"
         style={{ background: wallpaper }}
         {...{ [DESKTOP_ATTR]: "true" }}
-        onMouseDown={() => {
-          selectIcon(null);
-          closeStartMenu();
-          closeMenu();
-        }}
+        onPointerDown={marquee.onPointerDown}
+        onPointerMove={marquee.onPointerMove}
+        onPointerUp={marquee.onPointerUp}
+        onPointerCancel={marquee.onPointerCancel}
         onContextMenu={(event) => {
           event.preventDefault();
           const target = event.target as HTMLElement;
@@ -228,11 +240,24 @@ export function Desktop({
             icon={icon}
             onRequestMenu={openMenu}
             onRequestDelete={requestDelete}
+            onRequestDeleteMany={requestDeleteMany}
           />
         ))}
         {windows.map((window) => (
           <WindowFrame key={window.id} window={window} />
         ))}
+        {marquee.marquee ? (
+          <div
+            className="win-marquee pointer-events-none absolute z-[5000]"
+            style={{
+              left: marquee.marquee.left,
+              top: marquee.marquee.top,
+              width: marquee.marquee.width,
+              height: marquee.marquee.height,
+            }}
+            aria-hidden
+          />
+        ) : null}
       </main>
       <Taskbar />
       {menu ? (
@@ -243,14 +268,14 @@ export function Desktop({
           onClose={closeMenu}
         />
       ) : null}
-      {deletePrompt && pendingDeleteId && !isRemote ? (
+      {deletePrompt && pendingDeleteIds.length > 0 && !isRemote ? (
         <ConfirmDialog
           title={deletePrompt.title}
           message={deletePrompt.message}
           onConfirm={() => {
-            const id = confirmDelete();
-            if (id) {
-              deleteIcon(id);
+            const ids = confirmDelete();
+            if (ids.length > 0) {
+              deleteIcons(ids);
             }
           }}
           onCancel={cancelDelete}

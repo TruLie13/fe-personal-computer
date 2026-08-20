@@ -9,6 +9,7 @@ import {
   selectActiveDocuments,
   selectActiveIcons,
 } from "@/store/desktopSelectors";
+import { selectionFromIcon } from "@/store/selectionState";
 import type { DesktopWindow } from "@/types/desktop";
 
 export type NetworkSlice = Pick<
@@ -35,7 +36,7 @@ function enterRemoteDesktop(
     remoteUserId: userId,
     windows,
     documentWindowFifo: [],
-    selectedIconId,
+    ...selectionFromIcon(selectedIconId),
     renamingIconId: null,
     isStartMenuOpen: false,
     nextZIndex,
@@ -84,7 +85,7 @@ export const createNetworkSlice: StateCreator<
       remoteUserId: null,
       windows: session?.windows ?? [],
       documentWindowFifo: session?.documentWindowFifo ?? [],
-      selectedIconId: null,
+      ...selectionFromIcon(null),
       renamingIconId: null,
       isStartMenuOpen: false,
       nextZIndex: session?.nextZIndex ?? 1,

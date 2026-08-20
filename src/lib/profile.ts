@@ -38,7 +38,7 @@ export function clampBio(value: string): string {
 export const DEFAULT_LOCAL_PROFILE: UserProfile = {
   displayName: "Writer",
   computerName: "WRITER-PC",
-  bio: "This is my PC on MyPC.\n\nI write here. Visit Network Neighborhood to meet others, or leave a note on the Bulletin Board.",
+  bio: "This is my PC on MyPC.\n\nI write here. Visit Network Neighborhood to meet others, or leave a post on the Bulletin Board.",
   avatarColor: "#000080",
   avatarUrl: null,
 };

@@ -203,7 +203,7 @@ export const NETWORK_USERS: NetworkUser[] = [
   },
 ];
 
-/** Seed community notes (reach-outs). Story files live in Story Explorer. */
+/** Seed community posts (reach-outs). Story files live in Story Explorer. */
 export const SEED_BBS_POSTS: BbsPost[] = [
   {
     id: "post-maya-1",
@@ -218,7 +218,7 @@ export const SEED_BBS_POSTS: BbsPost[] = [
     authorId: "rex",
     title: "Looking for brave readers",
     content:
-      "Working on something horror-adjacent about computers that remember people.\nIf that sounds like your thing, leave a note — or just browse Story Explorer.",
+      "Working on something horror-adjacent about computers that remember people.\nIf that sounds like your thing, leave a post — or just browse Story Explorer.",
     createdAt: "2026-08-13T20:00:00.000Z",
   },
   {

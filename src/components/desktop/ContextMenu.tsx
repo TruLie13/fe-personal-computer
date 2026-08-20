@@ -72,6 +72,7 @@ export function ContextMenu({ x, y, entries, onClose }: ContextMenuProps) {
       className="win-menu win-raised fixed z-[30000] min-w-[160px]"
       style={{ left: position.left, top: position.top }}
       role="menu"
+      data-context-menu="true"
       onContextMenu={(event) => event.preventDefault()}
     >
       {entries.map((entry) => {

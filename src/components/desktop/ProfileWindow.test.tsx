@@ -21,6 +21,7 @@ describe("ProfileWindow", () => {
       contentDark: false,
       taskbarHeight: 36,
       selectedIconId: null,
+      selectedIconIds: [],
       renamingIconId: null,
       isStartMenuOpen: false,
       nextZIndex: 1,

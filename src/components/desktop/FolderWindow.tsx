@@ -90,7 +90,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
 
   const { menu, openMenu, closeMenu } = useContextMenuState();
   const {
-    pendingDeleteId,
+    pendingDeleteIds,
     deletePrompt,
     requestDelete,
     cancelDelete,
@@ -522,18 +522,17 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
         />
       ) : null}
 
-      {deletePrompt && pendingDeleteId ? (
+      {deletePrompt && pendingDeleteIds.length > 0 ? (
         <ConfirmDialog
           title={deletePrompt.title}
           message={deletePrompt.message}
           onConfirm={() => {
-            const id = confirmDelete();
-            if (!id) {
-              return;
-            }
-            deleteIcon(id);
-            if (selectedId === id) {
-              setSelectedId(null);
+            const ids = confirmDelete();
+            for (const id of ids) {
+              deleteIcon(id);
+              if (selectedId === id) {
+                setSelectedId(null);
+              }
             }
           }}
           onCancel={cancelDelete}

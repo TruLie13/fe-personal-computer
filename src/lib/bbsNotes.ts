@@ -5,7 +5,7 @@ export const BBS_NOTES_STORAGE_KEY = "personal-computer-bbs-notes-v1";
 
 /** Subject line — already mirrored by the compose `maxLength`. */
 export const MAX_BBS_NOTE_TITLE_CHARS = 80;
-/** Body — sticky-note length; long writing belongs in Notepad. */
+/** Body — short post length; long writing belongs in Notepad. */
 export const MAX_BBS_NOTE_CHARS = 1_000;
 /** Creates per author per UTC calendar day (resets 00:00 UTC). */
 export const MAX_BBS_NOTES_PER_UTC_DAY = 5;

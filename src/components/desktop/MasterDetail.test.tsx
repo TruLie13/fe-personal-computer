@@ -32,7 +32,7 @@ describe("MasterDetail", () => {
               authorLabel: "by Maya",
               content: "full body",
             }}
-            emptyMessage="Select a note to read."
+            emptyMessage="Select a post to read."
           />
         }
       />,
