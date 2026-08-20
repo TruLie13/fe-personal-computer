@@ -68,15 +68,38 @@ export const MAX_TASKBAR_HEIGHT = 72;
 export const MAX_TEXT_FILE_CHARS = 20_000;
 /** Text documents only — folders are not counted. */
 export const MAX_TEXT_FILES_PER_USER = 50;
+/** Folder icons / FS folder nodes (includes default Documents). */
+export const MAX_FOLDERS_PER_USER = 25;
+/** File / folder display titles (Notepad name, rename, create). */
+export const MAX_FILE_TITLE_CHARS = 120;
+
+export function clampFileTitle(title: string): string {
+  if (title.length <= MAX_FILE_TITLE_CHARS) {
+    return title;
+  }
+  return title.slice(0, MAX_FILE_TITLE_CHARS);
+}
 
 export function countTextFiles(documents: ReadonlyArray<TextDocument>): number {
   return documents.length;
+}
+
+export function countFolders(
+  icons: ReadonlyArray<{ type: string }>,
+): number {
+  return icons.filter((icon) => icon.type === "folder").length;
 }
 
 export function canCreateTextFile(
   documents: ReadonlyArray<TextDocument>,
 ): boolean {
   return countTextFiles(documents) < MAX_TEXT_FILES_PER_USER;
+}
+
+export function canCreateFolder(
+  icons: ReadonlyArray<{ type: string }>,
+): boolean {
+  return countFolders(icons) < MAX_FOLDERS_PER_USER;
 }
 
 export function clampTextFileContent(content: string): string {

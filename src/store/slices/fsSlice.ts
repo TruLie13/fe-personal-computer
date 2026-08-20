@@ -2,8 +2,10 @@ import type { StateCreator } from "zustand";
 import {
   DEFAULT_DOCUMENTS,
   DEFAULT_ICONS,
+  canCreateFolder,
   canCreateTextFile,
   canDeleteIcon,
+  clampFileTitle,
   clampTextFileContent,
   folderWindowTitle,
   isPinnedProfileIcon,
@@ -117,7 +119,7 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
       const fileTitle = uniqueTextFileName(
         state.icons,
         existingIcon?.parentId ?? null,
-        title,
+        clampFileTitle(title),
         existingIcon?.id ?? null,
       );
       const documents = state.documents.map((doc) =>
@@ -139,7 +141,11 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
       return;
     }
 
-    const fileTitle = uniqueTextFileName(state.icons, null, title);
+    const fileTitle = uniqueTextFileName(
+      state.icons,
+      null,
+      clampFileTitle(title),
+    );
     const documentId = createId("doc");
     const position = nextDesktopIconPosition(state.icons, "file");
     const document: TextDocument = {
@@ -181,6 +187,9 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
       return null;
     }
     const state = get();
+    if (!canCreateFolder(state.icons)) {
+      return null;
+    }
     const parent = parentId ?? null;
 
     if (parent !== null) {
@@ -194,7 +203,7 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
 
     const label = uniqueFolderName(
       state.icons,
-      name?.trim() || "New Folder",
+      clampFileTitle(name?.trim() || "New Folder"),
       null,
       parent,
     );
@@ -244,7 +253,7 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
     const label = uniqueTextFileName(
       state.icons,
       parent,
-      name?.trim() || "New Text Document",
+      clampFileTitle(name?.trim() || "New Text Document"),
     );
     const documentId = createId("doc");
     const place =
@@ -322,12 +331,12 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
         ? uniqueTextFileName(
             state.icons,
             icon.parentId ?? null,
-            label,
+            clampFileTitle(label),
             icon.id,
           )
         : uniqueFolderName(
             state.icons,
-            label.trim() || icon.label,
+            clampFileTitle(label.trim() || icon.label),
             icon.id,
             icon.parentId ?? null,
           );

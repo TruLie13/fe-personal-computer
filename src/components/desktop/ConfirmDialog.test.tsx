@@ -73,4 +73,27 @@ describe("ConfirmDialog", () => {
     expect(onConfirm).not.toHaveBeenCalled();
     expect(onCancel).not.toHaveBeenCalled();
   });
+
+  it("supports OK-only alert mode", async () => {
+    const user = userEvent.setup();
+    const onConfirm = jest.fn();
+    const onCancel = jest.fn();
+
+    render(
+      <ConfirmDialog
+        title="Bulletin Board"
+        message="Limit reached."
+        confirmLabel="OK"
+        showCancel={false}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "OK" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "No" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "OK" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
 });

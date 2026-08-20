@@ -10,7 +10,9 @@ import { useSavedFlash } from "@/hooks/useSavedFlash";
 import {
   MAX_TEXT_FILE_CHARS,
   MAX_TEXT_FILES_PER_USER,
+  MAX_FILE_TITLE_CHARS,
   canCreateTextFile,
+  clampFileTitle,
   clampTextFileContent,
   stripTextExtension,
 } from "@/lib/storage";
@@ -160,9 +162,12 @@ export function TextEditor({
           <input
             className="win-sunken min-w-0 flex-1 bg-win-paper py-0.5 pl-2 pr-1 text-win-ink outline-none"
             value={title}
-            onChange={(event) => setTitle(event.target.value)}
+            onChange={(event) =>
+              setTitle(clampFileTitle(event.target.value))
+            }
             spellCheck={false}
             readOnly={readOnly}
+            maxLength={readOnly ? undefined : MAX_FILE_TITLE_CHARS}
           />
         </label>
         {savedFlash ? <span className="text-win-dark">Saved</span> : null}

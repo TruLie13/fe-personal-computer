@@ -5,7 +5,15 @@ import { ProfileAvatar } from "@/components/desktop/ProfileAvatar";
 import { useSavedFlash } from "@/hooks/useSavedFlash";
 import { isFavorite } from "@/lib/favorites";
 import { getNetworkUser } from "@/lib/networkSeed";
-import { computerLabel } from "@/lib/profile";
+import {
+  clampBio,
+  clampDisplayName,
+  computerLabel,
+  MAX_BIO_CHARS,
+  MAX_DISPLAY_NAME_CHARS,
+} from "@/lib/profile";
+import { profilePath, currentUsername } from "@/lib/seo/paths";
+import { loadLocalSession } from "@/lib/setupAccount";
 import { usePcRoutes } from "@/hooks/usePcRoutes";
 import { useDesktopStore } from "@/store/desktopStore";
 
@@ -45,6 +53,13 @@ export function ProfileWindow() {
       ? isFavorite(favorites, remoteUserId)
       : false;
 
+  const publicPath = profilePath(
+    loadLocalSession()?.username ?? currentUsername(),
+  );
+
+  const bioCount = draftBio.length;
+  const atBioLimit = bioCount >= MAX_BIO_CHARS;
+
   const onSaveLocal = () => {
     updateLocalProfile({
       displayName: draftName,
@@ -79,15 +94,22 @@ export function ProfileWindow() {
                 <input
                   className="win-sunken bg-win-paper px-1 py-0.5 text-win-ink outline-none"
                   value={draftName}
-                  onChange={(event) => setDraftName(event.target.value)}
-                  maxLength={40}
+                  onChange={(event) =>
+                    setDraftName(clampDisplayName(event.target.value))
+                  }
+                  maxLength={MAX_DISPLAY_NAME_CHARS}
                   spellCheck={false}
                 />
               </label>
               <div className="mt-1 text-win-dark">
-                {computerLabel(draftName.trim() || displayName)} · \\
+                {computerLabel(displayName)} · \\
                 <strong className="text-win-black">{computerName}</strong>
               </div>
+              <p className="mt-2 text-win-dark">
+                Your URL{" "}
+                <code className="text-win-black">{publicPath}</code> is permanent
+                and will not change. You can edit your display name anytime.
+              </p>
             </>
           )}
         </div>
@@ -100,13 +122,25 @@ export function ProfileWindow() {
             {seedBio}
           </div>
         ) : (
-          <textarea
-            className="win-sunken min-h-0 flex-1 resize-none bg-win-paper p-2 leading-5 text-win-ink outline-none"
-            value={draftBio}
-            onChange={(event) => setDraftBio(event.target.value)}
-            spellCheck={false}
-            aria-label="Bio"
-          />
+          <>
+            <textarea
+              className="win-sunken min-h-0 flex-1 resize-none bg-win-paper p-2 leading-5 text-win-ink outline-none"
+              value={draftBio}
+              onChange={(event) => setDraftBio(clampBio(event.target.value))}
+              spellCheck={false}
+              aria-label="Bio"
+              maxLength={MAX_BIO_CHARS}
+            />
+            <div
+              className="flex shrink-0 justify-end border-t border-win-dark px-1 py-0.5 text-[11px] text-win-dark"
+              aria-live="polite"
+            >
+              <span aria-label="Bio character count">
+                {bioCount}/{MAX_BIO_CHARS}
+                {atBioLimit ? " (limit reached)" : ""}
+              </span>
+            </div>
+          </>
         )}
       </div>
 

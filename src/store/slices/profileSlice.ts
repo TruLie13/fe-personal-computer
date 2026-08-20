@@ -1,6 +1,9 @@
 import type { StateCreator } from "zustand";
 import {
   computerLabel,
+  clampBio,
+  clampComputerName,
+  clampDisplayName,
   DEFAULT_LOCAL_PROFILE,
   saveLocalProfile,
 } from "@/lib/profile";
@@ -36,14 +39,18 @@ export const createProfileSlice: StateCreator<
         ...patch,
         displayName:
           patch.displayName !== undefined
-            ? patch.displayName.trim() || state.localProfile.displayName
+            ? clampDisplayName(
+                patch.displayName.trim() || state.localProfile.displayName,
+              )
             : state.localProfile.displayName,
         computerName:
           patch.computerName !== undefined
-            ? patch.computerName.trim().toUpperCase() ||
-              state.localProfile.computerName
+            ? clampComputerName(
+                patch.computerName.trim() || state.localProfile.computerName,
+              )
             : state.localProfile.computerName,
-        bio: patch.bio !== undefined ? patch.bio : state.localProfile.bio,
+        bio:
+          patch.bio !== undefined ? clampBio(patch.bio) : state.localProfile.bio,
         avatarColor:
           patch.avatarColor !== undefined
             ? patch.avatarColor

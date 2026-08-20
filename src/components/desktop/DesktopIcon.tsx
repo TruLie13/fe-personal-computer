@@ -12,7 +12,7 @@ import {
   setDropTargetHighlight,
 } from "@/lib/dragDrop";
 import { getNetworkUser } from "@/lib/networkSeed";
-import { canDeleteIcon, isPinnedProfileIcon } from "@/lib/storage";
+import { canDeleteIcon, isPinnedProfileIcon, MAX_FILE_TITLE_CHARS, clampFileTitle } from "@/lib/storage";
 import { useDesktopStore } from "@/store/desktopStore";
 import type { DesktopIcon as DesktopIconType } from "@/types/desktop";
 
@@ -295,7 +295,10 @@ export function DesktopIcon({
           ref={inputRef}
           className="win-icon-rename"
           value={draftName}
-          onChange={(event) => setDraftName(event.target.value)}
+          onChange={(event) =>
+            setDraftName(clampFileTitle(event.target.value))
+          }
+          maxLength={MAX_FILE_TITLE_CHARS}
           onClick={(event) => event.stopPropagation()}
           onPointerDown={(event) => event.stopPropagation()}
           onKeyDown={(event) => {
@@ -309,8 +312,7 @@ export function DesktopIcon({
             }
           }}
           onBlur={commitRename}
-        />
-      ) : (
+        />      ) : (
         <span className="win-desktop-icon-label">{icon.label}</span>
       )}
     </button>

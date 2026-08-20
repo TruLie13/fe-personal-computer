@@ -8,6 +8,7 @@ import {
   type ContextMenuEntry,
 } from "@/components/desktop/ContextMenu";
 import { FolderIcon, TextFileIcon, UpFolderIcon } from "@/components/desktop/icons";
+import { useFolderCreateGuard } from "@/hooks/useFolderCreateGuard";
 import { useContextMenuState } from "@/hooks/useContextMenuState";
 import { useDeleteConfirm } from "@/hooks/useDeleteConfirm";
 import { canDeleteIcon } from "@/lib/deleteConfirm";
@@ -17,7 +18,7 @@ import {
   resolveFileDropTarget,
   setDropTargetHighlight,
 } from "@/lib/dragDrop";
-import { isOnDesktop } from "@/lib/storage";
+import { isOnDesktop, MAX_FILE_TITLE_CHARS, clampFileTitle } from "@/lib/storage";
 import {
   selectActiveIcons,
   selectFolderContents,
@@ -48,7 +49,6 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
   const viewMode = useDesktopStore((state) => state.viewMode);
   const openWindow = useDesktopStore((state) => state.openWindow);
   const moveIconToFolder = useDesktopStore((state) => state.moveIconToFolder);
-  const createFolder = useDesktopStore((state) => state.createFolder);
   const createTextFile = useDesktopStore((state) => state.createTextFile);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
   const renamingIconId = useDesktopStore((state) => state.renamingIconId);
@@ -56,6 +56,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
   const renameIcon = useDesktopStore((state) => state.renameIcon);
   const cancelRename = useDesktopStore((state) => state.cancelRename);
   const deleteIcon = useDesktopStore((state) => state.deleteIcon);
+  const { tryCreateFolder, folderLimitDialog } = useFolderCreateGuard();
 
   const readOnly = viewMode === "remote";
   const folder = icons.find(
@@ -286,7 +287,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
                 title="New Folder"
                 aria-label="New Folder"
                 onClick={() => {
-                  const id = createFolder(undefined, undefined, folderId);
+                  const id = tryCreateFolder(undefined, undefined, folderId);
                   if (id) {
                     setSelectedId(id);
                   }
@@ -478,7 +479,10 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
                         ref={inputRef}
                         className="win-icon-rename min-w-0 flex-1 pl-1 text-left"
                         value={draftName}
-                        onChange={(event) => setDraftName(event.target.value)}
+                        onChange={(event) =>
+                          setDraftName(clampFileTitle(event.target.value))
+                        }
+                        maxLength={MAX_FILE_TITLE_CHARS}
                         onClick={(event) => event.stopPropagation()}
                         onPointerDown={(event) => event.stopPropagation()}
                         onKeyDown={(event) => {
@@ -534,6 +538,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
           onCancel={cancelDelete}
         />
       ) : null}
+      {folderLimitDialog}
     </div>
   );
 }

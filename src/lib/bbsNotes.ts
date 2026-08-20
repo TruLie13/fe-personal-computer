@@ -3,6 +3,53 @@ import type { BbsPost } from "@/types/network";
 
 export const BBS_NOTES_STORAGE_KEY = "personal-computer-bbs-notes-v1";
 
+/** Subject line — already mirrored by the compose `maxLength`. */
+export const MAX_BBS_NOTE_TITLE_CHARS = 80;
+/** Body — sticky-note length; long writing belongs in Notepad. */
+export const MAX_BBS_NOTE_CHARS = 1_000;
+/** Creates per author per UTC calendar day (resets 00:00 UTC). */
+export const MAX_BBS_NOTES_PER_UTC_DAY = 5;
+
+/** `YYYY-MM-DD` for the given instant in UTC. */
+export function utcDayKey(isoOrDate: string | Date = new Date()): string {
+  const date =
+    typeof isoOrDate === "string" ? new Date(isoOrDate) : isoOrDate;
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString().slice(0, 10);
+  }
+  return date.toISOString().slice(0, 10);
+}
+
+export function countBbsNotesOnUtcDay(
+  notes: ReadonlyArray<Pick<BbsPost, "createdAt">>,
+  dayKey: string = utcDayKey(),
+): number {
+  return notes.filter((note) => utcDayKey(note.createdAt) === dayKey).length;
+}
+
+export function canPostBbsNoteToday(
+  notes: ReadonlyArray<Pick<BbsPost, "createdAt">>,
+  now: Date = new Date(),
+): boolean {
+  return (
+    countBbsNotesOnUtcDay(notes, utcDayKey(now)) < MAX_BBS_NOTES_PER_UTC_DAY
+  );
+}
+
+export function clampBbsNoteTitle(title: string): string {
+  if (title.length <= MAX_BBS_NOTE_TITLE_CHARS) {
+    return title;
+  }
+  return title.slice(0, MAX_BBS_NOTE_TITLE_CHARS);
+}
+
+export function clampBbsNoteContent(content: string): string {
+  if (content.length <= MAX_BBS_NOTE_CHARS) {
+    return content;
+  }
+  return content.slice(0, MAX_BBS_NOTE_CHARS);
+}
+
 function isBbsPost(value: unknown): value is BbsPost {
   if (!value || typeof value !== "object") {
     return false;

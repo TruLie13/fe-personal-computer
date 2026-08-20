@@ -1,4 +1,8 @@
-import { BBS_NOTES_STORAGE_KEY } from "@/lib/bbsNotes";
+import {
+  BBS_NOTES_STORAGE_KEY,
+  MAX_BBS_NOTE_CHARS,
+  MAX_BBS_NOTES_PER_UTC_DAY,
+} from "@/lib/bbsNotes";
 import {
   FAVORITES_STORAGE_KEY,
   isFavorite,
@@ -356,6 +360,39 @@ describe("desktopStore network", () => {
     expect(useDesktopStore.getState().postBbsNote("  ", "body")).toBe("");
     expect(useDesktopStore.getState().postBbsNote("title", "  ")).toBe("");
     expect(useDesktopStore.getState().localBbsNotes).toHaveLength(0);
+  });
+
+  it("rejects bulletin posts after the UTC daily limit", () => {
+    const day = new Date().toISOString().slice(0, 10);
+    useDesktopStore.setState({
+      localBbsNotes: Array.from(
+        { length: MAX_BBS_NOTES_PER_UTC_DAY },
+        (_, i) => ({
+          id: `bbs-day-${i}`,
+          authorId: LOCAL_USER_ID,
+          title: `Note ${i}`,
+          content: "body",
+          createdAt: `${day}T12:0${i}:00.000Z`,
+        }),
+      ),
+    });
+
+    expect(
+      useDesktopStore.getState().postBbsNote("One more", "Should fail"),
+    ).toBe("");
+    expect(useDesktopStore.getState().localBbsNotes).toHaveLength(
+      MAX_BBS_NOTES_PER_UTC_DAY,
+    );
+  });
+
+  it("clamps bulletin note body on post", () => {
+    const id = useDesktopStore
+      .getState()
+      .postBbsNote("Long body", "y".repeat(MAX_BBS_NOTE_CHARS + 500));
+    expect(id).toBeTruthy();
+    expect(useDesktopStore.getState().localBbsNotes[0]?.content).toHaveLength(
+      MAX_BBS_NOTE_CHARS,
+    );
   });
 
   it("hydrates profile label and merges missing app icons", () => {
