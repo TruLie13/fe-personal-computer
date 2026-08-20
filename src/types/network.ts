@@ -36,6 +36,8 @@ export interface BbsPost {
   title: string;
   content: string;
   createdAt: string;
+  /** Soft-delete; still counts toward the UTC daily create quota. */
+  deletedAt?: string;
 }
 
 /** Public writing discoverable in Story Explorer without following the author. */

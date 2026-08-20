@@ -12,7 +12,7 @@ import type { BbsPost } from "@/types/network";
 
 export type BbsSlice = Pick<
   DesktopStore,
-  "localBbsNotes" | "postBbsNote"
+  "localBbsNotes" | "postBbsNote" | "deleteBbsNote"
 >;
 
 export const createBbsSlice: StateCreator<DesktopStore, [], [], BbsSlice> = (
@@ -43,5 +43,25 @@ export const createBbsSlice: StateCreator<DesktopStore, [], [], BbsSlice> = (
       return { localBbsNotes };
     });
     return note.id;
+  },
+
+  deleteBbsNote: (postId) => {
+    const existing = get().localBbsNotes.find((post) => post.id === postId);
+    if (
+      !existing ||
+      existing.authorId !== LOCAL_USER_ID ||
+      existing.deletedAt
+    ) {
+      return false;
+    }
+    const deletedAt = new Date().toISOString();
+    set((state) => {
+      const localBbsNotes = state.localBbsNotes.map((post) =>
+        post.id === postId ? { ...post, deletedAt } : post,
+      );
+      saveLocalBbsNotes(localBbsNotes);
+      return { localBbsNotes };
+    });
+    return true;
   },
 });

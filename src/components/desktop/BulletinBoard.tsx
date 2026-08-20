@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
-import { TextFileIcon } from "@/components/desktop/icons";
+import { BbsPinIcon } from "@/components/desktop/icons";
 import {
   MasterDetail,
   MasterDetailListItem,
@@ -31,6 +31,7 @@ import type { BbsPost } from "@/types/network";
 export function BulletinBoard() {
   const localBbsNotes = useDesktopStore((state) => state.localBbsNotes);
   const postBbsNote = useDesktopStore((state) => state.postBbsNote);
+  const deleteBbsNote = useDesktopStore((state) => state.deleteBbsNote);
   const posts = useMemo(
     () => mergeBbsPostsNewestFirst(localBbsNotes),
     [localBbsNotes],
@@ -40,6 +41,7 @@ export function BulletinBoard() {
   const [draftTitle, setDraftTitle] = useState("");
   const [draftBody, setDraftBody] = useState("");
   const [showDailyLimit, setShowDailyLimit] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const postsToday = countBbsNotesOnUtcDay(localBbsNotes);
   const atDailyLimit = !canPostBbsNoteToday(localBbsNotes);
@@ -48,6 +50,8 @@ export function BulletinBoard() {
   const selected: BbsPost | undefined = posts.find(
     (post) => post.id === effectiveSelectedId,
   );
+  const isOwnPost =
+    selected != null && selected.authorId === LOCAL_USER_ID;
   const canVisit =
     selected != null &&
     selected.authorId !== LOCAL_USER_ID &&
@@ -92,6 +96,49 @@ export function BulletinBoard() {
   };
 
   const dismissDailyLimit = () => setShowDailyLimit(false);
+
+  const requestDelete = () => {
+    if (!selected || selected.authorId !== LOCAL_USER_ID) {
+      return;
+    }
+    setPendingDeleteId(selected.id);
+  };
+
+  const cancelDelete = () => setPendingDeleteId(null);
+
+  const confirmDelete = () => {
+    if (!pendingDeleteId) {
+      return;
+    }
+    const deletedId = pendingDeleteId;
+    const ok = deleteBbsNote(deletedId);
+    setPendingDeleteId(null);
+    if (!ok) {
+      return;
+    }
+    const remaining = mergeBbsPostsNewestFirst(
+      useDesktopStore.getState().localBbsNotes,
+    );
+    setSelectedId(remaining[0]?.id ?? null);
+  };
+
+  const detailAction = (() => {
+    if (canVisit && selected) {
+      return <VisitPcButton userId={selected.authorId} />;
+    }
+    if (isOwnPost) {
+      return (
+        <button
+          type="button"
+          className="win-raised px-2 py-0.5"
+          onClick={requestDelete}
+        >
+          Delete
+        </button>
+      );
+    }
+    return null;
+  })();
 
   return (
     <div className="relative h-full min-h-0">
@@ -181,7 +228,7 @@ export function BulletinBoard() {
                     onSelect={() => setSelectedId(post.id)}
                     title={
                       <>
-                        <TextFileIcon size={14} className="shrink-0" />
+                        <BbsPinIcon size={14} className="shrink-0" />
                         <span className="min-w-0 flex-1 truncate pl-0.5">
                           {post.title}
                         </span>
@@ -211,14 +258,7 @@ export function BulletinBoard() {
                 : null
             }
             emptyMessage="Select a post to read."
-            action={
-              canVisit && selected ? (
-                <VisitPcButton
-                  userId={selected.authorId}
-                  className="ml-auto"
-                />
-              ) : null
-            }
+            action={detailAction}
           />
         }
       />
@@ -230,6 +270,16 @@ export function BulletinBoard() {
           showCancel={false}
           onConfirm={dismissDailyLimit}
           onCancel={dismissDailyLimit}
+        />
+      ) : null}
+      {pendingDeleteId ? (
+        <ConfirmDialog
+          title="Bulletin Board"
+          message="Delete this post? Your daily post limit is not refunded."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
         />
       ) : null}
     </div>

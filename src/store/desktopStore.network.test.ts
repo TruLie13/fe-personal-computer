@@ -398,6 +398,32 @@ describe("desktopStore network", () => {
     );
   });
 
+  it("soft-deletes a local bbs post without refunding the daily quota", () => {
+    const day = new Date().toISOString().slice(0, 10);
+    useDesktopStore.setState({
+      localBbsNotes: Array.from(
+        { length: MAX_BBS_NOTES_PER_UTC_DAY },
+        (_, i) => ({
+          id: `bbs-del-${i}`,
+          authorId: LOCAL_USER_ID,
+          title: `Note ${i}`,
+          content: "body",
+          createdAt: `${day}T0${i}:00:00.000Z`,
+        }),
+      ),
+    });
+
+    expect(useDesktopStore.getState().deleteBbsNote("bbs-del-0")).toBe(true);
+    const notes = useDesktopStore.getState().localBbsNotes;
+    expect(notes.find((post) => post.id === "bbs-del-0")?.deletedAt).toBeTruthy();
+    expect(mergeBbsPostsNewestFirst(notes).some((p) => p.id === "bbs-del-0")).toBe(
+      false,
+    );
+    expect(
+      useDesktopStore.getState().postBbsNote("After delete", "Should still fail"),
+    ).toBe("");
+  });
+
   it("hydrates profile label and merges missing app icons", () => {
     window.localStorage.setItem(
       PROFILE_STORAGE_KEY,

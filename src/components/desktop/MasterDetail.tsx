@@ -103,15 +103,21 @@ export function MasterDetailPane({
   }
 
   return (
-    <>
-      <div className="mb-1 flex flex-wrap items-center gap-2">
-        <span className="font-bold">{item.title}</span>
-        <span className="text-win-dark">{item.authorLabel}</span>
-        {action}
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="mb-1 flex shrink-0 items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <span className="font-bold">{item.title}</span>{" "}
+          <span className="text-win-dark">{item.authorLabel}</span>
+        </div>
+        {action != null ? (
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+            {action}
+          </div>
+        ) : null}
       </div>
       <div className="win-sunken min-h-0 flex-1 overflow-auto whitespace-pre-wrap bg-win-paper p-2 leading-5 text-win-ink">
         {item.content}
       </div>
-    </>
+    </div>
   );
 }

@@ -24,6 +24,7 @@ export function countBbsNotesOnUtcDay(
   notes: ReadonlyArray<Pick<BbsPost, "createdAt">>,
   dayKey: string = utcDayKey(),
 ): number {
+  // Includes soft-deleted posts — deletes do not refund the daily create quota.
   return notes.filter((note) => utcDayKey(note.createdAt) === dayKey).length;
 }
 
@@ -55,12 +56,15 @@ function isBbsPost(value: unknown): value is BbsPost {
     return false;
   }
   const post = value as BbsPost;
+  const deletedOk =
+    post.deletedAt === undefined || typeof post.deletedAt === "string";
   return (
     typeof post.id === "string" &&
     typeof post.authorId === "string" &&
     typeof post.title === "string" &&
     typeof post.content === "string" &&
-    typeof post.createdAt === "string"
+    typeof post.createdAt === "string" &&
+    deletedOk
   );
 }
 

@@ -100,7 +100,7 @@ export function StoryExplorer() {
           emptyMessage="Select a story to read."
           action={
             author ? (
-              <div className="ml-auto flex flex-wrap items-center gap-1">
+              <>
                 {fileSlug ? (
                   <button
                     type="button"
@@ -112,7 +112,7 @@ export function StoryExplorer() {
                   </button>
                 ) : null}
                 <VisitPcButton userId={author.id} />
-              </div>
+              </>
             ) : null
           }
         />
