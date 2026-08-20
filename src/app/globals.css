@@ -222,6 +222,12 @@ textarea {
   outline: 1px dotted var(--color-win-white);
 }
 
+.win-marquee {
+  border: 1px dotted var(--color-win-white);
+  background: rgb(0 0 128 / 0.25);
+  box-shadow: inset 0 0 0 1px var(--color-win-black);
+}
+
 .win-icon-rename {
   width: 72px;
   margin-top: 2px;

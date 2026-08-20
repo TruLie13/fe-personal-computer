@@ -7,6 +7,7 @@ import { folderWindowTitle, stripTextExtension } from "@/lib/storage";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
 import { isRemote, selectActiveIcons } from "@/store/desktopSelectors";
 import { createWindowFromIcon } from "@/store/desktopWindowFactory";
+import { selectionFromIcon } from "@/store/selectionState";
 import type { DesktopWindow, WindowType } from "@/types/desktop";
 
 export type WindowSlice = Pick<
@@ -126,7 +127,7 @@ export const createWindowSlice: StateCreator<
         windows: [...capped.windows, nextWindow],
         documentWindowFifo: capped.fifo,
         nextZIndex: zIndex + 1,
-        selectedIconId: iconId,
+        ...selectionFromIcon(iconId),
         isStartMenuOpen: false,
       });
       return;
@@ -154,7 +155,7 @@ export const createWindowSlice: StateCreator<
             : { ...window, isFocused: false },
         ),
         nextZIndex: zIndex + 1,
-        selectedIconId: iconId,
+        ...selectionFromIcon(iconId),
         isStartMenuOpen: false,
       });
       return;
@@ -186,7 +187,7 @@ export const createWindowSlice: StateCreator<
                 : { ...window, isFocused: false },
             ),
             nextZIndex: zIndex + 1,
-            selectedIconId: iconId,
+            ...selectionFromIcon(iconId),
             isStartMenuOpen: false,
           });
           return;
@@ -217,7 +218,7 @@ export const createWindowSlice: StateCreator<
           ),
           documentWindowFifo: capped.fifo,
           nextZIndex: zIndex + 1,
-          selectedIconId: iconId,
+          ...selectionFromIcon(iconId),
           isStartMenuOpen: false,
         });
         return;
@@ -253,7 +254,7 @@ export const createWindowSlice: StateCreator<
         ),
         documentWindowFifo: capped.fifo,
         nextZIndex: zIndex + 1,
-        selectedIconId: iconId,
+        ...selectionFromIcon(iconId),
         isStartMenuOpen: false,
       });
       return;
@@ -273,7 +274,7 @@ export const createWindowSlice: StateCreator<
       windows: [...capped.windows, nextWindow],
       documentWindowFifo: capped.fifo,
       nextZIndex: zIndex + 1,
-      selectedIconId: iconId,
+      ...selectionFromIcon(iconId),
       isStartMenuOpen: false,
     });
   },

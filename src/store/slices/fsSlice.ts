@@ -20,6 +20,10 @@ import {
   commitDesktopPatch,
 } from "@/store/desktopWrite";
 import { createId } from "@/store/desktopWindowFactory";
+import {
+  selectionFromIcon,
+  selectionFromIds,
+} from "@/store/selectionState";
 import type { DesktopIcon, TextDocument } from "@/types/desktop";
 
 function slugForNewDocument(
@@ -30,6 +34,55 @@ function slugForNewDocument(
     title,
     documents.map((doc) => doc.slug),
   );
+}
+
+/** Roots to delete, skipping items already covered by a selected parent folder. */
+function planIconRemoval(
+  icons: DesktopIcon[],
+  rootIds: ReadonlyArray<string>,
+): { removedIconIds: Set<string>; removedDocumentIds: Set<string> } {
+  const candidates = rootIds
+    .map((id) => icons.find((item) => item.id === id))
+    .filter(
+      (icon): icon is DesktopIcon =>
+        icon !== undefined && canDeleteIcon(icon),
+    );
+
+  const candidateIds = new Set(candidates.map((icon) => icon.id));
+  const effective = candidates.filter((icon) => {
+    let parentId = icon.parentId ?? null;
+    while (parentId) {
+      if (candidateIds.has(parentId)) {
+        return false;
+      }
+      parentId =
+        icons.find((item) => item.id === parentId)?.parentId ?? null;
+    }
+    return true;
+  });
+
+  const removedIconIds = new Set<string>();
+  const removedDocumentIds = new Set<string>();
+
+  for (const icon of effective) {
+    removedIconIds.add(icon.id);
+    if (icon.documentId) {
+      removedDocumentIds.add(icon.documentId);
+    }
+    if (icon.type === "folder") {
+      for (const child of icons) {
+        if (child.parentId !== icon.id) {
+          continue;
+        }
+        removedIconIds.add(child.id);
+        if (child.documentId) {
+          removedDocumentIds.add(child.documentId);
+        }
+      }
+    }
+  }
+
+  return { removedIconIds, removedDocumentIds };
 }
 
 export type FsSlice = Pick<
@@ -46,6 +99,7 @@ export type FsSlice = Pick<
   | "cancelRename"
   | "renameIcon"
   | "deleteIcon"
+  | "deleteIcons"
 >;
 
 export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
@@ -223,7 +277,7 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
     const icons = [...state.icons, icon];
     set(commitDesktopPatch(state, {
       icons,
-      selectedIconId: id,
+      ...selectionFromIcon(id),
       renamingIconId: id,
       isStartMenuOpen: false,
     }));
@@ -284,7 +338,7 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
     set(commitDesktopPatch(state, {
       documents,
       icons,
-      selectedIconId: iconId,
+      ...selectionFromIcon(iconId),
       renamingIconId: iconId,
       isStartMenuOpen: false,
     }));
@@ -304,7 +358,7 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
     }
     set({
       renamingIconId: iconId,
-      selectedIconId: iconId,
+      ...selectionFromIcon(iconId),
       isStartMenuOpen: false,
     });
   },
@@ -384,32 +438,20 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
   },
 
   deleteIcon: (iconId) => {
+    get().deleteIcons([iconId]);
+  },
+
+  deleteIcons: (iconIds) => {
     if (!assertLocalWritable(get)) {
       return;
     }
     const state = get();
-    const icon = state.icons.find((item) => item.id === iconId);
-    if (!icon || !canDeleteIcon(icon)) {
+    const { removedIconIds, removedDocumentIds } = planIconRemoval(
+      state.icons,
+      iconIds,
+    );
+    if (removedIconIds.size === 0) {
       return;
-    }
-
-    const removedIconIds = new Set<string>([iconId]);
-    const removedDocumentIds = new Set<string>();
-
-    if (icon.documentId) {
-      removedDocumentIds.add(icon.documentId);
-    }
-
-    if (icon.type === "folder") {
-      for (const child of state.icons) {
-        if (child.parentId !== iconId) {
-          continue;
-        }
-        removedIconIds.add(child.id);
-        if (child.documentId) {
-          removedDocumentIds.add(child.documentId);
-        }
-      }
     }
 
     const icons = state.icons.filter((item) => !removedIconIds.has(item.id));
@@ -432,13 +474,15 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
       };
     });
 
+    const nextSelectedIds = state.selectedIconIds.filter(
+      (id) => !removedIconIds.has(id),
+    );
+
     set(commitDesktopPatch(state, {
       icons,
       documents,
       windows,
-      selectedIconId: removedIconIds.has(state.selectedIconId ?? "")
-        ? null
-        : state.selectedIconId,
+      ...selectionFromIds(nextSelectedIds),
       renamingIconId: removedIconIds.has(state.renamingIconId ?? "")
         ? null
         : state.renamingIconId,
@@ -557,10 +601,13 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
       icons,
       documents,
       windows,
-      selectedIconId:
-        state.selectedIconId === iconId && folderId !== null
-          ? null
-          : state.selectedIconId,
+      ...(state.selectedIconId === iconId && folderId !== null
+        ? selectionFromIcon(null)
+        : state.selectedIconIds.includes(iconId) && folderId !== null
+          ? selectionFromIds(
+              state.selectedIconIds.filter((id) => id !== iconId),
+            )
+          : {}),
     }));
   },
 });

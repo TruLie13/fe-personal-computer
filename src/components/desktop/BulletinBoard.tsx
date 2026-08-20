@@ -41,7 +41,7 @@ export function BulletinBoard() {
   const [draftBody, setDraftBody] = useState("");
   const [showDailyLimit, setShowDailyLimit] = useState(false);
 
-  const notesToday = countBbsNotesOnUtcDay(localBbsNotes);
+  const postsToday = countBbsNotesOnUtcDay(localBbsNotes);
   const atDailyLimit = !canPostBbsNoteToday(localBbsNotes);
 
   const effectiveSelectedId = selectedId ?? posts[0]?.id ?? null;
@@ -56,7 +56,7 @@ export function BulletinBoard() {
   const charCount = draftBody.length;
   const atCharLimit = charCount >= MAX_BBS_NOTE_CHARS;
 
-  const onNewNoteClick = () => {
+  const onNewPostClick = () => {
     if (composing) {
       setComposing(false);
       return;
@@ -99,14 +99,14 @@ export function BulletinBoard() {
         header={
           <>
             <span className="min-w-0 flex-1 text-win-dark">
-              Bulletin Board — leave a note for the community
+              Bulletin Board — leave a post for the community
             </span>
             <button
               type="button"
               className="win-raised px-2 py-0.5"
-              onClick={onNewNoteClick}
+              onClick={onNewPostClick}
             >
-              {composing ? "Cancel" : "New Note"}
+              {composing ? "Cancel" : "New Post"}
             </button>
           </>
         }
@@ -134,7 +134,7 @@ export function BulletinBoard() {
                   }
                   placeholder="Say hello, ask for readers, share what you're working on…"
                   spellCheck={false}
-                  aria-label="Note content"
+                  aria-label="Post content"
                   maxLength={MAX_BBS_NOTE_CHARS}
                 />
               </div>
@@ -148,8 +148,8 @@ export function BulletinBoard() {
                     {atCharLimit ? " (limit reached)" : ""}
                   </span>
                   <span aria-hidden="true"> · </span>
-                  <span aria-label="Daily note count">
-                    {notesToday}/{MAX_BBS_NOTES_PER_UTC_DAY} today
+                  <span aria-label="Daily post count">
+                    {postsToday}/{MAX_BBS_NOTES_PER_UTC_DAY} today
                   </span>
                 </span>
                 <button
@@ -168,7 +168,7 @@ export function BulletinBoard() {
         list={
           posts.length === 0 ? (
             <p className="p-2 text-win-paper-muted">
-              No notes yet. Post the first one.
+              No posts yet. Be the first.
             </p>
           ) : (
             <ul className="list-none">
@@ -210,7 +210,7 @@ export function BulletinBoard() {
                   }
                 : null
             }
-            emptyMessage="Select a note to read."
+            emptyMessage="Select a post to read."
             action={
               canVisit && selected ? (
                 <VisitPcButton
@@ -225,7 +225,7 @@ export function BulletinBoard() {
       {showDailyLimit ? (
         <ConfirmDialog
           title="Bulletin Board"
-          message={`You have reached the daily limit of ${MAX_BBS_NOTES_PER_UTC_DAY} notes (${notesToday}/${MAX_BBS_NOTES_PER_UTC_DAY}).\n\nThe limit resets at midnight UTC.`}
+          message={`You have reached the daily limit of ${MAX_BBS_NOTES_PER_UTC_DAY} posts (${postsToday}/${MAX_BBS_NOTES_PER_UTC_DAY}).\n\nThe limit resets at midnight UTC.`}
           confirmLabel="OK"
           showCancel={false}
           onConfirm={dismissDailyLimit}

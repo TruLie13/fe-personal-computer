@@ -1,48 +1,56 @@
 import { useCallback, useMemo, useState } from "react";
-import { buildDeleteConfirmMessage } from "@/lib/deleteConfirm";
+import {
+  buildBulkDeleteConfirmMessage,
+  buildDeleteConfirmMessage,
+  deletableSelection,
+} from "@/lib/deleteConfirm";
 import type { DesktopIcon } from "@/types/desktop";
 
 export function useDeleteConfirm(icons: DesktopIcon[]) {
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
 
-  const pendingDeleteIcon = useMemo(
-    () =>
-      pendingDeleteId
-        ? icons.find((icon) => icon.id === pendingDeleteId)
-        : undefined,
-    [icons, pendingDeleteId],
+  const pendingTargets = useMemo(
+    () => deletableSelection(icons, pendingDeleteIds),
+    [icons, pendingDeleteIds],
   );
 
-  const deletePrompt = useMemo(
-    () =>
-      pendingDeleteIcon
-        ? buildDeleteConfirmMessage(pendingDeleteIcon, icons)
-        : null,
-    [icons, pendingDeleteIcon],
-  );
+  const deletePrompt = useMemo(() => {
+    if (pendingTargets.length === 0) {
+      return null;
+    }
+    if (pendingTargets.length === 1 && pendingTargets[0]) {
+      return buildDeleteConfirmMessage(pendingTargets[0], icons);
+    }
+    return buildBulkDeleteConfirmMessage(pendingTargets);
+  }, [icons, pendingTargets]);
 
   const requestDelete = useCallback((iconId: string) => {
-    setPendingDeleteId(iconId);
+    setPendingDeleteIds([iconId]);
+  }, []);
+
+  const requestDeleteMany = useCallback((iconIds: ReadonlyArray<string>) => {
+    setPendingDeleteIds([...iconIds]);
   }, []);
 
   const cancelDelete = useCallback(() => {
-    setPendingDeleteId(null);
+    setPendingDeleteIds([]);
   }, []);
 
-  /** Clears pending id and returns it so the caller can delete + side-effects. */
-  const confirmDelete = useCallback((): string | null => {
-    if (!pendingDeleteId) {
-      return null;
+  /** Clears pending ids and returns them so the caller can delete. */
+  const confirmDelete = useCallback((): string[] => {
+    if (pendingDeleteIds.length === 0) {
+      return [];
     }
-    const id = pendingDeleteId;
-    setPendingDeleteId(null);
-    return id;
-  }, [pendingDeleteId]);
+    const ids = pendingDeleteIds;
+    setPendingDeleteIds([]);
+    return ids;
+  }, [pendingDeleteIds]);
 
   return {
-    pendingDeleteId,
+    pendingDeleteIds,
     deletePrompt,
     requestDelete,
+    requestDeleteMany,
     cancelDelete,
     confirmDelete,
   };

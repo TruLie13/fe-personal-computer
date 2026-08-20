@@ -93,7 +93,7 @@ function WindowBody({
         this machine.
       </p>
       <p className="text-win-dark">
-        Open your PC profile for bio, Bulletin Board for notes, Story Explorer
+        Open your PC profile for bio, Bulletin Board for posts, Story Explorer
         for public writing, and Network Neighborhood to visit other PCs on the
         intranet.
       </p>

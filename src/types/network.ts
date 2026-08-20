@@ -29,7 +29,7 @@ export interface NetworkUser {
   snapshot: RemoteDesktopSnapshot;
 }
 
-/** Community reach-out note on the Bulletin Board (not a story file). */
+/** Community reach-out post on the Bulletin Board (not a story file). */
 export interface BbsPost {
   id: string;
   authorId: NetworkUserId;

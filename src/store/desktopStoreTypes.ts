@@ -25,6 +25,8 @@ export interface DesktopStore {
   contentDark: boolean;
   taskbarHeight: number;
   selectedIconId: string | null;
+  /** Multi-select (marquee / additive). Primary is still `selectedIconId`. */
+  selectedIconIds: string[];
   isStartMenuOpen: boolean;
   nextZIndex: number;
   hydrated: boolean;
@@ -35,6 +37,7 @@ export interface DesktopStore {
   localProfile: UserProfile;
   hydrate: () => void;
   selectIcon: (iconId: string | null) => void;
+  setSelectedIcons: (iconIds: string[]) => void;
   toggleStartMenu: () => void;
   closeStartMenu: () => void;
   openWindow: (iconId: string) => void;
@@ -74,6 +77,8 @@ export interface DesktopStore {
   cancelRename: () => void;
   renameIcon: (iconId: string, label: string) => void;
   deleteIcon: (iconId: string) => void;
+  /** Delete many deletable icons in one FS write (skips pinned / apps). */
+  deleteIcons: (iconIds: ReadonlyArray<string>) => void;
   setWallpaper: (color: string) => void;
   setTitleBarColor: (color: string) => void;
   setContentDark: (enabled: boolean) => void;
