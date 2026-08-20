@@ -7,6 +7,7 @@ import {
 } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
 import { useSavedFlash } from "@/hooks/useSavedFlash";
+import { useTextFileCreateGuard } from "@/hooks/useTextFileCreateGuard";
 import {
   MAX_TEXT_FILE_CHARS,
   MAX_TEXT_FILES_PER_USER,
@@ -72,6 +73,7 @@ export function TextEditor({
   });
   const [confirmClose, setConfirmClose] = useState(false);
   const { savedFlash, flashSaved } = useSavedFlash();
+  const { showTextFileLimit, textFileLimitDialog } = useTextFileCreateGuard();
 
   useEffect(() => {
     if (document) {
@@ -107,7 +109,11 @@ export function TextEditor({
     !readOnly && documentId == null && !canCreateTextFile(documents);
 
   const onSave = () => {
-    if (readOnly || cannotSaveNewFile) {
+    if (readOnly) {
+      return;
+    }
+    if (cannotSaveNewFile) {
+      showTextFileLimit();
       return;
     }
     saveDocumentFromWindow(windowId, title, content);
@@ -125,6 +131,7 @@ export function TextEditor({
       return;
     }
     if (cannotSaveNewFile) {
+      showTextFileLimit();
       return;
     }
     saveDocumentFromWindow(windowId, title, content);
@@ -150,9 +157,8 @@ export function TextEditor({
         ) : (
           <button
             type="button"
-            className="win-raised px-3 py-0.5 disabled:opacity-60"
+            className="win-raised px-3 py-0.5"
             onClick={onSave}
-            disabled={cannotSaveNewFile}
           >
             Save
           </button>
@@ -212,6 +218,7 @@ export function TextEditor({
           onCancel={() => setConfirmClose(false)}
         />
       ) : null}
+      {textFileLimitDialog}
     </div>
   );
 }

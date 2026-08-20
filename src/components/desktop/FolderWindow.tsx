@@ -9,6 +9,7 @@ import {
 } from "@/components/desktop/ContextMenu";
 import { FolderIcon, TextFileIcon, UpFolderIcon } from "@/components/desktop/icons";
 import { useFolderCreateGuard } from "@/hooks/useFolderCreateGuard";
+import { useTextFileCreateGuard } from "@/hooks/useTextFileCreateGuard";
 import { useContextMenuState } from "@/hooks/useContextMenuState";
 import { useDeleteConfirm } from "@/hooks/useDeleteConfirm";
 import { canDeleteIcon } from "@/lib/deleteConfirm";
@@ -49,7 +50,6 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
   const viewMode = useDesktopStore((state) => state.viewMode);
   const openWindow = useDesktopStore((state) => state.openWindow);
   const moveIconToFolder = useDesktopStore((state) => state.moveIconToFolder);
-  const createTextFile = useDesktopStore((state) => state.createTextFile);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
   const renamingIconId = useDesktopStore((state) => state.renamingIconId);
   const startRename = useDesktopStore((state) => state.startRename);
@@ -57,6 +57,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
   const cancelRename = useDesktopStore((state) => state.cancelRename);
   const deleteIcon = useDesktopStore((state) => state.deleteIcon);
   const { tryCreateFolder, folderLimitDialog } = useFolderCreateGuard();
+  const { tryCreateTextFile, textFileLimitDialog } = useTextFileCreateGuard();
 
   const readOnly = viewMode === "remote";
   const folder = icons.find(
@@ -301,7 +302,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
                 title="New Text Document"
                 aria-label="New Text Document"
                 onClick={() => {
-                  const id = createTextFile(folderId);
+                  const id = tryCreateTextFile(folderId);
                   if (id) {
                     setSelectedId(id);
                   }
@@ -539,6 +540,7 @@ export function FolderWindow({ folderId }: FolderWindowProps) {
         />
       ) : null}
       {folderLimitDialog}
+      {textFileLimitDialog}
     </div>
   );
 }

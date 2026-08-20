@@ -37,6 +37,7 @@ describe("desktopStore network", () => {
       icons: DEFAULT_ICONS,
       documents: DEFAULT_DOCUMENTS,
       windows: [],
+      documentWindowFifo: [],
       wallpaper: DEFAULT_WALLPAPER,
       titleBarColor: DEFAULT_TITLE_BAR_COLOR,
       contentDark: false,
@@ -480,7 +481,11 @@ describe("desktopStore network", () => {
     useDesktopStore.getState().visitRemotePc("maya");
     useDesktopStore.getState().goHome();
     useDesktopStore.getState().visitRemotePc("maya");
-    useDesktopStore.setState({ windows: [], nextZIndex: 1 });
+    useDesktopStore.setState({
+      windows: [],
+      documentWindowFifo: [],
+      nextZIndex: 1,
+    });
 
     useDesktopStore.getState().openProfile();
     const { windows } = useDesktopStore.getState();
