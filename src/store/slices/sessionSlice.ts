@@ -9,6 +9,7 @@ import {
   PROFILE_ICON_ID,
   loadDesktopState,
 } from "@/lib/storage";
+import { loadWindowSession } from "@/lib/windowSession";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
 
 export type SessionSlice = Pick<
@@ -45,6 +46,9 @@ export const createSessionSlice: StateCreator<
         ? { ...icon, label: computerLabel(localProfile.displayName) }
         : icon,
     );
+    const session = loadWindowSession(icons);
+    const existingWindows = get().windows;
+    const restoreSession = existingWindows.length === 0;
     set({
       icons,
       documents: saved.documents,
@@ -55,6 +59,13 @@ export const createSessionSlice: StateCreator<
       favorites: loadFavorites(),
       localBbsNotes: loadLocalBbsNotes(),
       localProfile,
+      windows: restoreSession ? (session?.windows ?? []) : existingWindows,
+      documentWindowFifo: restoreSession
+        ? (session?.documentWindowFifo ?? [])
+        : get().documentWindowFifo,
+      nextZIndex: restoreSession
+        ? (session?.nextZIndex ?? 1)
+        : get().nextZIndex,
       hydrated: true,
     });
   },

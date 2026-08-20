@@ -23,6 +23,7 @@ import {
   DEFAULT_WALLPAPER,
   STORAGE_KEY,
 } from "@/lib/storage";
+import { WINDOW_SESSION_STORAGE_KEY } from "@/lib/windowSession";
 import {
   selectActiveDocuments,
   selectActiveIcons,
@@ -449,6 +450,47 @@ describe("desktopStore network", () => {
     expect(state.wallpaper).toBe(DEFAULT_WALLPAPER);
     expect(state.icons).toEqual(DEFAULT_ICONS);
     expect(state.documents).toEqual(DEFAULT_DOCUMENTS);
+  });
+
+  it("loads open windows from the window session on hydrate", () => {
+    window.localStorage.setItem(
+      WINDOW_SESSION_STORAGE_KEY,
+      JSON.stringify({
+        windows: [
+          {
+            id: "sess-1",
+            title: "Untitled - Notepad",
+            type: "editor",
+            iconId: "notepad",
+            documentId: null,
+            isOpen: true,
+            isFocused: true,
+            isMinimized: false,
+            x: 88,
+            y: 44,
+            width: 480,
+            height: 360,
+            zIndex: 2,
+          },
+        ],
+        documentWindowFifo: ["sess-1"],
+        nextZIndex: 3,
+      }),
+    );
+
+    useDesktopStore.getState().hydrate();
+    const state = useDesktopStore.getState();
+    expect(state.windows).toHaveLength(1);
+    expect(state.windows[0]).toEqual(
+      expect.objectContaining({
+        id: "sess-1",
+        x: 88,
+        y: 44,
+        isOpen: true,
+      }),
+    );
+    expect(state.documentWindowFifo).toEqual(["sess-1"]);
+    expect(state.nextZIndex).toBe(3);
   });
 
   it("does not re-hydrate after the first successful load", () => {

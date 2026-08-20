@@ -30,9 +30,9 @@ describe("Desktop", () => {
 
   it("closes all windows from the desktop context menu", async () => {
     const user = userEvent.setup();
+    render(<Desktop />);
     useDesktopStore.getState().openWindow("notepad");
     useDesktopStore.getState().openWindow("bulletin-board");
-    render(<Desktop />);
 
     expect(
       useDesktopStore.getState().windows.filter((window) => window.isOpen),

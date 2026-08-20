@@ -1,6 +1,7 @@
 import type { StateCreator } from "zustand";
 import { isFavorite } from "@/lib/favorites";
 import { getNetworkUser, LOCAL_USER_ID } from "@/lib/networkSeed";
+import { loadWindowSession } from "@/lib/windowSession";
 import { persistFavorites } from "@/store/desktopPersist";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
 import { createWindowFromIcon } from "@/store/desktopWindowFactory";
@@ -77,15 +78,16 @@ export const createNetworkSlice: StateCreator<
   },
 
   goHome: () => {
+    const session = loadWindowSession(get().icons);
     set({
       viewMode: "local",
       remoteUserId: null,
-      windows: [],
-      documentWindowFifo: [],
+      windows: session?.windows ?? [],
+      documentWindowFifo: session?.documentWindowFifo ?? [],
       selectedIconId: null,
       renamingIconId: null,
       isStartMenuOpen: false,
-      nextZIndex: 1,
+      nextZIndex: session?.nextZIndex ?? 1,
     });
   },
 
