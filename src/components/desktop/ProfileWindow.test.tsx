@@ -59,6 +59,53 @@ describe("ProfileWindow", () => {
     expect(screen.getByText("Saved")).toBeInTheDocument();
   });
 
+  it("clamps bio to the character limit", async () => {
+    const user = userEvent.setup();
+    render(<ProfileWindow />);
+
+    const bio = screen.getByLabelText("Bio");
+    await user.clear(bio);
+    await user.click(bio);
+    await user.paste("x".repeat(600));
+
+    expect(bio).toHaveValue("x".repeat(500));
+    expect(screen.getByLabelText("Bio character count")).toHaveTextContent(
+      "500/500 (limit reached)",
+    );
+  });
+
+  it("keeps the saved identity preview until Save", async () => {
+    const user = userEvent.setup();
+    render(<ProfileWindow />);
+
+    const preview = () =>
+      screen.getByText("WRITER-PC").parentElement?.textContent ?? "";
+
+    expect(preview()).toContain("Writer's PC");
+
+    const nameInput = screen.getByDisplayValue("Writer");
+    await user.clear(nameInput);
+    await user.type(nameInput, "Zay");
+
+    expect(preview()).toContain("Writer's PC");
+    expect(preview()).not.toContain("Zay's PC");
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(preview()).toContain("Zay's PC");
+    expect(preview()).toContain("WRITER-PC");
+  });
+
+  it("shows the permanent URL note on the local profile card", () => {
+    render(<ProfileWindow />);
+
+    expect(screen.getByText(/permanent/i)).toBeInTheDocument();
+    expect(screen.getByText("/C/users/local")).toBeInTheDocument();
+    expect(
+      screen.getByText(/You can edit your display name anytime/i),
+    ).toBeInTheDocument();
+  });
+
   it("shows remote bio actions and can go home", async () => {
     const user = userEvent.setup();
     useDesktopStore.getState().visitRemotePc("maya");
@@ -67,6 +114,7 @@ describe("ProfileWindow", () => {
     expect(screen.getByText("Maya Chen")).toBeInTheDocument();
     expect(screen.getByText("Read-only visit")).toBeInTheDocument();
     expect(screen.getByText(/Poet of buses/i)).toBeInTheDocument();
+    expect(screen.queryByText(/permanent/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Add to Network" }));
     expect(useDesktopStore.getState().favorites).toHaveLength(1);

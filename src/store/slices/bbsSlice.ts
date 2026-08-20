@@ -1,5 +1,10 @@
 import type { StateCreator } from "zustand";
-import { saveLocalBbsNotes } from "@/lib/bbsNotes";
+import {
+  canPostBbsNoteToday,
+  clampBbsNoteContent,
+  clampBbsNoteTitle,
+  saveLocalBbsNotes,
+} from "@/lib/bbsNotes";
 import { LOCAL_USER_ID } from "@/lib/networkSeed";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
 import { createId } from "@/store/desktopWindowFactory";
@@ -12,13 +17,17 @@ export type BbsSlice = Pick<
 
 export const createBbsSlice: StateCreator<DesktopStore, [], [], BbsSlice> = (
   set,
+  get,
 ) => ({
   localBbsNotes: [],
 
   postBbsNote: (title, content) => {
-    const trimmedTitle = title.trim();
-    const trimmedContent = content.trim();
+    const trimmedTitle = clampBbsNoteTitle(title.trim());
+    const trimmedContent = clampBbsNoteContent(content.trim());
     if (!trimmedTitle || !trimmedContent) {
+      return "";
+    }
+    if (!canPostBbsNoteToday(get().localBbsNotes)) {
       return "";
     }
     const note: BbsPost = {

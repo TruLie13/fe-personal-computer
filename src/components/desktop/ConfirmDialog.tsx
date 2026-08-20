@@ -12,6 +12,8 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   discardLabel?: string;
+  /** When false, only the confirm (OK) button is shown — e.g. limit alerts. */
+  showCancel?: boolean;
 }
 
 export function ConfirmDialog({
@@ -23,9 +25,10 @@ export function ConfirmDialog({
   confirmLabel = "Yes",
   cancelLabel = "No",
   discardLabel = "No",
+  showCancel = true,
 }: ConfirmDialogProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
-  const threeWay = typeof onDiscard === "function";
+  const threeWay = showCancel && typeof onDiscard === "function";
 
   useEffect(() => {
     confirmRef.current?.focus();
@@ -101,13 +104,15 @@ export function ConfirmDialog({
               {discardLabel}
             </button>
           ) : null}
-          <button
-            type="button"
-            className="win-raised min-w-[75px] px-4 py-1"
-            onClick={onCancel}
-          >
-            {threeWay ? "Cancel" : cancelLabel}
-          </button>
+          {showCancel ? (
+            <button
+              type="button"
+              className="win-raised min-w-[75px] px-4 py-1"
+              onClick={onCancel}
+            >
+              {threeWay ? "Cancel" : cancelLabel}
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

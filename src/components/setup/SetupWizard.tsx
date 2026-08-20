@@ -13,6 +13,8 @@ import {
   normalizeUsername,
   userInfoError,
 } from "@/lib/setupAccount";
+import { checkUsernameAvailabilityOnNext } from "@/lib/usernameAvailabilityClient";
+import { usernameBlurError } from "@/lib/usernames";
 
 export type SetupStep = "welcome" | "user-info" | "analyzing";
 
@@ -42,11 +44,15 @@ export function SetupWizard({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [usernameFieldError, setUsernameFieldError] = useState<string | null>(
+    null,
+  );
+  const [checkingUsername, setCheckingUsername] = useState(false);
   const [progress, setProgress] = useState(0);
   const [exitOpen, setExitOpen] = useState(false);
 
   const backDisabled = step === "welcome" || step === "analyzing";
-  const nextDisabled = step === "analyzing";
+  const nextDisabled = step === "analyzing" || checkingUsername;
   const nextIsDefault = step !== "analyzing";
 
   useEffect(() => {
@@ -103,12 +109,13 @@ export function SetupWizard({
       return;
     }
     setFormError(null);
+    setUsernameFieldError(null);
     if (step === "user-info") {
       setStep("welcome");
     }
   }
 
-  function goNext() {
+  async function goNext() {
     if (nextDisabled) {
       return;
     }
@@ -122,14 +129,37 @@ export function SetupWizard({
         setFormError(error);
         return;
       }
+
+      const reservedOrFormat = usernameBlurError(username);
+      if (reservedOrFormat) {
+        setUsernameFieldError(reservedOrFormat);
+        setFormError(reservedOrFormat);
+        return;
+      }
+
+      setCheckingUsername(true);
       setFormError(null);
-      setStep("analyzing");
+      try {
+        const availabilityError = await checkUsernameAvailabilityOnNext(username);
+        if (availabilityError) {
+          setFormError(availabilityError);
+          return;
+        }
+        setUsernameFieldError(null);
+        setStep("analyzing");
+      } finally {
+        setCheckingUsername(false);
+      }
     }
   }
 
   function onUserInfoSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    goNext();
+    void goNext();
+  }
+
+  function onUsernameBlur() {
+    setUsernameFieldError(usernameBlurError(username));
   }
 
   const handle = normalizeUsername(username);
@@ -162,10 +192,14 @@ export function SetupWizard({
                 password={password}
                 handle={handle}
                 formError={formError}
+                usernameFieldError={usernameFieldError}
+                checkingUsername={checkingUsername}
                 onUsernameChange={(value) => {
                   setUsername(value);
                   setFormError(null);
+                  setUsernameFieldError(null);
                 }}
+                onUsernameBlur={onUsernameBlur}
                 onEmailChange={(value) => {
                   setEmail(value);
                   setFormError(null);
@@ -205,9 +239,15 @@ export function SetupWizard({
             disabled={nextDisabled}
             accessKey="n"
             aria-label="Next"
-            onClick={goNext}
+            onClick={() => {
+              void goNext();
+            }}
           >
-            <u>N</u>ext &gt;
+            {checkingUsername ? "Checking…" : (
+              <>
+                <u>N</u>ext &gt;
+              </>
+            )}
           </button>
           <button
             type="button"
@@ -270,7 +310,10 @@ function UserInfoStep({
   password,
   handle,
   formError,
+  usernameFieldError,
+  checkingUsername,
   onUsernameChange,
+  onUsernameBlur,
   onEmailChange,
   onPasswordChange,
   onSubmit,
@@ -280,33 +323,52 @@ function UserInfoStep({
   password: string;
   handle: string;
   formError: string | null;
+  usernameFieldError: string | null;
+  checkingUsername: boolean;
   onUsernameChange: (value: string) => void;
+  onUsernameBlur: () => void;
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
     <form onSubmit={onSubmit}>
+      <fieldset disabled={checkingUsername} className="min-w-0 border-0 p-0">
       <h1 className="win-wizard-title mb-3">User Information</h1>
       <p>
         Type a username for this computer. You can also type an e-mail address
         and a password so you can log on later.
       </p>
-      <div className="mt-5 grid grid-cols-[104px_minmax(0,1fr)] items-center gap-x-3 gap-y-3">
-        <label htmlFor="setup-username">
+      <p className="mt-3 text-win-dark">
+        Your username becomes your permanent URL.
+      </p>
+      <div className="mt-5 grid grid-cols-[104px_minmax(0,1fr)] items-start gap-x-3 gap-y-3">
+        <label htmlFor="setup-username" className="pt-1">
           <u>U</u>sername:
         </label>
-        <input
-          id="setup-username"
-          name="username"
-          autoComplete="username"
-          accessKey="u"
-          aria-label="Username"
-          value={username}
-          onChange={(event) => onUsernameChange(event.target.value)}
-          className="win-sunken bg-win-white px-1.5 py-1 text-[15px] text-win-black outline-none"
-        />
-        <label htmlFor="setup-email">
+        <div className="min-w-0">
+          <input
+            id="setup-username"
+            name="username"
+            autoComplete="username"
+            accessKey="u"
+            aria-label="Username"
+            aria-invalid={usernameFieldError ? true : undefined}
+            aria-describedby={
+              usernameFieldError ? "setup-username-error" : undefined
+            }
+            value={username}
+            onChange={(event) => onUsernameChange(event.target.value)}
+            onBlur={onUsernameBlur}
+            className="win-sunken w-full bg-win-white px-1.5 py-1 text-[15px] text-win-black outline-none"
+          />
+          {usernameFieldError ? (
+            <p id="setup-username-error" className="mt-1" role="alert">
+              {usernameFieldError}
+            </p>
+          ) : null}
+        </div>
+        <label htmlFor="setup-email" className="pt-1">
           <u>E</u>-mail:
         </label>
         <input
@@ -342,11 +404,12 @@ function UserInfoStep({
         </code>{" "}
         on the network.
       </p>
-      {formError ? (
+      {formError && formError !== usernameFieldError ? (
         <p className="mt-3" role="alert">
           {formError}
         </p>
       ) : null}
+      </fieldset>
     </form>
   );
 }

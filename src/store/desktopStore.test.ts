@@ -4,6 +4,7 @@ import {
   DEFAULT_TITLE_BAR_COLOR,
   DEFAULT_WALLPAPER,
   STORAGE_KEY,
+  MAX_FOLDERS_PER_USER,
   MAX_TEXT_FILE_CHARS,
   MAX_TEXT_FILES_PER_USER,
   folderWindowTitle,
@@ -709,6 +710,23 @@ describe("desktopStore", () => {
     expect(useDesktopStore.getState().documents).toHaveLength(
       MAX_TEXT_FILES_PER_USER,
     );
+  });
+
+  it("blocks createFolder when the folder limit is reached", () => {
+    const { createFolder } = useDesktopStore.getState();
+    const existing = useDesktopStore
+      .getState()
+      .icons.filter((icon) => icon.type === "folder").length;
+    for (let i = existing; i < MAX_FOLDERS_PER_USER; i += 1) {
+      expect(createFolder(`Folder ${i}`)).toBeTruthy();
+    }
+    expect(
+      useDesktopStore.getState().icons.filter((icon) => icon.type === "folder"),
+    ).toHaveLength(MAX_FOLDERS_PER_USER);
+    expect(createFolder("one-too-many")).toBeNull();
+    expect(
+      useDesktopStore.getState().icons.filter((icon) => icon.type === "folder"),
+    ).toHaveLength(MAX_FOLDERS_PER_USER);
   });
 
   it("blocks saving a new Notepad document when the text file limit is reached", () => {

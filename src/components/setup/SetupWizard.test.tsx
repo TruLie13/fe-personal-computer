@@ -21,6 +21,14 @@ describe("SetupWizard", () => {
   beforeEach(() => {
     push.mockClear();
     resetDesktopStore();
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: "available", message: null }),
+    }) as jest.Mock;
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it("starts on the welcome step with the next parts of Setup", () => {
@@ -48,6 +56,7 @@ describe("SetupWizard", () => {
     ).toBeInTheDocument();
     await user.type(screen.getByLabelText(/username/i), "Ada");
     expect(screen.getByText(/C:\\users\\ada/i)).toBeInTheDocument();
+    expect(screen.getByText(/permanent URL/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /back/i }));
     expect(
       screen.getByText(/the next three parts of setup are/i),
@@ -64,6 +73,37 @@ describe("SetupWizard", () => {
     await user.type(screen.getByLabelText(/username/i), "ada");
     await user.click(screen.getByRole("button", { name: /next/i }));
     expect(screen.getByRole("alert")).toHaveTextContent(/e-mail/i);
+  });
+
+  it("shows reserved username feedback when the username field loses focus", async () => {
+    const user = userEvent.setup();
+    renderWizard();
+    await user.click(screen.getByRole("button", { name: /next/i }));
+    await user.type(screen.getByLabelText(/username/i), "setup");
+    await user.tab();
+    expect(screen.getByRole("alert")).toHaveTextContent(/not available/i);
+  });
+
+  it("blocks Next when the username is already taken", async () => {
+    const user = userEvent.setup();
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        status: "taken",
+        message: "That username is already taken.",
+      }),
+    });
+    renderWizard();
+    await user.click(screen.getByRole("button", { name: /next/i }));
+    await user.type(screen.getByLabelText(/username/i), "claimed");
+    await user.type(screen.getByLabelText(/e-mail/i), "claimed@example.com");
+    await user.type(screen.getByLabelText(/password/i), "secret1");
+    await user.click(screen.getByRole("button", { name: /next/i }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/already taken/i);
+    expect(
+      screen.queryByRole("heading", { name: /analyzing your computer/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("asks before exiting Setup", async () => {

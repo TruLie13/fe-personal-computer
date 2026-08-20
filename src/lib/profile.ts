@@ -3,6 +3,38 @@ import { profileMetaTitle } from "@/lib/seo/brand";
 
 export const PROFILE_STORAGE_KEY = "personal-computer-profile-v1";
 
+/** Profile bio body (abuse + SEO payload size). */
+export const MAX_BIO_CHARS = 500;
+/** Shown as `{Name}'s Computer` — not the URL. */
+export const MAX_DISPLAY_NAME_CHARS = 25;
+/**
+ * Win95-style PC name (`WRITER-PC`). Not the public URL — that is `username`
+ * (2–20 chars). Soft cap for when computerName becomes editable.
+ */
+export const MAX_COMPUTER_NAME_CHARS = 24;
+
+export function clampDisplayName(value: string): string {
+  if (value.length <= MAX_DISPLAY_NAME_CHARS) {
+    return value;
+  }
+  return value.slice(0, MAX_DISPLAY_NAME_CHARS);
+}
+
+export function clampComputerName(value: string): string {
+  const upper = value.toUpperCase();
+  if (upper.length <= MAX_COMPUTER_NAME_CHARS) {
+    return upper;
+  }
+  return upper.slice(0, MAX_COMPUTER_NAME_CHARS);
+}
+
+export function clampBio(value: string): string {
+  if (value.length <= MAX_BIO_CHARS) {
+    return value;
+  }
+  return value.slice(0, MAX_BIO_CHARS);
+}
+
 export const DEFAULT_LOCAL_PROFILE: UserProfile = {
   displayName: "Writer",
   computerName: "WRITER-PC",
@@ -31,15 +63,15 @@ export function loadLocalProfile(): UserProfile {
     return {
       displayName:
         typeof parsed.displayName === "string" && parsed.displayName.trim()
-          ? parsed.displayName.trim()
+          ? clampDisplayName(parsed.displayName.trim())
           : DEFAULT_LOCAL_PROFILE.displayName,
       computerName:
         typeof parsed.computerName === "string" && parsed.computerName.trim()
-          ? parsed.computerName.trim().toUpperCase()
+          ? clampComputerName(parsed.computerName.trim())
           : DEFAULT_LOCAL_PROFILE.computerName,
       bio:
         typeof parsed.bio === "string"
-          ? parsed.bio
+          ? clampBio(parsed.bio)
           : DEFAULT_LOCAL_PROFILE.bio,
       avatarColor:
         typeof parsed.avatarColor === "string" &&

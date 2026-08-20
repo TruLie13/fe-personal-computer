@@ -20,7 +20,9 @@ export function MasterDetail({
       <div className="flex items-center gap-2 border-b border-win-dark px-2 py-1">
         {header}
       </div>
-      {aboveSplit}
+      {aboveSplit != null ? (
+        <div className="shrink-0">{aboveSplit}</div>
+      ) : null}
       <div className="flex min-h-0 flex-1">
         <div className="win-sunken m-1 w-[42%] overflow-auto bg-win-paper text-win-ink">
           {list}

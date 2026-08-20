@@ -8,6 +8,7 @@ import { Taskbar } from "@/components/desktop/Taskbar";
 import { WindowFrame } from "@/components/desktop/WindowFrame";
 import { useContextMenuState } from "@/hooks/useContextMenuState";
 import { useDeleteConfirm } from "@/hooks/useDeleteConfirm";
+import { useFolderCreateGuard } from "@/hooks/useFolderCreateGuard";
 import { usePcRoutes } from "@/hooks/usePcRoutes";
 import { useDesktopUrlSync } from "@/hooks/useDesktopUrlSync";
 import { clampIconPosition } from "@/lib/desktopBounds";
@@ -44,7 +45,6 @@ export function Desktop({
   const applyDeepLink = useDesktopStore((state) => state.applyDeepLink);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
   const closeStartMenu = useDesktopStore((state) => state.closeStartMenu);
-  const createFolder = useDesktopStore((state) => state.createFolder);
   const deleteIcon = useDesktopStore((state) => state.deleteIcon);
   const openWindow = useDesktopStore((state) => state.openWindow);
   const { goHome } = usePcRoutes();
@@ -64,6 +64,7 @@ export function Desktop({
     cancelDelete,
     confirmDelete,
   } = useDeleteConfirm(storeIcons);
+  const { tryCreateFolder, folderLimitDialog } = useFolderCreateGuard();
 
   useEffect(() => {
     hydrate();
@@ -151,7 +152,7 @@ export function Desktop({
                 {
                   id: "new-folder",
                   label: "Folder",
-                  onSelect: () => createFolder(undefined, place),
+                  onSelect: () => tryCreateFolder(undefined, place),
                 },
               ],
             },
@@ -198,6 +199,7 @@ export function Desktop({
           onCancel={cancelDelete}
         />
       ) : null}
+      {folderLimitDialog}
     </div>
   );
 }

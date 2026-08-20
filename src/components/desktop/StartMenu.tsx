@@ -10,10 +10,11 @@ import {
   StoryExplorerIcon,
 } from "@/components/desktop/icons";
 import { ProfileAvatar } from "@/components/desktop/ProfileAvatar";
+import { useFolderCreateGuard } from "@/hooks/useFolderCreateGuard";
+import { usePcRoutes } from "@/hooks/usePcRoutes";
 import { getNetworkUser } from "@/lib/networkSeed";
 import { computerLabel } from "@/lib/profile";
 import { PROFILE_ICON_ID } from "@/lib/storage";
-import { usePcRoutes } from "@/hooks/usePcRoutes";
 import { useDesktopStore } from "@/store/desktopStore";
 
 export function StartMenu() {
@@ -25,11 +26,11 @@ export function StartMenu() {
   const openWindow = useDesktopStore((state) => state.openWindow);
   const openProfile = useDesktopStore((state) => state.openProfile);
   const closeStartMenu = useDesktopStore((state) => state.closeStartMenu);
-  const createFolder = useDesktopStore((state) => state.createFolder);
   const { goHome } = usePcRoutes();
+  const { tryCreateFolder, folderLimitDialog } = useFolderCreateGuard();
 
   if (!isStartMenuOpen) {
-    return null;
+    return folderLimitDialog;
   }
 
   const isRemote = viewMode === "remote";
@@ -162,7 +163,7 @@ export function StartMenu() {
               className="win-menu-item"
               role="menuitem"
               onClick={() => {
-                createFolder();
+                tryCreateFolder();
               }}
             >
               <FolderIcon size={16} />
@@ -180,6 +181,7 @@ export function StartMenu() {
           </>
         )}
       </div>
+      {folderLimitDialog}
     </div>
   );
 }
