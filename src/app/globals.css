@@ -198,7 +198,7 @@ textarea {
 }
 
 .win-desktop-icon {
-  width: 76px;
+  width: 92px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -208,12 +208,14 @@ textarea {
 }
 
 .win-desktop-icon-label {
-  max-width: 72px;
+  max-width: 88px;
   padding: 1px 2px;
   text-align: center;
   color: var(--color-win-white);
   text-shadow: 1px 1px 0 var(--color-win-black);
-  word-break: break-word;
+  /* Prefer whole-word wraps (avoids "Neighborhoo" / hanging "d"). */
+  overflow-wrap: break-word;
+  word-break: normal;
   line-height: 1.2;
 }
 
@@ -229,7 +231,7 @@ textarea {
 }
 
 .win-icon-rename {
-  width: 72px;
+  width: 88px;
   margin-top: 2px;
   padding: 1px 2px;
   border: 1px solid var(--color-win-black);

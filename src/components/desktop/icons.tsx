@@ -74,11 +74,17 @@ export function NotepadIcon({ className, size = 32 }: IconProps) {
       viewBox="0 0 32 32"
       aria-hidden="true"
     >
-      <rect x="6" y="2" width="20" height="28" fill="#fff8dc" stroke="#000" />
-      <rect x="9" y="0" width="3" height="5" fill="#c0c0c0" stroke="#000" />
-      <rect x="14" y="0" width="3" height="5" fill="#c0c0c0" stroke="#000" />
-      <rect x="19" y="0" width="3" height="5" fill="#c0c0c0" stroke="#000" />
-      <path d="M10 10h12M10 14h12M10 18h12M10 22h8" stroke="#000" />
+      {/* Spiral pad — cream + blue margin, not a loose document. */}
+      <rect x="5" y="3" width="22" height="27" fill="#fff8dc" stroke="#000" />
+      <rect x="8" y="1" width="4" height="5" fill="#808080" stroke="#000" />
+      <rect x="14" y="1" width="4" height="5" fill="#808080" stroke="#000" />
+      <rect x="20" y="1" width="4" height="5" fill="#808080" stroke="#000" />
+      <path d="M11 3.5v27" stroke="#0000ff" strokeWidth="1.5" />
+      <path
+        d="M14 11h10M14 15h10M14 19h10M14 23h7"
+        stroke="#000"
+        strokeWidth="1"
+      />
     </svg>
   );
 }
@@ -112,12 +118,15 @@ export function BulletinBoardIcon({ className, size = 32 }: IconProps) {
       viewBox="0 0 32 32"
       aria-hidden="true"
     >
-      <rect x="4" y="3" width="24" height="26" fill="#f8d568" stroke="#000" />
-      <rect x="7" y="7" width="18" height="3" fill="#000080" />
-      <rect x="7" y="13" width="18" height="2" fill="#000" />
-      <rect x="7" y="17" width="14" height="2" fill="#000" />
-      <rect x="7" y="21" width="16" height="2" fill="#000" />
-      <rect x="14" y="1" width="4" height="4" fill="#c0c0c0" stroke="#000" />
+      {/* Cork board with pinned slips — not a clipboard/document. */}
+      <rect x="2" y="3" width="28" height="26" fill="#8b6914" stroke="#000" />
+      <rect x="4" y="5" width="24" height="22" fill="#c4a35a" stroke="#000" />
+      <rect x="6" y="7" width="10" height="9" fill="#fff8dc" stroke="#000" />
+      <circle cx="11" cy="8" r="1.25" fill="#c00000" stroke="#000" />
+      <rect x="15" y="12" width="11" height="8" fill="#ffd0e0" stroke="#000" />
+      <circle cx="20.5" cy="13" r="1.25" fill="#000080" stroke="#000" />
+      <rect x="8" y="18" width="9" height="7" fill="#d0e8ff" stroke="#000" />
+      <circle cx="12.5" cy="19" r="1.25" fill="#008000" stroke="#000" />
     </svg>
   );
 }
@@ -131,13 +140,17 @@ export function NetworkIcon({ className, size = 32 }: IconProps) {
       viewBox="0 0 32 32"
       aria-hidden="true"
     >
-      <rect x="2" y="4" width="12" height="10" fill="#c0c0c0" stroke="#000" />
-      <rect x="4" y="6" width="8" height="5" fill="#008080" />
-      <rect x="18" y="4" width="12" height="10" fill="#c0c0c0" stroke="#000" />
-      <rect x="20" y="6" width="8" height="5" fill="#000080" />
-      <rect x="10" y="18" width="12" height="10" fill="#c0c0c0" stroke="#000" />
-      <rect x="12" y="20" width="8" height="5" fill="#800080" />
-      <path d="M8 14v4h16v-4M16 14v4" stroke="#000" fill="none" />
+      {/* Larger CRTs so the neighborhood reads at desktop size. */}
+      <rect x="1" y="2" width="14" height="12" fill="#c0c0c0" stroke="#000" />
+      <rect x="3" y="4" width="10" height="7" fill="#008080" />
+      <rect x="5" y="14" width="6" height="2" fill="#c0c0c0" stroke="#000" />
+      <rect x="17" y="2" width="14" height="12" fill="#c0c0c0" stroke="#000" />
+      <rect x="19" y="4" width="10" height="7" fill="#000080" />
+      <rect x="21" y="14" width="6" height="2" fill="#c0c0c0" stroke="#000" />
+      <rect x="9" y="17" width="14" height="12" fill="#c0c0c0" stroke="#000" />
+      <rect x="11" y="19" width="10" height="7" fill="#800080" />
+      <rect x="13" y="29" width="6" height="2" fill="#c0c0c0" stroke="#000" />
+      <path d="M8 16h16M16 16v1" stroke="#000" fill="none" />
     </svg>
   );
 }
@@ -151,13 +164,25 @@ export function StoryExplorerIcon({ className, size = 32 }: IconProps) {
       viewBox="0 0 32 32"
       aria-hidden="true"
     >
-      <rect x="5" y="4" width="16" height="22" fill="#fff8dc" stroke="#000" />
-      <path d="M21 4l6 6v16H21V4z" fill="#fff" stroke="#000" />
-      <path d="M21 4v6h6" fill="none" stroke="#000" />
-      <path d="M9 11h10M9 15h10M9 19h7" stroke="#000" />
-      <circle cx="24" cy="22" r="6" fill="#c0c0c0" stroke="#000" />
-      <circle cx="24" cy="22" r="3" fill="none" stroke="#000" />
-      <path d="M28 26l3 3" stroke="#000" strokeWidth="2" />
+      {/* Open book + glass — distinct from Notepad pad and .txt page. */}
+      <path
+        d="M3 6l11 3v18L3 24V6z"
+        fill="#000080"
+        stroke="#000"
+      />
+      <path
+        d="M29 6L18 9v18l11-3V6z"
+        fill="#000080"
+        stroke="#000"
+      />
+      <path d="M4 7.5l9 2.5v15L4 22.5V7.5z" fill="#fff8dc" stroke="#000" />
+      <path d="M28 7.5L19 10v15l9-2.5V7.5z" fill="#fff" stroke="#000" />
+      <path d="M14 9v18M18 9v18" stroke="#000" />
+      <path d="M6 12h5M6 16h5M6 20h4" stroke="#000" />
+      <path d="M21 13h5M21 17h5M21 21h3" stroke="#000" />
+      <circle cx="23" cy="24" r="5.5" fill="#c0c0c0" stroke="#000" />
+      <circle cx="23" cy="24" r="2.75" fill="none" stroke="#000" />
+      <path d="M27 28l3 3" stroke="#000" strokeWidth="2" />
     </svg>
   );
 }

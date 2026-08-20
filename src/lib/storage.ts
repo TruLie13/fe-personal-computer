@@ -8,8 +8,8 @@ import { ensureDocumentSlugs } from "@/lib/seo/slugs";
 
 export const STORAGE_KEY = "personal-computer-desktop-v2";
 
-/** Desktop grid pitch — leaves room for 2-line labels like "Network Neighborhood". */
-export const ICON_SLOT_WIDTH = 88;
+/** Desktop grid pitch — room for 2-line labels like "Network Neighborhood". */
+export const ICON_SLOT_WIDTH = 100;
 export const ICON_SLOT_HEIGHT = 96;
 
 export const PROFILE_ICON_ID = "profile";
@@ -38,21 +38,21 @@ export const DEFAULT_ICONS: DesktopIcon[] = [
     id: "bulletin-board",
     label: "Bulletin Board",
     type: "bbs",
-    x: 104,
+    x: 116,
     y: 16,
   },
   {
     id: "story-explorer",
     label: "Story Explorer",
     type: "stories",
-    x: 104,
+    x: 116,
     y: 112,
   },
   {
     id: "network-neighborhood",
     label: "Network Neighborhood",
     type: "network",
-    x: 104,
+    x: 116,
     y: 208,
   },
 ];

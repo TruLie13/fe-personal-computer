@@ -28,7 +28,7 @@ describe("desktop icon placement", () => {
       id: "network-neighborhood",
       label: "Network Neighborhood",
       type: "network",
-      x: 104,
+      x: 116,
       y: 112,
     };
     const withoutStory = DEFAULT_ICONS.filter(
@@ -50,20 +50,20 @@ describe("desktop icon placement", () => {
   });
 
   it("findOpenDesktopSlot prefers the requested point when free", () => {
-    expect(findOpenDesktopSlot([], { x: 104, y: 112 })).toEqual({
-      x: 104,
+    expect(findOpenDesktopSlot([], { x: 116, y: 112 })).toEqual({
+      x: 116,
       y: 112,
     });
   });
 
   it("findOpenDesktopSlot skips occupied preferred points", () => {
-    const slot = findOpenDesktopSlot([{ x: 104, y: 112 }], {
-      x: 104,
+    const slot = findOpenDesktopSlot([{ x: 116, y: 112 }], {
+      x: 116,
       y: 112,
     });
-    expect(slot).not.toEqual({ x: 104, y: 112 });
+    expect(slot).not.toEqual({ x: 116, y: 112 });
     expect(
-      Math.abs(slot.x - 104) < ICON_SLOT_WIDTH &&
+      Math.abs(slot.x - 116) < ICON_SLOT_WIDTH &&
         Math.abs(slot.y - 112) < ICON_SLOT_HEIGHT,
     ).toBe(false);
   });
