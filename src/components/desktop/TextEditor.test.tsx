@@ -1,6 +1,10 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TextEditor } from "@/components/desktop/TextEditor";
+import {
+  NOTEPAD_DRAFTS_STORAGE_KEY,
+  saveNotepadDraft,
+} from "@/lib/notepadDrafts";
 import {
   DEFAULT_DOCUMENTS,
   DEFAULT_ICONS,
@@ -17,7 +21,7 @@ function resetStore() {
     icons: DEFAULT_ICONS,
     documents: DEFAULT_DOCUMENTS,
     windows: [],
-      documentWindowFifo: [],
+    documentWindowFifo: [],
     wallpaper: DEFAULT_WALLPAPER,
     titleBarColor: DEFAULT_TITLE_BAR_COLOR,
     contentDark: false,
@@ -69,6 +73,44 @@ describe("TextEditor", () => {
     expect(documents[0]?.content).toBe("shall I compare thee");
     expect(icons.some((icon) => icon.label === "sonnet")).toBe(true);
     expect(screen.getByText("Saved")).toBeInTheDocument();
+  });
+
+  it("restores an unsaved draft from localStorage", async () => {
+    useDesktopStore.getState().openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+    saveNotepadDraft({
+      windowId: "gone-after-refresh",
+      documentId: null,
+      title: "draft-title",
+      content: "recovered lines",
+    });
+
+    render(<TextEditor windowId={windowId} documentId={null} />);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("draft-title")).toBeInTheDocument();
+    });
+    expect(screen.getByLabelText("Document content")).toHaveValue(
+      "recovered lines",
+    );
+    expect(window.localStorage.getItem(NOTEPAD_DRAFTS_STORAGE_KEY)).toContain(
+      windowId,
+    );
+  });
+
+  it("persists dirty edits to localStorage while typing", async () => {
+    const user = userEvent.setup();
+    useDesktopStore.getState().openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+
+    render(<TextEditor windowId={windowId} documentId={null} />);
+    await user.type(screen.getByLabelText("Document content"), "hello draft");
+
+    await waitFor(() => {
+      expect(window.localStorage.getItem(NOTEPAD_DRAFTS_STORAGE_KEY)).toContain(
+        "hello draft",
+      );
+    });
   });
 
   it("is read-only when visiting a remote PC", () => {

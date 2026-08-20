@@ -2,12 +2,18 @@
 
 import {
   useEffect,
+  useRef,
   useState,
   type MutableRefObject,
 } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
 import { useSavedFlash } from "@/hooks/useSavedFlash";
 import { useTextFileCreateGuard } from "@/hooks/useTextFileCreateGuard";
+import {
+  clearNotepadDraft,
+  resolveNotepadDraft,
+  saveNotepadDraft,
+} from "@/lib/notepadDrafts";
 import {
   MAX_TEXT_FILE_CHARS,
   MAX_TEXT_FILES_PER_USER,
@@ -60,34 +66,75 @@ export function TextEditor({
 
   const readOnly = viewMode === "remote";
 
-  const initialTitle = stripTextExtension(
+  const savedTitle = stripTextExtension(
     document?.title ?? titleFromWindowTitle(windowTitle),
   );
-  const initialContent = clampTextFileContent(document?.content ?? "");
+  const savedContent = clampTextFileContent(document?.content ?? "");
 
-  const [title, setTitle] = useState(initialTitle);
-  const [content, setContent] = useState(initialContent);
+  const [title, setTitle] = useState(savedTitle);
+  const [content, setContent] = useState(savedContent);
   const [baseline, setBaseline] = useState({
-    title: initialTitle,
-    content: initialContent,
+    title: savedTitle,
+    content: savedContent,
   });
   const [confirmClose, setConfirmClose] = useState(false);
+  const [draftReady, setDraftReady] = useState(false);
   const { savedFlash, flashSaved } = useSavedFlash();
   const { showTextFileLimit, textFileLimitDialog } = useTextFileCreateGuard();
 
+  const draftSnapshotRef = useRef({
+    windowId,
+    documentId,
+    title,
+    content,
+    isDirty: false,
+  });
+
+  // Restore local draft once per window/document (client-only).
   useEffect(() => {
-    if (document) {
-      const nextTitle = stripTextExtension(document.title);
-      const nextContent = clampTextFileContent(document.content);
-      setTitle(nextTitle);
-      setContent(nextContent);
-      setBaseline({ title: nextTitle, content: nextContent });
+    if (readOnly) {
+      setDraftReady(true);
+      return;
     }
-  }, [document?.id, document?.title, document?.content]);
+    const openUntitledIds = useDesktopStore
+      .getState()
+      .windows.filter(
+        (window) =>
+          window.isOpen &&
+          window.type === "editor" &&
+          window.documentId == null &&
+          window.id !== windowId,
+      )
+      .map((window) => window.id);
+    const draft = resolveNotepadDraft(windowId, documentId, openUntitledIds);
+    const nextSavedTitle = stripTextExtension(
+      document?.title ?? titleFromWindowTitle(windowTitle),
+    );
+    const nextSavedContent = clampTextFileContent(document?.content ?? "");
+    setBaseline({ title: nextSavedTitle, content: nextSavedContent });
+    if (draft) {
+      setTitle(clampFileTitle(draft.title));
+      setContent(clampTextFileContent(draft.content));
+    } else {
+      setTitle(nextSavedTitle);
+      setContent(nextSavedContent);
+    }
+    setDraftReady(true);
+    // Restore once when the editor identity changes (not on every keystroke).
+  }, [windowId, documentId, readOnly]);
 
   const isDirty =
+    draftReady &&
     !readOnly &&
     (title !== baseline.title || content !== baseline.content);
+
+  draftSnapshotRef.current = {
+    windowId,
+    documentId,
+    title,
+    content,
+    isDirty,
+  };
 
   useEffect(() => {
     if (!closeInterceptorRef) {
@@ -105,6 +152,61 @@ export function TextEditor({
     };
   }, [closeInterceptorRef, isDirty]);
 
+  // Persist dirty drafts immediately. Only clear on Save / discard Close —
+  // never on "clean", or Strict Mode / remount races wipe recovery data.
+  useEffect(() => {
+    if (readOnly || !draftReady || !isDirty) {
+      return;
+    }
+    saveNotepadDraft({ windowId, documentId, title, content });
+  }, [
+    readOnly,
+    draftReady,
+    isDirty,
+    windowId,
+    documentId,
+    title,
+    content,
+  ]);
+
+  // Flush on hide/unload — beforeunload alone often drops localStorage writes.
+  useEffect(() => {
+    const flush = () => {
+      const snap = draftSnapshotRef.current;
+      if (!snap.isDirty) {
+        return;
+      }
+      saveNotepadDraft({
+        windowId: snap.windowId,
+        documentId: snap.documentId,
+        title: snap.title,
+        content: snap.content,
+      });
+    };
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      flush();
+      if (!draftSnapshotRef.current.isDirty) {
+        return;
+      }
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    const onVisibility = () => {
+      if (window.document.visibilityState === "hidden") {
+        flush();
+      }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    window.addEventListener("pagehide", flush);
+    window.document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.removeEventListener("pagehide", flush);
+      window.document.removeEventListener("visibilitychange", onVisibility);
+      flush();
+    };
+  }, []);
+
   const cannotSaveNewFile =
     !readOnly && documentId == null && !canCreateTextFile(documents);
 
@@ -117,11 +219,28 @@ export function TextEditor({
       return;
     }
     saveDocumentFromWindow(windowId, title, content);
-    setBaseline({ title: stripTextExtension(title), content });
+    const nextTitle = stripTextExtension(title);
+    setBaseline({ title: nextTitle, content });
+    draftSnapshotRef.current = {
+      ...draftSnapshotRef.current,
+      isDirty: false,
+    };
+    clearNotepadDraft(windowId, documentId);
+    const savedId =
+      useDesktopStore.getState().windows.find((item) => item.id === windowId)
+        ?.documentId ?? null;
+    if (savedId) {
+      clearNotepadDraft(windowId, savedId);
+    }
     flashSaved();
   };
 
   const finishClose = () => {
+    draftSnapshotRef.current = {
+      ...draftSnapshotRef.current,
+      isDirty: false,
+    };
+    clearNotepadDraft(windowId, documentId);
     setConfirmClose(false);
     closeWindow(windowId);
   };
@@ -135,6 +254,17 @@ export function TextEditor({
       return;
     }
     saveDocumentFromWindow(windowId, title, content);
+    draftSnapshotRef.current = {
+      ...draftSnapshotRef.current,
+      isDirty: false,
+    };
+    clearNotepadDraft(windowId, documentId);
+    const savedId =
+      useDesktopStore.getState().windows.find((item) => item.id === windowId)
+        ?.documentId ?? null;
+    if (savedId) {
+      clearNotepadDraft(windowId, savedId);
+    }
     finishClose();
   };
 

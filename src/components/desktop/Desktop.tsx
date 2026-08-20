@@ -13,6 +13,7 @@ import { usePcRoutes } from "@/hooks/usePcRoutes";
 import { useDesktopUrlSync } from "@/hooks/useDesktopUrlSync";
 import { clampIconPosition } from "@/lib/desktopBounds";
 import { DESKTOP_ATTR } from "@/lib/dragDrop";
+import { saveWindowSession } from "@/lib/windowSession";
 import {
   selectActiveIcons,
   selectActiveTitleBarColor,
@@ -70,6 +71,49 @@ export function Desktop({
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  // Persist open windows / positions for the local desktop only.
+  useEffect(() => {
+    if (!hydrated) {
+      return;
+    }
+    const persist = () => {
+      const state = useDesktopStore.getState();
+      if (state.viewMode !== "local") {
+        return;
+      }
+      saveWindowSession({
+        windows: state.windows,
+        documentWindowFifo: state.documentWindowFifo,
+        nextZIndex: state.nextZIndex,
+      });
+    };
+    persist();
+    const unsubscribe = useDesktopStore.subscribe((state, prev) => {
+      if (state.viewMode !== "local") {
+        return;
+      }
+      if (
+        state.windows === prev.windows &&
+        state.documentWindowFifo === prev.documentWindowFifo &&
+        state.nextZIndex === prev.nextZIndex
+      ) {
+        return;
+      }
+      saveWindowSession({
+        windows: state.windows,
+        documentWindowFifo: state.documentWindowFifo,
+        nextZIndex: state.nextZIndex,
+      });
+    });
+    const onPageHide = () => persist();
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("pagehide", onPageHide);
+      persist();
+    };
+  }, [hydrated]);
 
   useEffect(() => {
     if (!hydrated) {
