@@ -131,6 +131,24 @@ export function BulletinBoardIcon({ className, size = 32 }: IconProps) {
   );
 }
 
+/** Small pin+slip for Bulletin Board list rows (distinct from .txt files). */
+export function BbsPinIcon({ className, size = 32 }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      aria-hidden="true"
+    >
+      <rect x="6" y="8" width="20" height="20" fill="#fff8dc" stroke="#000" />
+      <path d="M10 14h12M10 18h12M10 22h8" stroke="#000" />
+      <circle cx="16" cy="6" r="4" fill="#c00000" stroke="#000" />
+      <path d="M16 10v4" stroke="#000" strokeWidth="2" />
+    </svg>
+  );
+}
+
 export function NetworkIcon({ className, size = 32 }: IconProps) {
   return (
     <svg

@@ -294,7 +294,8 @@ export function listPublicStoriesNewestFirst(): PublicStory[] {
 }
 
 export function mergeBbsPostsNewestFirst(localPosts: BbsPost[]): BbsPost[] {
-  return [...SEED_BBS_POSTS, ...localPosts].sort(
+  const visibleLocal = localPosts.filter((post) => !post.deletedAt);
+  return [...SEED_BBS_POSTS, ...visibleLocal].sort(
     (a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );

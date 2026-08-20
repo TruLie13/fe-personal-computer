@@ -94,6 +94,8 @@ export interface DesktopStore {
   addFavorite: (userId: NetworkUserId) => void;
   removeFavorite: (userId: NetworkUserId) => void;
   postBbsNote: (title: string, content: string) => string;
+  /** Soft-delete own post; does not refund the UTC daily create quota. */
+  deleteBbsNote: (postId: string) => boolean;
   updateLocalProfile: (patch: Partial<UserProfile>) => void;
   openProfile: () => void;
 }
