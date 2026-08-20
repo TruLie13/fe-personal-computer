@@ -841,6 +841,23 @@ describe("desktopStore", () => {
     ).toHaveLength(3);
   });
 
+  it("closes all open windows", () => {
+    const { openWindow, closeAllWindows } = useDesktopStore.getState();
+    openWindow("notepad");
+    openWindow("bulletin-board");
+    openWindow("documents");
+    expect(
+      useDesktopStore.getState().windows.filter((window) => window.isOpen),
+    ).toHaveLength(3);
+
+    closeAllWindows();
+
+    expect(
+      useDesktopStore.getState().windows.some((window) => window.isOpen),
+    ).toBe(false);
+    expect(useDesktopStore.getState().documentWindowFifo).toEqual([]);
+  });
+
   it("opens the local profile window via openProfile", () => {
     useDesktopStore.getState().openProfile();
     const { windows } = useDesktopStore.getState();

@@ -47,6 +47,7 @@ export function Desktop({
   const closeStartMenu = useDesktopStore((state) => state.closeStartMenu);
   const deleteIcon = useDesktopStore((state) => state.deleteIcon);
   const openWindow = useDesktopStore((state) => state.openWindow);
+  const closeAllWindows = useDesktopStore((state) => state.closeAllWindows);
   const { goHome } = usePcRoutes();
   const appliedDeepLinkKey = useRef<string | null>(null);
   const [urlSyncReady, setUrlSyncReady] = useState(!deepLinkUsername);
@@ -122,8 +123,18 @@ export function Desktop({
           selectIcon(null);
           closeStartMenu();
 
+          const hasOpenWindows = windows.some((window) => window.isOpen);
+          const closeAllEntry = {
+            id: "close-all",
+            label: "Close all windows",
+            disabled: !hasOpenWindows,
+            onSelect: () => closeAllWindows(),
+          };
+
           if (isRemote) {
             openMenu(event, [
+              closeAllEntry,
+              { id: "sep-go-home", separator: true },
               {
                 id: "go-home",
                 label: "Go Home (My Computer)",
@@ -156,6 +167,8 @@ export function Desktop({
                 },
               ],
             },
+            { id: "sep-close", separator: true },
+            closeAllEntry,
             { id: "sep-props", separator: true },
             {
               id: "properties",

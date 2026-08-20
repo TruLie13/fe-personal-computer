@@ -16,6 +16,7 @@ export type WindowSlice = Pick<
   | "nextZIndex"
   | "openWindow"
   | "closeWindow"
+  | "closeAllWindows"
   | "minimizeWindow"
   | "focusWindow"
   | "updateWindowPosition"
@@ -291,6 +292,22 @@ export const createWindowSlice: StateCreator<
         ),
       };
     });
+  },
+
+  closeAllWindows: () => {
+    set((state) => ({
+      windows: state.windows.map((window) =>
+        window.isOpen
+          ? {
+              ...window,
+              isOpen: false,
+              isFocused: false,
+              isMinimized: false,
+            }
+          : window,
+      ),
+      documentWindowFifo: [],
+    }));
   },
 
   minimizeWindow: (windowId) => {

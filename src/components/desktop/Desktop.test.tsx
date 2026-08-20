@@ -27,4 +27,27 @@ describe("Desktop", () => {
       screen.getByRole("dialog", { name: /Notepad/i }),
     ).toBeInTheDocument();
   });
+
+  it("closes all windows from the desktop context menu", async () => {
+    const user = userEvent.setup();
+    useDesktopStore.getState().openWindow("notepad");
+    useDesktopStore.getState().openWindow("bulletin-board");
+    render(<Desktop />);
+
+    expect(
+      useDesktopStore.getState().windows.filter((window) => window.isOpen),
+    ).toHaveLength(2);
+
+    await user.pointer({
+      keys: "[MouseRight]",
+      target: screen.getByRole("main"),
+    });
+    await user.click(
+      screen.getByRole("menuitem", { name: "Close all windows" }),
+    );
+
+    expect(
+      useDesktopStore.getState().windows.some((window) => window.isOpen),
+    ).toBe(false);
+  });
 });

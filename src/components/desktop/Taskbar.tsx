@@ -1,10 +1,12 @@
 "use client";
 
 import { useRef } from "react";
+import { ContextMenu } from "@/components/desktop/ContextMenu";
 import { Clock } from "@/components/desktop/Clock";
 import { ComputerIcon, StartLogo, iconForType } from "@/components/desktop/icons";
 import { ProfileAvatar } from "@/components/desktop/ProfileAvatar";
 import { StartMenu } from "@/components/desktop/StartMenu";
+import { useContextMenuState } from "@/hooks/useContextMenuState";
 import { getNetworkUser } from "@/lib/networkSeed";
 import {
   clampTaskbarHeight,
@@ -27,8 +29,10 @@ export function Taskbar() {
   const toggleStartMenu = useDesktopStore((state) => state.toggleStartMenu);
   const focusWindow = useDesktopStore((state) => state.focusWindow);
   const minimizeWindow = useDesktopStore((state) => state.minimizeWindow);
+  const closeWindow = useDesktopStore((state) => state.closeWindow);
   const openProfile = useDesktopStore((state) => state.openProfile);
   const { goHome } = usePcRoutes();
+  const { menu, openMenu, closeMenu } = useContextMenuState();
 
   const dragOrigin = useRef<{ y: number; height: number } | null>(null);
 
@@ -132,11 +136,29 @@ export function Taskbar() {
               type="button"
               className={`win-task-btn ${active ? "win-sunken win-task-btn-active" : "win-raised"}`}
               onClick={() => {
+                closeMenu();
                 if (active) {
                   minimizeWindow(window.id);
                 } else {
                   focusWindow(window.id);
                 }
+              }}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                openMenu(event, [
+                  {
+                    id: "task-title",
+                    label: title,
+                    disabled: true,
+                  },
+                  { id: "task-sep", separator: true },
+                  {
+                    id: "task-close",
+                    label: "Close",
+                    onSelect: () => closeWindow(window.id),
+                  },
+                ]);
               }}
             >
               <Icon className="shrink-0" size={16} />
@@ -164,6 +186,14 @@ export function Taskbar() {
         <Clock />
       </div>
       <StartMenu />
+      {menu ? (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          entries={menu.entries}
+          onClose={closeMenu}
+        />
+      ) : null}
     </footer>
   );
 }
