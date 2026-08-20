@@ -39,4 +39,27 @@ describe("Taskbar", () => {
     expect(useDesktopStore.getState().windows[0]?.isMinimized).toBe(false);
     expect(useDesktopStore.getState().windows[0]?.isFocused).toBe(true);
   });
+
+  it("closes a window from the task button context menu", async () => {
+    const user = userEvent.setup();
+    useDesktopStore.getState().openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+
+    render(<Taskbar />);
+    await user.pointer({
+      keys: "[MouseRight]",
+      target: screen.getByRole("button", { name: /Untitled - Notepad/i }),
+    });
+
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: "Untitled - Notepad" }),
+    ).toBeDisabled();
+    await user.click(screen.getByRole("menuitem", { name: "Close" }));
+
+    expect(
+      useDesktopStore.getState().windows.find((window) => window.id === windowId)
+        ?.isOpen,
+    ).toBe(false);
+  });
 });

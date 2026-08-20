@@ -39,6 +39,8 @@ export interface DesktopStore {
   closeStartMenu: () => void;
   openWindow: (iconId: string) => void;
   closeWindow: (windowId: string) => void;
+  /** Close every open window (taskbar + desktop). */
+  closeAllWindows: () => void;
   minimizeWindow: (windowId: string) => void;
   focusWindow: (windowId: string) => void;
   updateWindowPosition: (windowId: string, x: number, y: number) => void;
