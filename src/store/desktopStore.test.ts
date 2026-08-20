@@ -18,6 +18,7 @@ describe("desktopStore", () => {
       icons: DEFAULT_ICONS,
       documents: DEFAULT_DOCUMENTS,
       windows: [],
+      documentWindowFifo: [],
       wallpaper: DEFAULT_WALLPAPER,
       titleBarColor: DEFAULT_TITLE_BAR_COLOR,
       contentDark: false,
@@ -753,6 +754,91 @@ describe("desktopStore", () => {
     const windowId = useDesktopStore.getState().windows[0]!.id;
     updateDocumentContent(windowId, "orphan", "nope");
     expect(useDesktopStore.getState().documents).toHaveLength(0);
+  });
+
+  it("ignores document updates without a linked document", () => {
+    const { openWindow, updateDocumentContent } = useDesktopStore.getState();
+    openWindow("notepad");
+    const windowId = useDesktopStore.getState().windows[0]!.id;
+    updateDocumentContent(windowId, "orphan", "nope");
+    expect(useDesktopStore.getState().documents).toHaveLength(0);
+  });
+
+  it("caps open document windows at 15 with FIFO eviction (apps ignored)", () => {
+    const { openWindow, createFolder, createTextFile } =
+      useDesktopStore.getState();
+
+    openWindow("bulletin-board");
+    openWindow("network-neighborhood");
+    openWindow("story-explorer");
+
+    const fileIds: string[] = [];
+    for (let i = 0; i < 10; i += 1) {
+      const id = createTextFile(null, `doc-${i}`)!;
+      fileIds.push(id);
+      openWindow(id);
+    }
+    const folderIds: string[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      const id = createFolder(`cap-folder-${i}`)!;
+      folderIds.push(id);
+      openWindow(id);
+    }
+
+    let state = useDesktopStore.getState();
+    expect(
+      state.windows.filter(
+        (window) =>
+          window.isOpen &&
+          (window.type === "folder" ||
+            window.type === "text" ||
+            window.type === "editor"),
+      ),
+    ).toHaveLength(15);
+    expect(
+      state.windows.filter(
+        (window) =>
+          window.isOpen &&
+          (window.type === "bbs" ||
+            window.type === "network" ||
+            window.type === "stories"),
+      ),
+    ).toHaveLength(3);
+
+    const oldestFileId = fileIds[0]!;
+    const oldestWindow = state.windows.find(
+      (window) => window.iconId === oldestFileId && window.isOpen,
+    );
+    expect(oldestWindow).toBeDefined();
+
+    openWindow("notepad");
+    state = useDesktopStore.getState();
+    expect(
+      state.windows.find((window) => window.iconId === oldestFileId)?.isOpen,
+    ).toBe(false);
+    expect(
+      state.windows.filter(
+        (window) =>
+          window.isOpen &&
+          (window.type === "folder" ||
+            window.type === "text" ||
+            window.type === "editor"),
+      ),
+    ).toHaveLength(15);
+    expect(
+      state.windows.some(
+        (window) => window.isOpen && window.type === "editor",
+      ),
+    ).toBe(true);
+    expect(
+      state.windows.filter(
+        (window) =>
+          window.isOpen &&
+          (window.type === "bbs" ||
+            window.type === "network" ||
+            window.type === "stories"),
+      ),
+    ).toHaveLength(3);
   });
 
   it("opens the local profile window via openProfile", () => {

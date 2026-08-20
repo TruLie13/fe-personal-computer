@@ -21,6 +21,7 @@ function resetStore(localBbsNotes: BbsPost[] = []) {
     icons: DEFAULT_ICONS,
     documents: DEFAULT_DOCUMENTS,
     windows: [],
+      documentWindowFifo: [],
     wallpaper: DEFAULT_WALLPAPER,
     titleBarColor: DEFAULT_TITLE_BAR_COLOR,
     contentDark: false,

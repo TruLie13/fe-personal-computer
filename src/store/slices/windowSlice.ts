@@ -1,12 +1,18 @@
 import type { StateCreator } from "zustand";
+import {
+  countsTowardOpenDocumentCap,
+  MAX_OPEN_DOCUMENT_WINDOWS,
+} from "@/lib/windowKinds";
 import { folderWindowTitle, stripTextExtension } from "@/lib/storage";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
 import { isRemote, selectActiveIcons } from "@/store/desktopSelectors";
 import { createWindowFromIcon } from "@/store/desktopWindowFactory";
+import type { DesktopWindow, WindowType } from "@/types/desktop";
 
 export type WindowSlice = Pick<
   DesktopStore,
   | "windows"
+  | "documentWindowFifo"
   | "nextZIndex"
   | "openWindow"
   | "closeWindow"
@@ -15,6 +21,76 @@ export type WindowSlice = Pick<
   | "updateWindowPosition"
 >;
 
+function syncFifo(
+  windows: DesktopWindow[],
+  fifo: string[],
+): string[] {
+  const openIds = new Set(
+    windows
+      .filter(
+        (window) =>
+          window.isOpen && countsTowardOpenDocumentCap(window.type),
+      )
+      .map((window) => window.id),
+  );
+  const kept = fifo.filter((id) => openIds.has(id));
+  for (const id of openIds) {
+    if (!kept.includes(id)) {
+      kept.push(id);
+    }
+  }
+  return kept;
+}
+
+/**
+ * Make room to have `openingId` open as a document window.
+ * Closes oldest FIFO entries (never `openingId`) until under the cap.
+ */
+function makeRoomForDocumentWindow(
+  windows: DesktopWindow[],
+  fifo: string[],
+  openingId: string,
+  openingType: WindowType,
+): { windows: DesktopWindow[]; fifo: string[] } {
+  if (!countsTowardOpenDocumentCap(openingType)) {
+    return { windows, fifo: syncFifo(windows, fifo) };
+  }
+
+  let nextWindows = windows;
+  let nextFifo = syncFifo(windows, fifo).filter((id) => id !== openingId);
+
+  const otherOpenCount = () =>
+    nextWindows.filter(
+      (window) =>
+        window.isOpen &&
+        window.id !== openingId &&
+        countsTowardOpenDocumentCap(window.type),
+    ).length;
+
+  while (
+    otherOpenCount() >= MAX_OPEN_DOCUMENT_WINDOWS &&
+    nextFifo.length > 0
+  ) {
+    const oldestId = nextFifo[0]!;
+    nextFifo = nextFifo.slice(1);
+    nextWindows = nextWindows.map((window) =>
+      window.id === oldestId
+        ? {
+            ...window,
+            isOpen: false,
+            isFocused: false,
+            isMinimized: false,
+          }
+        : window,
+    );
+  }
+
+  return {
+    windows: nextWindows,
+    fifo: [...nextFifo, openingId],
+  };
+}
+
 export const createWindowSlice: StateCreator<
   DesktopStore,
   [],
@@ -22,6 +98,7 @@ export const createWindowSlice: StateCreator<
   WindowSlice
 > = (set, get) => ({
   windows: [],
+  documentWindowFifo: [],
   nextZIndex: 1,
   openWindow: (iconId) => {
     const state = get();
@@ -38,11 +115,15 @@ export const createWindowSlice: StateCreator<
       const zIndex = state.nextZIndex;
       const openCount = state.windows.filter((window) => window.isOpen).length;
       const nextWindow = createWindowFromIcon(icon, zIndex, openCount, icons);
+      const capped = makeRoomForDocumentWindow(
+        state.windows.map((window) => ({ ...window, isFocused: false })),
+        state.documentWindowFifo,
+        nextWindow.id,
+        nextWindow.type,
+      );
       set({
-        windows: [
-          ...state.windows.map((window) => ({ ...window, isFocused: false })),
-          nextWindow,
-        ],
+        windows: [...capped.windows, nextWindow],
+        documentWindowFifo: capped.fifo,
         nextZIndex: zIndex + 1,
         selectedIconId: iconId,
         isStartMenuOpen: false,
@@ -84,8 +165,40 @@ export const createWindowSlice: StateCreator<
       );
       if (existingDocWindow) {
         const zIndex = state.nextZIndex;
+        const wasOpen = existingDocWindow.isOpen;
+        if (wasOpen) {
+          set({
+            windows: state.windows.map((window) =>
+              window.id === existingDocWindow.id
+                ? {
+                    ...window,
+                    iconId,
+                    title:
+                      icon.type === "text"
+                        ? `${stripTextExtension(icon.label)} - Notepad`
+                        : window.title,
+                    isOpen: true,
+                    isMinimized: false,
+                    isFocused: true,
+                    zIndex,
+                  }
+                : { ...window, isFocused: false },
+            ),
+            nextZIndex: zIndex + 1,
+            selectedIconId: iconId,
+            isStartMenuOpen: false,
+          });
+          return;
+        }
+
+        const capped = makeRoomForDocumentWindow(
+          state.windows.map((window) => ({ ...window, isFocused: false })),
+          state.documentWindowFifo,
+          existingDocWindow.id,
+          existingDocWindow.type,
+        );
         set({
-          windows: state.windows.map((window) =>
+          windows: capped.windows.map((window) =>
             window.id === existingDocWindow.id
               ? {
                   ...window,
@@ -99,8 +212,9 @@ export const createWindowSlice: StateCreator<
                   isFocused: true,
                   zIndex,
                 }
-              : { ...window, isFocused: false },
+              : window,
           ),
+          documentWindowFifo: capped.fifo,
           nextZIndex: zIndex + 1,
           selectedIconId: iconId,
           isStartMenuOpen: false,
@@ -114,8 +228,14 @@ export const createWindowSlice: StateCreator<
     );
     if (closed) {
       const zIndex = state.nextZIndex;
+      const capped = makeRoomForDocumentWindow(
+        state.windows.map((window) => ({ ...window, isFocused: false })),
+        state.documentWindowFifo,
+        closed.id,
+        closed.type,
+      );
       set({
-        windows: state.windows.map((window) =>
+        windows: capped.windows.map((window) =>
           window.id === closed.id
             ? {
                 ...window,
@@ -128,8 +248,9 @@ export const createWindowSlice: StateCreator<
                     ? folderWindowTitle(icons, icon.id)
                     : window.title,
               }
-            : { ...window, isFocused: false },
+            : window,
         ),
+        documentWindowFifo: capped.fifo,
         nextZIndex: zIndex + 1,
         selectedIconId: iconId,
         isStartMenuOpen: false,
@@ -140,12 +261,16 @@ export const createWindowSlice: StateCreator<
     const zIndex = state.nextZIndex;
     const openCount = state.windows.filter((window) => window.isOpen).length;
     const nextWindow = createWindowFromIcon(icon, zIndex, openCount, icons);
+    const capped = makeRoomForDocumentWindow(
+      state.windows.map((window) => ({ ...window, isFocused: false })),
+      state.documentWindowFifo,
+      nextWindow.id,
+      nextWindow.type,
+    );
 
     set({
-      windows: [
-        ...state.windows.map((window) => ({ ...window, isFocused: false })),
-        nextWindow,
-      ],
+      windows: [...capped.windows, nextWindow],
+      documentWindowFifo: capped.fifo,
       nextZIndex: zIndex + 1,
       selectedIconId: iconId,
       isStartMenuOpen: false,
@@ -153,13 +278,19 @@ export const createWindowSlice: StateCreator<
   },
 
   closeWindow: (windowId) => {
-    set((state) => ({
-      windows: state.windows.map((window) =>
+    set((state) => {
+      const windows = state.windows.map((window) =>
         window.id === windowId
           ? { ...window, isOpen: false, isFocused: false, isMinimized: false }
           : window,
-      ),
-    }));
+      );
+      return {
+        windows,
+        documentWindowFifo: state.documentWindowFifo.filter(
+          (id) => id !== windowId,
+        ),
+      };
+    });
   },
 
   minimizeWindow: (windowId) => {

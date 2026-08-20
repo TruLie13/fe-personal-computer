@@ -15,6 +15,11 @@ export interface DesktopStore {
   icons: DesktopIcon[];
   documents: TextDocument[];
   windows: DesktopWindow[];
+  /**
+   * FIFO of open document-window ids (folder / text / editor).
+   * Apps are excluded. Used to close the oldest when over the open cap.
+   */
+  documentWindowFifo: string[];
   wallpaper: string;
   titleBarColor: string;
   contentDark: boolean;

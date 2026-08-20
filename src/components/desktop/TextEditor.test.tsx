@@ -17,6 +17,7 @@ function resetStore() {
     icons: DEFAULT_ICONS,
     documents: DEFAULT_DOCUMENTS,
     windows: [],
+      documentWindowFifo: [],
     wallpaper: DEFAULT_WALLPAPER,
     titleBarColor: DEFAULT_TITLE_BAR_COLOR,
     contentDark: false,
@@ -193,7 +194,8 @@ describe("TextEditor", () => {
     );
   });
 
-  it("shows a banner and disables save when the text file limit is reached", async () => {
+  it("shows a banner and limit popup when saving a new file at the text file limit", async () => {
+    const user = userEvent.setup();
     seedTextFilesInStore();
     useDesktopStore.getState().openWindow("notepad");
     const windowId = useDesktopStore.getState().windows[0]!.id;
@@ -205,7 +207,10 @@ describe("TextEditor", () => {
     ).toHaveTextContent(
       `You will not be able to save — you have reached the limit of ${MAX_TEXT_FILES_PER_USER} text files (${MAX_TEXT_FILES_PER_USER}/${MAX_TEXT_FILES_PER_USER}).`,
     );
-    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(
+      screen.getByRole("alertdialog", { name: "New Text Document" }),
+    ).toBeInTheDocument();
   });
 
   it("still allows saving an existing text file when at the file limit", async () => {
