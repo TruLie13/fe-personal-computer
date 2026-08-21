@@ -21,7 +21,7 @@ function resetStore(localBbsNotes: BbsPost[] = []) {
     icons: DEFAULT_ICONS,
     documents: DEFAULT_DOCUMENTS,
     windows: [],
-      documentWindowFifo: [],
+    documentWindowFifo: [],
     wallpaper: DEFAULT_WALLPAPER,
     titleBarColor: DEFAULT_TITLE_BAR_COLOR,
     contentDark: false,
@@ -73,9 +73,7 @@ describe("BulletinBoard", () => {
     await user.click(screen.getByRole("button", { name: "Post" }));
 
     expect(useDesktopStore.getState().localBbsNotes).toHaveLength(1);
-    expect(
-      screen.getByRole("button", { name: /Looking for readers/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Looking for readers")).toBeInTheDocument();
     expect(screen.getByText("Anyone want to swap poems?")).toBeInTheDocument();
   });
 
@@ -125,28 +123,17 @@ describe("BulletinBoard", () => {
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
-  it("shows Visit PC for another author's post", async () => {
-    const user = userEvent.setup();
+  it("shows Visit PC on other authors' pinned slips", () => {
     render(<BulletinBoard />);
-
-    await user.click(
-      screen.getByRole("button", { name: /Looking for brave readers/i }),
-    );
     expect(
-      screen.getByRole("button", { name: /Visit PC/i }),
+      screen.getAllByRole("button", { name: /Visit PC/i }).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/Looking for brave readers/i),
     ).toBeInTheDocument();
   });
 
-  it("shows Visit PC on the default selected seed post", () => {
-    render(<BulletinBoard />);
-    // Newest seed post is Rex's — Visit PC should appear without an extra click.
-    expect(
-      screen.getByRole("button", { name: /Visit PC/i }),
-    ).toBeInTheDocument();
-  });
-
-  it("hides Visit PC on your own post", async () => {
-    const user = userEvent.setup();
+  it("hides Visit PC on your own post", () => {
     resetStore([
       {
         id: "local-1",
@@ -158,11 +145,15 @@ describe("BulletinBoard", () => {
     ]);
     render(<BulletinBoard />);
 
-    await user.click(screen.getByRole("button", { name: /My own post/i }));
+    const ownTitle = screen.getByText("My own post");
+    const ownSlip = ownTitle.closest("li");
+    expect(ownSlip).toBeTruthy();
     expect(
-      screen.queryByRole("button", { name: /Visit PC/i }),
+      within(ownSlip!).queryByRole("button", { name: /Visit PC/i }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    expect(
+      within(ownSlip!).getByRole("button", { name: "Delete My own post" }),
+    ).toBeInTheDocument();
   });
 
   it("deletes your own post without refunding the daily limit", async () => {
@@ -179,27 +170,33 @@ describe("BulletinBoard", () => {
     );
     render(<BulletinBoard />);
 
-    await user.click(screen.getByRole("button", { name: /Cap post 0/i }));
-    await user.click(screen.getByRole("button", { name: "Delete" }));
+    await user.click(
+      screen.getByRole("button", { name: "Delete Cap post 0" }),
+    );
 
     const dialog = screen.getByRole("alertdialog", { name: "Bulletin Board" });
     expect(dialog).toHaveTextContent(/not refunded/i);
     await user.click(within(dialog).getByRole("button", { name: "Delete" }));
 
-    expect(
-      screen.queryByRole("button", { name: /Cap post 0/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Cap post 0")).not.toBeInTheDocument();
     expect(
       useDesktopStore
         .getState()
         .localBbsNotes.find((post) => post.id === "local-cap-0")?.deletedAt,
     ).toBeTruthy();
 
-    // Soft-deleted create still blocks New Post at the daily cap.
     await user.click(screen.getByRole("button", { name: "New Post" }));
     expect(
       screen.getByRole("alertdialog", { name: "Bulletin Board" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/daily limit of 5 posts/i)).toBeInTheDocument();
+  });
+
+  it("renders a sunken post stack (not master-detail, not cork cards)", () => {
+    const { container } = render(<BulletinBoard />);
+    expect(container.querySelector(".win-bbs-cork")).toBeNull();
+    expect(container.querySelector(".win-guestbook-wall")).toBeNull();
+    expect(screen.getByText(/leave a post for the community/i)).toBeInTheDocument();
+    expect(screen.getByText(/Looking for brave readers/i)).toBeInTheDocument();
   });
 });
