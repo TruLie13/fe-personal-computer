@@ -12,6 +12,7 @@ import { FolderWindow } from "@/components/desktop/FolderWindow";
 import { iconForType } from "@/components/desktop/icons";
 import { NetworkNeighborhood } from "@/components/desktop/NetworkNeighborhood";
 import { ProfileWindow } from "@/components/desktop/ProfileWindow";
+import { CommentsWindow } from "@/components/desktop/CommentsWindow";
 import { StoryExplorer } from "@/components/desktop/StoryExplorer";
 import { TextEditor } from "@/components/desktop/TextEditor";
 import { getNetworkUser } from "@/lib/networkSeed";
@@ -61,6 +62,10 @@ function WindowBody({
 
   if (window.type === "stories") {
     return <StoryExplorer />;
+  }
+
+  if (window.type === "comments") {
+    return <CommentsWindow documentId={window.documentId} />;
   }
 
   if (window.type === "network") {

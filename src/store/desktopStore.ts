@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
 import { createBbsSlice } from "@/store/slices/bbsSlice";
+import { createCommentsSlice } from "@/store/slices/commentsSlice";
 import { createFsSlice } from "@/store/slices/fsSlice";
 import { createNetworkSlice } from "@/store/slices/networkSlice";
 import { createProfileSlice } from "@/store/slices/profileSlice";
@@ -26,6 +27,7 @@ export const useDesktopStore = create<DesktopStore>()((...a) => ({
   ...createWindowSlice(...a),
   ...createFsSlice(...a),
   ...createBbsSlice(...a),
+  ...createCommentsSlice(...a),
   ...createNetworkSlice(...a),
   ...createProfileSlice(...a),
 }));

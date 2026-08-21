@@ -291,6 +291,27 @@ export function UpFolderIcon({ className, size = 32 }: IconProps) {
   );
 }
 
+/** Speech bubble for story Comments windows / toolbar. */
+export function CommentsIcon({ className, size = 32 }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      style={{ display: "block", flexShrink: 0 }}
+      aria-hidden="true"
+    >
+      <path
+        d="M5 6h22v14H12l-5 5V6z"
+        fill="#fff8dc"
+        stroke="#000"
+      />
+      <path d="M9 11h14M9 15h10" stroke="#000" />
+    </svg>
+  );
+}
+
 export function iconForType(type: string) {
   switch (type) {
     case "folder":
@@ -305,6 +326,8 @@ export function iconForType(type: string) {
       return BulletinBoardIcon;
     case "stories":
       return StoryExplorerIcon;
+    case "comments":
+      return CommentsIcon;
     case "network":
       return NetworkIcon;
     case "profile":

@@ -7,6 +7,7 @@ import {
   type MutableRefObject,
 } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
+import { CommentsIcon } from "@/components/desktop/icons";
 import { useSavedFlash } from "@/hooks/useSavedFlash";
 import { useTextFileCreateGuard } from "@/hooks/useTextFileCreateGuard";
 import {
@@ -63,6 +64,9 @@ export function TextEditor({
     (state) => state.saveDocumentFromWindow,
   );
   const closeWindow = useDesktopStore((state) => state.closeWindow);
+  const openStoryComments = useDesktopStore(
+    (state) => state.openStoryComments,
+  );
 
   const readOnly = viewMode === "remote";
 
@@ -293,6 +297,23 @@ export function TextEditor({
             Save
           </button>
         )}
+        {documentId ? (
+          <button
+            type="button"
+            className="win-raised flex items-center gap-1 px-2 py-0.5"
+            onClick={() =>
+              openStoryComments({
+                documentId,
+                storyTitle: displayName || "Untitled",
+              })
+            }
+          >
+            <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+              <CommentsIcon size={14} />
+            </span>
+            Comments
+          </button>
+        ) : null}
         <label className="flex min-w-0 flex-1 items-center gap-2">
           <span className="shrink-0">File name:</span>
           <input

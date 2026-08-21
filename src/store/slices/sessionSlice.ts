@@ -9,6 +9,7 @@ import {
   PROFILE_ICON_ID,
   loadDesktopState,
 } from "@/lib/storage";
+import { loadLocalStoryComments } from "@/lib/storyComments";
 import { loadWindowSession } from "@/lib/windowSession";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
 import {
@@ -65,6 +66,7 @@ export const createSessionSlice: StateCreator<
       taskbarHeight: saved.taskbarHeight,
       favorites: loadFavorites(),
       localBbsNotes: loadLocalBbsNotes(),
+      localStoryComments: loadLocalStoryComments(),
       localProfile,
       windows: restoreSession ? (session?.windows ?? []) : existingWindows,
       documentWindowFifo: restoreSession

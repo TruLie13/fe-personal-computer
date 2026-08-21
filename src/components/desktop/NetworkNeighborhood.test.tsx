@@ -30,6 +30,7 @@ describe("NetworkNeighborhood", () => {
       remoteUserId: null,
       favorites: [],
       localBbsNotes: [],
+    localStoryComments: [],
       localProfile: {
         displayName: "Writer",
         computerName: "WRITER-PC",

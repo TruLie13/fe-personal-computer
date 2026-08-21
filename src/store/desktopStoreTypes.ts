@@ -8,6 +8,7 @@ import type {
   DesktopViewMode,
   FavoritePc,
   NetworkUserId,
+  StoryComment,
   UserProfile,
 } from "@/types/network";
 
@@ -34,6 +35,7 @@ export interface DesktopStore {
   remoteUserId: NetworkUserId | null;
   favorites: FavoritePc[];
   localBbsNotes: BbsPost[];
+  localStoryComments: StoryComment[];
   localProfile: UserProfile;
   hydrate: () => void;
   selectIcon: (iconId: string | null) => void;
@@ -96,6 +98,13 @@ export interface DesktopStore {
   postBbsNote: (title: string, content: string) => string;
   /** Soft-delete own post; does not refund the UTC daily create quota. */
   deleteBbsNote: (postId: string) => boolean;
+  postStoryComment: (documentId: string, content: string) => string;
+  deleteStoryComment: (commentId: string) => boolean;
+  /** One Comments window per story `documentId` (focus if already open). */
+  openStoryComments: (input: {
+    documentId: string;
+    storyTitle: string;
+  }) => void;
   updateLocalProfile: (patch: Partial<UserProfile>) => void;
   openProfile: () => void;
 }

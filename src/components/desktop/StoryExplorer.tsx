@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { TextFileIcon } from "@/components/desktop/icons";
+import { CommentsIcon, TextFileIcon } from "@/components/desktop/icons";
 import {
   MasterDetail,
   MasterDetailListItem,
@@ -17,6 +17,7 @@ import {
   LOCAL_USER_ID,
 } from "@/lib/networkSeed";
 import { findDocumentSlugForUser } from "@/lib/seo/publicContent";
+import { useDesktopStore } from "@/store/desktopStore";
 import type { PublicStory } from "@/types/network";
 
 function snippet(content: string, max = 80): string {
@@ -33,6 +34,9 @@ export function StoryExplorer() {
     stories[0]?.id ?? null,
   );
   const { openPublicFile } = usePcRoutes();
+  const openStoryComments = useDesktopStore(
+    (state) => state.openStoryComments,
+  );
 
   const selected: PublicStory | undefined = stories.find(
     (story) => story.id === selectedId,
@@ -98,10 +102,11 @@ export function StoryExplorer() {
               : null
           }
           emptyMessage="Select a story to read."
+          showHeading={false}
           action={
-            author ? (
+            selected ? (
               <>
-                {fileSlug ? (
+                {author && fileSlug ? (
                   <button
                     type="button"
                     className="win-raised flex items-center gap-1 px-2 py-0.5"
@@ -111,7 +116,22 @@ export function StoryExplorer() {
                     Open file
                   </button>
                 ) : null}
-                <VisitPcButton userId={author.id} />
+                <button
+                  type="button"
+                  className="win-raised flex items-center gap-1 px-2 py-0.5"
+                  onClick={() =>
+                    openStoryComments({
+                      documentId: selected.documentId,
+                      storyTitle: selected.title,
+                    })
+                  }
+                >
+                  <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+                    <CommentsIcon size={14} />
+                  </span>
+                  Comments
+                </button>
+                {author ? <VisitPcButton userId={author.id} /> : null}
               </>
             ) : null
           }

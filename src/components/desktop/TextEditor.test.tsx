@@ -36,6 +36,7 @@ function resetStore() {
     remoteUserId: null,
     favorites: [],
     localBbsNotes: [],
+    localStoryComments: [],
     localProfile: {
       displayName: "Writer",
       computerName: "WRITER-PC",
