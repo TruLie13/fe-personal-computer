@@ -1,4 +1,5 @@
 import {
+  canDeleteIcon,
   DEFAULT_ICONS,
   findOpenDesktopSlot,
   ICON_SLOT_HEIGHT,
@@ -7,6 +8,7 @@ import {
   nextDesktopIconPosition,
   PROFILE_ICON_POSITION,
 } from "@/lib/storage";
+import { getNetworkUser } from "@/lib/networkSeed";
 import type { DesktopIcon } from "@/types/desktop";
 
 describe("desktop icon placement", () => {
@@ -93,5 +95,17 @@ describe("desktop icon placement", () => {
     const profile = merged.find((icon) => icon.type === "profile");
     expect(profile?.x).toBe(PROFILE_ICON_POSITION.x);
     expect(profile?.y).toBe(PROFILE_ICON_POSITION.y);
+  });
+
+  it("includes a locked Guest Book app on local and seed remote desktops", () => {
+    const localGb = DEFAULT_ICONS.find((icon) => icon.id === "guestbook");
+    expect(localGb?.type).toBe("guestbook");
+    expect(localGb).toBeDefined();
+    expect(canDeleteIcon(localGb!)).toBe(false);
+
+    for (const userId of ["maya", "rex"] as const) {
+      const icons = getNetworkUser(userId)?.snapshot.icons ?? [];
+      expect(icons.some((icon) => icon.id === "guestbook")).toBe(true);
+    }
   });
 });

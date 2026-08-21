@@ -102,6 +102,9 @@ describe("desktopStore network", () => {
     );
     expect(selectActiveWallpaper(state)).toBe(maya!.snapshot.wallpaper);
     expect(selectActiveIcons(state)).toEqual(maya!.snapshot.icons);
+    expect(
+      selectActiveIcons(state).some((icon) => icon.type === "guestbook"),
+    ).toBe(true);
   });
 
   it("updates local profile name and desktop icon label", () => {

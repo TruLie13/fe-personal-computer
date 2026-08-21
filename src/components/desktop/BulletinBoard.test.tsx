@@ -222,4 +222,38 @@ describe("BulletinBoard", () => {
     await user.click(screen.getByRole("button", { name: "Show less" }));
     expect(screen.queryByText("line 11")).not.toBeInTheDocument();
   });
+
+  it("keeps title and author on separate lines with indented body", () => {
+    render(<BulletinBoard />);
+    const title = screen.getByRole("heading", {
+      name: /Looking for brave readers/i,
+    });
+    const meta = screen.getByText(/Rex Ortega ·/i);
+    expect(title.tagName).toBe("H3");
+    expect(meta.tagName).toBe("P");
+    expect(title.compareDocumentPosition(meta) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    const body = screen.getByText(/Working on something horror-adjacent/i);
+    expect(body.className).toContain("pl-4");
+    expect(
+      screen.queryByRole("button", { name: "Read more" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not show Read more for short posts", () => {
+    resetStore([
+      {
+        id: "local-short",
+        authorId: LOCAL_USER_ID,
+        title: "Short",
+        content: "Hi",
+        createdAt: "2026-08-20T12:00:00.000Z",
+      },
+    ]);
+    render(<BulletinBoard />);
+    expect(screen.getByText("Hi")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Read more" }),
+    ).not.toBeInTheDocument();
+  });
 });

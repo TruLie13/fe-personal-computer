@@ -47,4 +47,18 @@ describe("WindowFrame", () => {
     const { container } = render(<WindowFrame window={closed} />);
     expect(container).toBeEmptyDOMElement();
   });
+
+  it("renders the Guest Book wall body", () => {
+    useDesktopStore.getState().openWindow("guestbook");
+    const win = useDesktopStore.getState().windows[0]!;
+    const { container } = render(<WindowFrame window={win} />);
+
+    expect(
+      screen.getByRole("dialog", { name: /Guest Book/i }),
+    ).toBeInTheDocument();
+    expect(container.querySelector(".win-guestbook-wall")).toBeTruthy();
+    expect(
+      screen.getByText(/Your book — visitors sign when they Visit PC/i),
+    ).toBeInTheDocument();
+  });
 });
