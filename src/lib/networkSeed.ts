@@ -1,12 +1,23 @@
 import type {
   BbsPost,
+  GuestbookEntry,
   NetworkUser,
   NetworkUserId,
   PublicStory,
   StoryComment,
 } from "@/types/network";
+import type { DesktopIcon } from "@/types/desktop";
 
 export const LOCAL_USER_ID = "local";
+
+/** Locked Guest Book icon shared by every PC (local + seed remotes). */
+export const GUESTBOOK_DESKTOP_ICON: DesktopIcon = {
+  id: "guestbook",
+  label: "Guest Book",
+  type: "guestbook",
+  x: 216,
+  y: 16,
+};
 
 export const NETWORK_USERS: NetworkUser[] = [
   {
@@ -58,6 +69,11 @@ export const NETWORK_USERS: NetworkUser[] = [
           y: 96,
           documentId: "maya-doc-rain",
           parentId: null,
+        },
+        {
+          ...GUESTBOOK_DESKTOP_ICON,
+          x: 184,
+          y: 16,
         },
         {
           id: "maya-file-poem",
@@ -142,6 +158,11 @@ export const NETWORK_USERS: NetworkUser[] = [
           y: 96,
           documentId: "rex-doc-log",
           parentId: null,
+        },
+        {
+          ...GUESTBOOK_DESKTOP_ICON,
+          x: 184,
+          y: 16,
         },
         {
           id: "rex-file-outline",
@@ -318,6 +339,54 @@ export function listPublicStoriesNewestFirst(): PublicStory[] {
   return [...PUBLIC_STORIES].sort(
     (a, b) =>
       new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+  );
+}
+
+/** Seed Guest Book messages on seed PCs. */
+export const SEED_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
+  {
+    id: "gb-rex-on-maya",
+    hostUserId: "maya",
+    authorId: "rex",
+    content:
+      "Liked the purple machine. Left a note so the rain poems know I was here.",
+    createdAt: "2026-08-12T16:30:00.000Z",
+  },
+  {
+    id: "gb-maya-on-rex",
+    hostUserId: "rex",
+    authorId: "maya",
+    content:
+      "Black desktop, green chrome — dramatic. Keep the scary paragraph.",
+    createdAt: "2026-08-13T22:00:00.000Z",
+  },
+];
+
+/** Oldest-first messages for a host's Guest Book. */
+export function mergeGuestbookOldestFirst(
+  hostUserId: NetworkUserId,
+  localEntries: GuestbookEntry[],
+): GuestbookEntry[] {
+  const deletedIds = new Set(
+    localEntries
+      .filter((entry) => entry.deletedAt)
+      .map((entry) => entry.id),
+  );
+  const localLive = localEntries.filter(
+    (entry) =>
+      entry.hostUserId === hostUserId &&
+      !entry.deletedAt &&
+      !SEED_GUESTBOOK_ENTRIES.some((seed) => seed.id === entry.id),
+  );
+  const seedLive = SEED_GUESTBOOK_ENTRIES.filter(
+    (entry) =>
+      entry.hostUserId === hostUserId &&
+      !entry.deletedAt &&
+      !deletedIds.has(entry.id),
+  );
+  return [...seedLive, ...localLive].sort(
+    (a, b) =>
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
 }
 

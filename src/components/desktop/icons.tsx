@@ -312,6 +312,39 @@ export function CommentsIcon({ className, size = 32 }: IconProps) {
   );
 }
 
+/** Open guestbook — cream pages with a pen, distinct from Story Explorer’s book. */
+export function GuestBookIcon({ className, size = 32 }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      style={{ display: "block", flexShrink: 0 }}
+      aria-hidden="true"
+    >
+      <path
+        d="M6 5h9v22H8a2 2 0 0 1-2-2V5z"
+        fill="#f5f0e6"
+        stroke="#000"
+      />
+      <path
+        d="M17 5h9v20a2 2 0 0 1-2 2h-7V5z"
+        fill="#fffef8"
+        stroke="#000"
+      />
+      <path d="M15 5v22" stroke="#000" />
+      <path d="M19 10h5M19 14h5M19 18h3" stroke="#808080" />
+      <path
+        d="M22 22l6-2 1 3-6 2-1-3z"
+        fill="#c0c0c0"
+        stroke="#000"
+      />
+      <path d="M22 22l1 3" stroke="#000" />
+    </svg>
+  );
+}
+
 export function iconForType(type: string) {
   switch (type) {
     case "folder":
@@ -328,6 +361,8 @@ export function iconForType(type: string) {
       return StoryExplorerIcon;
     case "comments":
       return CommentsIcon;
+    case "guestbook":
+      return GuestBookIcon;
     case "network":
       return NetworkIcon;
     case "profile":

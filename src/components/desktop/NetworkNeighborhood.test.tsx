@@ -31,6 +31,7 @@ describe("NetworkNeighborhood", () => {
       favorites: [],
       localBbsNotes: [],
     localStoryComments: [],
+    localGuestbookEntries: [],
       localProfile: {
         displayName: "Writer",
         computerName: "WRITER-PC",

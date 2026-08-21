@@ -9,6 +9,7 @@ export type WindowType =
   | "network"
   | "stories"
   | "comments"
+  | "guestbook"
   | "profile";
 
 export interface DesktopIcon {

@@ -52,6 +52,18 @@ export interface StoryComment {
   createdAt: string;
 }
 
+/** Message left on a user's Guest Book (Myspace-style wall for that PC). */
+export interface GuestbookEntry {
+  id: string;
+  /** Whose Guest Book this appears in. */
+  hostUserId: NetworkUserId;
+  authorId: NetworkUserId;
+  content: string;
+  createdAt: string;
+  /** Soft-delete; host or author may delete. */
+  deletedAt?: string;
+}
+
 /** Public writing discoverable in Story Explorer without following the author. */
 export interface PublicStory {
   id: string;

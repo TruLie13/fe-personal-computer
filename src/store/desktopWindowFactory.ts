@@ -16,6 +16,7 @@ export const WINDOW_DEFAULTS: Record<
   network: { title: "Network Neighborhood", width: 480, height: 360 },
   stories: { title: "Story Explorer", width: 560, height: 420 },
   comments: { title: "Comments", width: 420, height: 360 },
+  guestbook: { title: "Guest Book", width: 520, height: 420 },
   profile: { title: "Profile", width: 420, height: 360 },
 };
 

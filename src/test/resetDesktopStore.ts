@@ -28,6 +28,7 @@ export function resetDesktopStore() {
     favorites: [],
     localBbsNotes: [],
     localStoryComments: [],
+    localGuestbookEntries: [],
     localProfile: {
       displayName: "Writer",
       computerName: "WRITER-PC",

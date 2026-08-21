@@ -1,6 +1,7 @@
 import type { StateCreator } from "zustand";
 import { loadLocalBbsNotes } from "@/lib/bbsNotes";
 import { loadFavorites } from "@/lib/favorites";
+import { loadLocalGuestbookEntries } from "@/lib/guestbook";
 import {
   computerLabel,
   loadLocalProfile,
@@ -67,6 +68,7 @@ export const createSessionSlice: StateCreator<
       favorites: loadFavorites(),
       localBbsNotes: loadLocalBbsNotes(),
       localStoryComments: loadLocalStoryComments(),
+      localGuestbookEntries: loadLocalGuestbookEntries(),
       localProfile,
       windows: restoreSession ? (session?.windows ?? []) : existingWindows,
       documentWindowFifo: restoreSession

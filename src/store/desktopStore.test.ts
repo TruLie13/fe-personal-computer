@@ -33,7 +33,8 @@ describe("desktopStore", () => {
       remoteUserId: null,
       favorites: [],
       localBbsNotes: [],
-    localStoryComments: [],
+      localStoryComments: [],
+      localGuestbookEntries: [],
       localProfile: {
         displayName: "Writer",
         computerName: "WRITER-PC",

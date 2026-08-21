@@ -37,6 +37,7 @@ function resetStore(localBbsNotes: BbsPost[] = []) {
     favorites: [],
     localBbsNotes,
     localStoryComments: [],
+    localGuestbookEntries: [],
     localProfile: {
       displayName: "Writer",
       computerName: "WRITER-PC",
