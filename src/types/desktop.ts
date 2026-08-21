@@ -46,6 +46,18 @@ export interface DesktopWindow {
   isOpen: boolean;
   isFocused: boolean;
   isMinimized: boolean;
+  /** Fills the desktop area above the taskbar. */
+  isMaximized: boolean;
+  /**
+   * Geometry to restore when leaving maximized.
+   * Only set while `isMaximized` is true.
+   */
+  restoreBounds?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
   x: number;
   y: number;
   width: number;

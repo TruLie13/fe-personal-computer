@@ -115,6 +115,9 @@ export function WindowFrame({ window }: WindowFrameProps) {
   const focusWindow = useDesktopStore((state) => state.focusWindow);
   const closeWindow = useDesktopStore((state) => state.closeWindow);
   const minimizeWindow = useDesktopStore((state) => state.minimizeWindow);
+  const toggleMaximizeWindow = useDesktopStore(
+    (state) => state.toggleMaximizeWindow,
+  );
   const updateWindowPosition = useDesktopStore(
     (state) => state.updateWindowPosition,
   );
@@ -137,7 +140,7 @@ export function WindowFrame({ window }: WindowFrameProps) {
   }
 
   const onTitlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) {
+    if (event.button !== 0 || window.isMaximized) {
       return;
     }
     const target = event.target as HTMLElement;
@@ -154,7 +157,7 @@ export function WindowFrame({ window }: WindowFrameProps) {
   };
 
   const onTitlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragging.current) {
+    if (!dragging.current || window.isMaximized) {
       return;
     }
     // Integer coords keep text crisp and stop SVG clip from flickering mid-drag.
@@ -204,6 +207,13 @@ export function WindowFrame({ window }: WindowFrameProps) {
         onPointerDown={onTitlePointerDown}
         onPointerMove={onTitlePointerMove}
         onPointerUp={onTitlePointerUp}
+        onDoubleClick={(event) => {
+          const target = event.target as HTMLElement;
+          if (target.closest("button")) {
+            return;
+          }
+          toggleMaximizeWindow(window.id);
+        }}
       >
         <Icon className="shrink-0" size={16} />
         <span className="min-w-0 flex-1 truncate">{title}</span>
@@ -223,12 +233,15 @@ export function WindowFrame({ window }: WindowFrameProps) {
         <button
           type="button"
           className="win-title-btn"
-          aria-label="Maximize"
-          disabled
+          aria-label={window.isMaximized ? "Restore" : "Maximize"}
           onPointerDown={stopChromePointer}
           onMouseDown={stopChromePointer}
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleMaximizeWindow(window.id);
+          }}
         >
-          □
+          {window.isMaximized ? "❐" : "□"}
         </button>
         <button
           type="button"

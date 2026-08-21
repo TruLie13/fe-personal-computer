@@ -121,6 +121,7 @@ export const createCommentsSlice: StateCreator<
       isOpen: true,
       isFocused: true,
       isMinimized: false,
+      isMaximized: false,
       ...position,
       width: defaults.width,
       height: defaults.height,

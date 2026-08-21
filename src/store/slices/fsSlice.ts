@@ -471,6 +471,8 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
         isOpen: false,
         isFocused: false,
         isMinimized: false,
+        isMaximized: false,
+        restoreBounds: undefined,
       };
     });
 

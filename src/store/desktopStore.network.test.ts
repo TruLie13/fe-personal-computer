@@ -502,6 +502,7 @@ describe("desktopStore network", () => {
             isOpen: true,
             isFocused: true,
             isMinimized: false,
+            isMaximized: false,
             x: 88,
             y: 44,
             width: 480,

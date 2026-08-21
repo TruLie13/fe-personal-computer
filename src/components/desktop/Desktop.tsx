@@ -44,6 +44,9 @@ export function Desktop({
   const taskbarHeight = useDesktopStore((state) => state.taskbarHeight);
   const hydrate = useDesktopStore((state) => state.hydrate);
   const hydrated = useDesktopStore((state) => state.hydrated);
+  const syncMaximizedWindows = useDesktopStore(
+    (state) => state.syncMaximizedWindows,
+  );
   const applyDeepLink = useDesktopStore((state) => state.applyDeepLink);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
   const setSelectedIcons = useDesktopStore((state) => state.setSelectedIcons);
@@ -84,6 +87,13 @@ export function Desktop({
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  useEffect(() => {
+    syncMaximizedWindows();
+    const onResize = () => syncMaximizedWindows();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [syncMaximizedWindows, taskbarHeight]);
 
   // Persist open windows / positions for the local desktop only.
   useEffect(() => {

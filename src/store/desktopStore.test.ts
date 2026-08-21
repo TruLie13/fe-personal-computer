@@ -673,6 +673,48 @@ describe("desktopStore", () => {
     expect(windowState?.isFocused).toBe(true);
   });
 
+  it("maximizes a window to the desktop and restores prior bounds", () => {
+    const { openWindow, toggleMaximizeWindow } = useDesktopStore.getState();
+    openWindow("bulletin-board");
+    const before = useDesktopStore.getState().windows[0]!;
+    const prior = {
+      x: before.x,
+      y: before.y,
+      width: before.width,
+      height: before.height,
+    };
+
+    toggleMaximizeWindow(before.id);
+    let win = useDesktopStore.getState().windows[0]!;
+    expect(win.isMaximized).toBe(true);
+    expect(win.x).toBe(0);
+    expect(win.y).toBe(0);
+    expect(win.width).toBe(window.innerWidth);
+    expect(win.height).toBe(window.innerHeight - 36);
+    expect(win.restoreBounds).toEqual(prior);
+
+    toggleMaximizeWindow(before.id);
+    win = useDesktopStore.getState().windows[0]!;
+    expect(win.isMaximized).toBe(false);
+    expect(win.restoreBounds).toBeUndefined();
+    expect(win.x).toBe(prior.x);
+    expect(win.y).toBe(prior.y);
+    expect(win.width).toBe(prior.width);
+    expect(win.height).toBe(prior.height);
+  });
+
+  it("ignores move while maximized", () => {
+    const { openWindow, toggleMaximizeWindow, updateWindowPosition } =
+      useDesktopStore.getState();
+    openWindow("network-neighborhood");
+    const id = useDesktopStore.getState().windows[0]!.id;
+    toggleMaximizeWindow(id);
+    updateWindowPosition(id, 120, 80);
+    const win = useDesktopStore.getState().windows[0]!;
+    expect(win.x).toBe(0);
+    expect(win.y).toBe(0);
+  });
+
   it("selects icons and clears rename when selecting another", () => {
     const { createFolder, startRename, selectIcon } =
       useDesktopStore.getState();

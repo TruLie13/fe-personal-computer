@@ -17,6 +17,7 @@ const sampleWindow: DesktopWindow = {
   isOpen: true,
   isFocused: true,
   isMinimized: false,
+  isMaximized: false,
   x: 40,
   y: 60,
   width: 480,

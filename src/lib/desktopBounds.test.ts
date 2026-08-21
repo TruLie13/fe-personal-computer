@@ -1,4 +1,8 @@
-import { centeredWindowPosition, clampIconPosition } from "@/lib/desktopBounds";
+import {
+  centeredWindowPosition,
+  clampIconPosition,
+  maximizedWindowBounds,
+} from "@/lib/desktopBounds";
 
 describe("clampIconPosition", () => {
   const icon = { width: 76, height: 64 };
@@ -43,6 +47,19 @@ describe("centeredWindowPosition", () => {
     ).toEqual({
       x: 290,
       y: 152,
+    });
+  });
+});
+
+describe("maximizedWindowBounds", () => {
+  it("fills the desktop above the taskbar", () => {
+    expect(
+      maximizedWindowBounds(40, { width: 1280, height: 800 }),
+    ).toEqual({
+      x: 0,
+      y: 0,
+      width: 1280,
+      height: 760,
     });
   });
 });

@@ -38,6 +38,32 @@ describe("WindowFrame", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("maximizes and restores from the title-bar button", async () => {
+    const user = userEvent.setup();
+    useDesktopStore.getState().openWindow("guestbook");
+    const win = useDesktopStore.getState().windows[0]!;
+    const prior = {
+      x: win.x,
+      y: win.y,
+      width: win.width,
+      height: win.height,
+    };
+
+    const { rerender } = render(<WindowFrame window={win} />);
+    await user.click(screen.getByRole("button", { name: "Maximize" }));
+
+    let next = useDesktopStore.getState().windows[0]!;
+    expect(next.isMaximized).toBe(true);
+    rerender(<WindowFrame window={next} />);
+    expect(screen.getByRole("button", { name: "Restore" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Restore" }));
+    next = useDesktopStore.getState().windows[0]!;
+    expect(next.isMaximized).toBe(false);
+    expect(next.width).toBe(prior.width);
+    expect(next.height).toBe(prior.height);
+  });
+
   it("returns null when the window is closed", () => {
     useDesktopStore.getState().openWindow("notepad");
     const win = useDesktopStore.getState().windows[0]!;

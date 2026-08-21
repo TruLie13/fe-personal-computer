@@ -1,4 +1,5 @@
 import type { StateCreator } from "zustand";
+import { maximizedWindowBounds } from "@/lib/desktopBounds";
 import {
   countsTowardOpenDocumentCap,
   MAX_OPEN_DOCUMENT_WINDOWS,
@@ -19,6 +20,8 @@ export type WindowSlice = Pick<
   | "closeWindow"
   | "closeAllWindows"
   | "minimizeWindow"
+  | "toggleMaximizeWindow"
+  | "syncMaximizedWindows"
   | "focusWindow"
   | "updateWindowPosition"
 >;
@@ -283,7 +286,7 @@ export const createWindowSlice: StateCreator<
     set((state) => {
       const windows = state.windows.map((window) =>
         window.id === windowId
-          ? { ...window, isOpen: false, isFocused: false, isMinimized: false }
+          ? { ...window, isOpen: false, isFocused: false, isMinimized: false, isMaximized: false, restoreBounds: undefined }
           : window,
       );
       return {
@@ -304,6 +307,8 @@ export const createWindowSlice: StateCreator<
               isOpen: false,
               isFocused: false,
               isMinimized: false,
+              isMaximized: false,
+              restoreBounds: undefined,
             }
           : window,
       ),
@@ -319,6 +324,78 @@ export const createWindowSlice: StateCreator<
           : window,
       ),
     }));
+  },
+
+  toggleMaximizeWindow: (windowId) => {
+    const state = get();
+    const target = state.windows.find((window) => window.id === windowId);
+    if (!target || !target.isOpen) {
+      return;
+    }
+    const zIndex = state.nextZIndex;
+    if (target.isMaximized && target.restoreBounds) {
+      const { x, y, width, height } = target.restoreBounds;
+      set({
+        windows: state.windows.map((window) =>
+          window.id === windowId
+            ? {
+                ...window,
+                isMaximized: false,
+                restoreBounds: undefined,
+                isFocused: true,
+                isMinimized: false,
+                x,
+                y,
+                width,
+                height,
+                zIndex,
+              }
+            : { ...window, isFocused: false },
+        ),
+        nextZIndex: zIndex + 1,
+        isStartMenuOpen: false,
+      });
+      return;
+    }
+
+    const bounds = maximizedWindowBounds(state.taskbarHeight);
+    set({
+      windows: state.windows.map((window) =>
+        window.id === windowId
+          ? {
+              ...window,
+              isMaximized: true,
+              restoreBounds: {
+                x: window.x,
+                y: window.y,
+                width: window.width,
+                height: window.height,
+              },
+              isFocused: true,
+              isMinimized: false,
+              ...bounds,
+              zIndex,
+            }
+          : { ...window, isFocused: false },
+      ),
+      nextZIndex: zIndex + 1,
+      isStartMenuOpen: false,
+    });
+  },
+
+  syncMaximizedWindows: () => {
+    const state = get();
+    if (!state.windows.some((window) => window.isMaximized && window.isOpen)) {
+      return;
+    }
+    const bounds = maximizedWindowBounds(state.taskbarHeight);
+    set({
+      windows: state.windows.map((window) =>
+        window.isMaximized && window.isOpen
+          ? { ...window, ...bounds }
+          : window,
+      ),
+    });
   },
 
   focusWindow: (windowId) => {
@@ -348,9 +425,12 @@ export const createWindowSlice: StateCreator<
 
   updateWindowPosition: (windowId, x, y) => {
     set((state) => ({
-      windows: state.windows.map((window) =>
-        window.id === windowId ? { ...window, x, y } : window,
-      ),
+      windows: state.windows.map((window) => {
+        if (window.id !== windowId || window.isMaximized) {
+          return window;
+        }
+        return { ...window, x, y };
+      }),
     }));
   },
 });
