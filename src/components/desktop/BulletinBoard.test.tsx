@@ -199,4 +199,27 @@ describe("BulletinBoard", () => {
     expect(screen.getByText(/leave a post for the community/i)).toBeInTheDocument();
     expect(screen.getByText(/Looking for brave readers/i)).toBeInTheDocument();
   });
+
+  it("collapses long posts behind Read more", async () => {
+    const user = userEvent.setup();
+    const longBody = Array.from({ length: 12 }, (_, i) => `line ${i}`).join(
+      "\n",
+    );
+    resetStore([
+      {
+        id: "local-long",
+        authorId: LOCAL_USER_ID,
+        title: "Long post",
+        content: longBody,
+        createdAt: "2026-08-20T12:00:00.000Z",
+      },
+    ]);
+    render(<BulletinBoard />);
+
+    expect(screen.queryByText("line 11")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Read more" }));
+    expect(screen.getByText(/line 11/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show less" }));
+    expect(screen.queryByText("line 11")).not.toBeInTheDocument();
+  });
 });

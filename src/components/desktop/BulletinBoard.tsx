@@ -6,9 +6,11 @@ import { BbsPinIcon, DeleteIcon, PlusIcon } from "@/components/desktop/icons";
 import { VisitPcButton } from "@/components/desktop/VisitPcButton";
 import { formatShortDateTime } from "@/lib/formatDate";
 import {
+  bbsPostNeedsCollapse,
   canPostBbsNoteToday,
   clampBbsNoteContent,
   clampBbsNoteTitle,
+  collapseBbsPostContent,
   countBbsNotesOnUtcDay,
   MAX_BBS_NOTE_CHARS,
   MAX_BBS_NOTE_TITLE_CHARS,
@@ -35,6 +37,9 @@ export function BulletinBoard() {
   const [draftBody, setDraftBody] = useState("");
   const [showDailyLimit, setShowDailyLimit] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [expandedPostIds, setExpandedPostIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
 
   const postsToday = countBbsNotesOnUtcDay(localBbsNotes);
   const atDailyLimit = !canPostBbsNoteToday(localBbsNotes);
@@ -81,6 +86,18 @@ export function BulletinBoard() {
     }
     deleteBbsNote(pendingDeleteId);
     setPendingDeleteId(null);
+  };
+
+  const toggleExpanded = (postId: string) => {
+    setExpandedPostIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(postId)) {
+        next.delete(postId);
+      } else {
+        next.add(postId);
+      }
+      return next;
+    });
   };
 
   return (
@@ -169,10 +186,16 @@ export function BulletinBoard() {
               const isOwn = post.authorId === LOCAL_USER_ID;
               const canVisit =
                 !isOwn && Boolean(getNetworkUser(post.authorId));
+              const needsCollapse = bbsPostNeedsCollapse(post.content);
+              const expanded = expandedPostIds.has(post.id);
+              const bodyText =
+                needsCollapse && !expanded
+                  ? collapseBbsPostContent(post.content)
+                  : post.content;
               return (
                 <li
                   key={post.id}
-                  className="border-b border-win-dark px-2 py-1.5 last:border-b-0"
+                  className="border-b border-win-dark px-2 py-3 last:border-b-0"
                 >
                   <div className="flex items-start gap-2">
                     <span className="mt-0.5 shrink-0" aria-hidden="true">
@@ -184,9 +207,19 @@ export function BulletinBoard() {
                         {authorDisplayName(post.authorId)} ·{" "}
                         {formatShortDateTime(post.createdAt)}
                       </p>
-                      <p className="mt-2.5 whitespace-pre-wrap leading-6">
-                        {post.content}
+                      <p className="mt-3.5 pl-4 whitespace-pre-wrap leading-6">
+                        {bodyText}
+                        {needsCollapse && !expanded ? "…" : ""}
                       </p>
+                      {needsCollapse ? (
+                        <button
+                          type="button"
+                          className="win-raised mt-1.5 ml-4 px-1.5 py-0.5 text-[11px]"
+                          onClick={() => toggleExpanded(post.id)}
+                        >
+                          {expanded ? "Show less" : "Read more"}
+                        </button>
+                      ) : null}
                     </div>
                     <div className="flex shrink-0 flex-col gap-1">
                       {canVisit ? (

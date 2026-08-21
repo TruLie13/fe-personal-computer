@@ -8,7 +8,7 @@ interface MasterDetailProps {
   detail: ReactNode;
 }
 
-/** Win95-style left list + right detail layout used by BBS and Story Explorer. */
+/** Win95-style left list + right detail layout (Story Explorer). */
 export function MasterDetail({
   header,
   aboveSplit,
@@ -60,8 +60,8 @@ export function MasterDetailListItem({
         <span className="flex items-center gap-2 font-bold">{title}</span>
         <span
           className={`truncate text-[11px] ${
-            active ? "text-white/90" : "text-win-paper-muted"
-          }`}
+            subtitle != null ? "mb-1.5" : ""
+          } ${active ? "text-white/90" : "text-win-paper-muted"}`}
         >
           {meta}
         </span>
