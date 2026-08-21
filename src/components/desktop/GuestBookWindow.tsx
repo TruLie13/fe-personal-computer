@@ -2,12 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
-import { DeleteIcon, PlusIcon } from "@/components/desktop/icons";
-import {
-  MasterDetail,
-  MasterDetailListItem,
-  MasterDetailPane,
-} from "@/components/desktop/MasterDetail";
+import { DeleteIcon } from "@/components/desktop/icons";
 import { VisitPcButton } from "@/components/desktop/VisitPcButton";
 import { formatShortDateTime } from "@/lib/formatDate";
 import {
@@ -24,7 +19,16 @@ import {
   mergeGuestbookOldestFirst,
 } from "@/lib/networkSeed";
 import { useDesktopStore } from "@/store/desktopStore";
-import type { GuestbookEntry } from "@/types/network";
+
+function canDeleteEntry(
+  entry: { authorId: string; hostUserId: string },
+  isOwnBook: boolean,
+): boolean {
+  return (
+    entry.authorId === LOCAL_USER_ID ||
+    (isOwnBook && entry.hostUserId === LOCAL_USER_ID)
+  );
+}
 
 export function GuestBookWindow() {
   const viewMode = useDesktopStore((state) => state.viewMode);
@@ -47,8 +51,6 @@ export function GuestBookWindow() {
     [hostUserId, localGuestbookEntries],
   );
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [composing, setComposing] = useState(false);
   const [draft, setDraft] = useState("");
   const [showDailyLimit, setShowDailyLimit] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -63,38 +65,13 @@ export function GuestBookWindow() {
     hostUserId,
     LOCAL_USER_ID,
   );
-
-  const effectiveSelectedId = selectedId ?? entries[0]?.id ?? null;
-  const selected: GuestbookEntry | undefined = entries.find(
-    (entry) => entry.id === effectiveSelectedId,
-  );
-
-  const canVisitAuthor =
-    selected != null &&
-    selected.authorId !== LOCAL_USER_ID &&
-    Boolean(getNetworkUser(selected.authorId));
-  const canDeleteSelected =
-    selected != null &&
-    (selected.authorId === LOCAL_USER_ID ||
-      (isOwnBook && selected.hostUserId === LOCAL_USER_ID));
-
   const charCount = draft.length;
   const atCharLimit = charCount >= MAX_GUESTBOOK_ENTRY_CHARS;
 
-  const onSignClick = () => {
-    if (!canSign) {
-      return;
-    }
-    if (composing) {
-      setComposing(false);
-      return;
-    }
-    if (atDailyLimit) {
-      setShowDailyLimit(true);
-      return;
-    }
-    setComposing(true);
-  };
+  const hostLabel =
+    hostUserId === LOCAL_USER_ID
+      ? "this PC"
+      : (getNetworkUser(hostUserId)?.displayName ?? hostUserId);
 
   const onSign = () => {
     const content = draft.trim();
@@ -109,187 +86,140 @@ export function GuestBookWindow() {
       )
     ) {
       setShowDailyLimit(true);
-      setComposing(false);
       return;
     }
     const id = signGuestbook(hostUserId, content);
     if (!id) {
       setShowDailyLimit(true);
-      setComposing(false);
       return;
     }
     setDraft("");
-    setComposing(false);
-    setSelectedId(id);
-  };
-
-  const requestDelete = () => {
-    if (!selected || !canDeleteSelected) {
-      return;
-    }
-    setPendingDeleteId(selected.id);
   };
 
   const confirmDelete = () => {
     if (!pendingDeleteId) {
       return;
     }
-    const deletedId = pendingDeleteId;
-    const ok = deleteGuestbookEntry(deletedId);
+    deleteGuestbookEntry(pendingDeleteId);
     setPendingDeleteId(null);
-    if (!ok) {
-      return;
-    }
-    const remaining = mergeGuestbookOldestFirst(
-      hostUserId,
-      useDesktopStore.getState().localGuestbookEntries,
-    );
-    setSelectedId(remaining[0]?.id ?? null);
   };
 
-  const detailAction = (() => {
-    if (canVisitAuthor && selected) {
-      return <VisitPcButton userId={selected.authorId} />;
-    }
-    if (canDeleteSelected) {
-      return (
-        <button
-          type="button"
-          className="win-raised flex items-center gap-1 px-2 py-0.5"
-          onClick={requestDelete}
-        >
-          <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
-            <DeleteIcon size={14} />
-          </span>
-          Delete
-        </button>
-      );
-    }
-    return null;
-  })();
-
-  const hostLabel =
-    hostUserId === LOCAL_USER_ID
-      ? "this PC"
-      : (getNetworkUser(hostUserId)?.displayName ?? hostUserId);
-
   return (
-    <div className="relative h-full min-h-0">
-      <MasterDetail
-        header={
-          <>
-            <span className="min-w-0 flex-1 text-win-dark">
-              Guest Book — messages left on {hostLabel}
-            </span>
-            {canSign ? (
-              <button
-                type="button"
-                className="win-raised flex items-center gap-1 px-2 py-0.5"
-                onClick={onSignClick}
-              >
-                {composing ? (
-                  "Cancel"
-                ) : (
-                  <>
-                    <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
-                      <PlusIcon size={14} />
-                    </span>
-                    Sign…
-                  </>
-                )}
-              </button>
-            ) : null}
-          </>
-        }
-        aboveSplit={
-          composing && canSign ? (
-            <div className="flex flex-col border-b border-win-dark">
-              <div className="p-2">
-                <textarea
-                  className="win-sunken min-h-[88px] w-full resize-none bg-win-paper p-2 text-win-ink outline-none"
-                  value={draft}
-                  onChange={(event) =>
-                    setDraft(clampGuestbookEntryContent(event.target.value))
-                  }
-                  placeholder="Leave a short message for this PC…"
-                  spellCheck={false}
-                  aria-label="Guest Book message"
-                  maxLength={MAX_GUESTBOOK_ENTRY_CHARS}
-                />
-              </div>
-              <div className="relative z-10 flex shrink-0 items-center justify-between gap-2 border-t border-win-dark px-2 py-0.5">
-                <span
-                  className="text-[11px] text-win-dark"
-                  aria-live="polite"
+    <div className="relative flex h-full min-h-0 flex-col bg-win-face text-[12px]">
+      <div className="flex shrink-0 items-center gap-2 border-b border-win-dark px-2 py-1 text-win-dark">
+        <span className="min-w-0 flex-1">
+          Guest Book — signed pages for {hostLabel}
+        </span>
+        <span className="shrink-0 text-[11px] text-win-dark/80">
+          oldest first
+        </span>
+      </div>
+
+      <div className="win-guestbook-wall win-sunken m-1 min-h-0 flex-1 overflow-auto bg-win-paper text-win-ink">
+        {entries.length === 0 ? (
+          <p className="p-3 text-win-paper-muted">
+            {canSign
+              ? "This book is empty. Leave the first signature below."
+              : "No signatures yet. Visitors leave messages when they Visit PC."}
+          </p>
+        ) : (
+          <ul className="list-none p-2">
+            {entries.map((entry) => {
+              const canVisit =
+                entry.authorId !== LOCAL_USER_ID &&
+                Boolean(getNetworkUser(entry.authorId));
+              const canDelete = canDeleteEntry(entry, isOwnBook);
+              return (
+                <li
+                  key={entry.id}
+                  className="mb-2 border border-win-dark bg-win-paper-hover px-2 py-1.5 last:mb-0"
                 >
-                  <span aria-label="Character count">
-                    {charCount}/{MAX_GUESTBOOK_ENTRY_CHARS}
-                    {atCharLimit ? " (limit reached)" : ""}
-                  </span>
-                  <span aria-hidden="true"> · </span>
-                  <span aria-label="Daily sign count">
-                    {signsToday}/{MAX_GUESTBOOK_SIGNS_PER_HOST_PER_UTC_DAY}{" "}
-                    today
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  className="win-raised px-3 py-0.5 disabled:opacity-50"
-                  disabled={!draft.trim()}
-                  onMouseDown={(event) => event.stopPropagation()}
-                  onClick={onSign}
-                >
-                  Sign
-                </button>
-              </div>
-            </div>
-          ) : null
-        }
-        list={
-          entries.length === 0 ? (
-            <p className="p-2 text-win-paper-muted">
-              {canSign
-                ? "No messages yet. Be the first to sign."
-                : "No messages yet. Visitors can sign when they Visit PC."}
-            </p>
-          ) : (
-            <ul className="list-none">
-              {entries.map((entry) => {
-                const active = entry.id === effectiveSelectedId;
-                return (
-                  <MasterDetailListItem
-                    key={entry.id}
-                    active={active}
-                    onSelect={() => setSelectedId(entry.id)}
-                    title={
-                      <span className="min-w-0 flex-1 truncate">
-                        {authorDisplayName(entry.authorId)}
-                      </span>
-                    }
-                    meta={formatShortDateTime(entry.createdAt)}
-                  />
-                );
-              })}
-            </ul>
-          )
-        }
-        detail={
-          <MasterDetailPane
-            item={
-              selected
-                ? {
-                    title: authorDisplayName(selected.authorId),
-                    authorLabel: formatShortDateTime(selected.createdAt),
-                    content: selected.content,
-                  }
-                : null
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <span className="font-bold">
+                          {authorDisplayName(entry.authorId)}
+                        </span>
+                        <span className="text-[11px] text-win-paper-muted">
+                          {formatShortDateTime(entry.createdAt)}
+                        </span>
+                      </div>
+                      <p className="mt-1 whitespace-pre-wrap leading-5">
+                        {entry.content}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col gap-1">
+                      {canVisit ? (
+                        <VisitPcButton userId={entry.authorId} />
+                      ) : null}
+                      {canDelete ? (
+                        <button
+                          type="button"
+                          className="win-raised flex items-center gap-1 px-1.5 py-0.5"
+                          onClick={() => setPendingDeleteId(entry.id)}
+                          aria-label="Delete signature"
+                        >
+                          <span className="inline-flex h-3.5 w-3.5 items-center justify-center">
+                            <DeleteIcon size={14} />
+                          </span>
+                          Delete
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      {canSign ? (
+        <div className="shrink-0 border-t border-win-dark">
+          <textarea
+            className="win-sunken m-1 mb-0 min-h-[72px] w-[calc(100%-8px)] resize-none bg-win-paper p-2 text-win-ink outline-none"
+            value={draft}
+            onChange={(event) =>
+              setDraft(clampGuestbookEntryContent(event.target.value))
             }
-            emptyMessage="Select a message to read."
-            showHeading
-            action={detailAction}
+            placeholder="Sign the Guest Book…"
+            spellCheck={false}
+            aria-label="Guest Book message"
+            maxLength={MAX_GUESTBOOK_ENTRY_CHARS}
           />
-        }
-      />
+          <div className="flex items-center justify-between gap-2 px-2 py-0.5">
+            <span className="text-[11px] text-win-dark" aria-live="polite">
+              <span aria-label="Character count">
+                {charCount}/{MAX_GUESTBOOK_ENTRY_CHARS}
+                {atCharLimit ? " (limit reached)" : ""}
+              </span>
+              <span aria-hidden="true"> · </span>
+              <span aria-label="Daily sign count">
+                {signsToday}/{MAX_GUESTBOOK_SIGNS_PER_HOST_PER_UTC_DAY} today
+              </span>
+            </span>
+            <button
+              type="button"
+              className="win-raised px-3 py-0.5 disabled:opacity-50"
+              disabled={!draft.trim() || atDailyLimit}
+              onClick={() => {
+                if (atDailyLimit) {
+                  setShowDailyLimit(true);
+                  return;
+                }
+                onSign();
+              }}
+            >
+              Sign
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="shrink-0 border-t border-win-dark px-2 py-1 text-[11px] text-win-dark">
+          Your book — visitors sign when they Visit PC.
+        </div>
+      )}
+
       {showDailyLimit ? (
         <ConfirmDialog
           title="Guest Book"
@@ -303,7 +233,7 @@ export function GuestBookWindow() {
       {pendingDeleteId ? (
         <ConfirmDialog
           title="Guest Book"
-          message="Delete this message?"
+          message="Delete this signature?"
           confirmLabel="Delete"
           cancelLabel="Cancel"
           onConfirm={confirmDelete}
