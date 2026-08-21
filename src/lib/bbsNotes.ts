@@ -9,6 +9,30 @@ export const MAX_BBS_NOTE_TITLE_CHARS = 80;
 export const MAX_BBS_NOTE_CHARS = 1_000;
 /** Creates per author per UTC calendar day (resets 00:00 UTC). */
 export const MAX_BBS_NOTES_PER_UTC_DAY = 5;
+/** Collapsed post preview — caps height from long bodies or one-char-per-line spam. */
+export const MAX_BBS_COLLAPSED_LINES = 5;
+export const MAX_BBS_COLLAPSED_CHARS = 320;
+
+/**
+ * Whether the board should offer Read more for this body.
+ * Line count matters as much as chars (pathological newlines).
+ */
+export function bbsPostNeedsCollapse(content: string): boolean {
+  if (content.length > MAX_BBS_COLLAPSED_CHARS) {
+    return true;
+  }
+  return content.split("\n").length > MAX_BBS_COLLAPSED_LINES;
+}
+
+/** Preview text for a collapsed post (lines first, then chars). */
+export function collapseBbsPostContent(content: string): string {
+  const lines = content.split("\n");
+  let preview = lines.slice(0, MAX_BBS_COLLAPSED_LINES).join("\n");
+  if (preview.length > MAX_BBS_COLLAPSED_CHARS) {
+    preview = preview.slice(0, MAX_BBS_COLLAPSED_CHARS);
+  }
+  return preview;
+}
 
 /** `YYYY-MM-DD` for the given instant in UTC. */
 export function utcDayKey(isoOrDate: string | Date = new Date()): string {

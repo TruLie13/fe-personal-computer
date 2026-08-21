@@ -1,8 +1,12 @@
 import {
+  bbsPostNeedsCollapse,
   canPostBbsNoteToday,
   clampBbsNoteContent,
   clampBbsNoteTitle,
+  collapseBbsPostContent,
   countBbsNotesOnUtcDay,
+  MAX_BBS_COLLAPSED_CHARS,
+  MAX_BBS_COLLAPSED_LINES,
   MAX_BBS_NOTE_CHARS,
   MAX_BBS_NOTE_TITLE_CHARS,
   MAX_BBS_NOTES_PER_UTC_DAY,
@@ -48,5 +52,25 @@ describe("bbsNotes limits", () => {
     expect(canPostBbsNoteToday(notes, new Date(`${day}T18:00:00.000Z`))).toBe(
       false,
     );
+  });
+});
+
+describe("bbsNotes collapse preview", () => {
+  it("collapses long character bodies and tall line stacks", () => {
+    expect(bbsPostNeedsCollapse("short")).toBe(false);
+    expect(bbsPostNeedsCollapse("x".repeat(MAX_BBS_COLLAPSED_CHARS + 1))).toBe(
+      true,
+    );
+    const tall = Array.from(
+      { length: MAX_BBS_COLLAPSED_LINES + 3 },
+      (_, i) => String(i),
+    ).join("\n");
+    expect(bbsPostNeedsCollapse(tall)).toBe(true);
+    expect(collapseBbsPostContent(tall).split("\n")).toHaveLength(
+      MAX_BBS_COLLAPSED_LINES,
+    );
+    expect(
+      collapseBbsPostContent("x".repeat(MAX_BBS_COLLAPSED_CHARS + 50)),
+    ).toHaveLength(MAX_BBS_COLLAPSED_CHARS);
   });
 });
