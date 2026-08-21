@@ -20,6 +20,7 @@ const WINDOW_TYPES = new Set<WindowType>([
   "bbs",
   "network",
   "stories",
+  "comments",
   "profile",
 ]);
 

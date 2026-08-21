@@ -40,6 +40,18 @@ export interface BbsPost {
   deletedAt?: string;
 }
 
+/**
+ * Flat comment on a story file (no nested replies).
+ * Keyed by the story's `documentId` (same id across Story Explorer / Notepad).
+ */
+export interface StoryComment {
+  id: string;
+  documentId: string;
+  authorId: NetworkUserId;
+  content: string;
+  createdAt: string;
+}
+
 /** Public writing discoverable in Story Explorer without following the author. */
 export interface PublicStory {
   id: string;

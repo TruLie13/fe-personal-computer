@@ -3,6 +3,7 @@ import type {
   NetworkUser,
   NetworkUserId,
   PublicStory,
+  StoryComment,
 } from "@/types/network";
 
 export const LOCAL_USER_ID = "local";
@@ -271,6 +272,33 @@ export const PUBLIC_STORIES: PublicStory[] = [
   },
 ];
 
+/** Seed flat comments on public stories (no nested replies). */
+export const SEED_STORY_COMMENTS: StoryComment[] = [
+  {
+    id: "cmt-rex-on-maya-poem",
+    documentId: "maya-doc-poem",
+    authorId: "rex",
+    content:
+      "The bus window line stuck with me. Quiet and exact.",
+    createdAt: "2026-08-12T14:05:00.000Z",
+  },
+  {
+    id: "cmt-maya-on-rex-chapter",
+    documentId: "rex-doc-outline",
+    authorId: "maya",
+    content:
+      "I would open that machine. Terrifying premise — send more when you have it.",
+    createdAt: "2026-08-13T21:10:00.000Z",
+  },
+  {
+    id: "cmt-maya-on-rex-log",
+    documentId: "rex-doc-log",
+    authorId: "maya",
+    content: "Keep the paragraph that scared you.",
+    createdAt: "2026-08-11T12:00:00.000Z",
+  },
+];
+
 export function getNetworkUser(userId: NetworkUserId): NetworkUser | undefined {
   return NETWORK_USERS.find((user) => user.id === userId);
 }
@@ -291,6 +319,22 @@ export function listPublicStoriesNewestFirst(): PublicStory[] {
     (a, b) =>
       new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
   );
+}
+
+/** Oldest-first reading order for a story's comments. */
+export function mergeStoryCommentsOldestFirst(
+  documentId: string,
+  localComments: StoryComment[],
+): StoryComment[] {
+  const localForDoc = localComments.filter(
+    (comment) => comment.documentId === documentId,
+  );
+  return [...SEED_STORY_COMMENTS, ...localForDoc]
+    .filter((comment) => comment.documentId === documentId)
+    .sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
 }
 
 export function mergeBbsPostsNewestFirst(localPosts: BbsPost[]): BbsPost[] {

@@ -53,6 +53,7 @@ describe("desktopStore network", () => {
       remoteUserId: null,
       favorites: [],
       localBbsNotes: [],
+    localStoryComments: [],
       localProfile: {
         displayName: "Writer",
         computerName: "WRITER-PC",

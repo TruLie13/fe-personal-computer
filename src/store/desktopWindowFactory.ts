@@ -15,6 +15,7 @@ export const WINDOW_DEFAULTS: Record<
   bbs: { title: "Bulletin Board", width: 520, height: 440 },
   network: { title: "Network Neighborhood", width: 480, height: 360 },
   stories: { title: "Story Explorer", width: 560, height: 420 },
+  comments: { title: "Comments", width: 420, height: 360 },
   profile: { title: "Profile", width: 420, height: 360 },
 };
 

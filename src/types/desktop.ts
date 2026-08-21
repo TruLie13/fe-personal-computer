@@ -8,6 +8,7 @@ export type WindowType =
   | "bbs"
   | "network"
   | "stories"
+  | "comments"
   | "profile";
 
 export interface DesktopIcon {

@@ -87,12 +87,15 @@ interface MasterDetailPaneProps {
   } | null;
   emptyMessage: string;
   action?: ReactNode;
+  /** When false, omit title/author (list already shows them). Default true. */
+  showHeading?: boolean;
 }
 
 export function MasterDetailPane({
   item,
   emptyMessage,
   action,
+  showHeading = true,
 }: MasterDetailPaneProps) {
   if (!item) {
     return (
@@ -102,19 +105,30 @@ export function MasterDetailPane({
     );
   }
 
-  return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="mb-1 flex shrink-0 items-center gap-2">
-        <div className="min-w-0 flex-1">
-          <span className="font-bold">{item.title}</span>{" "}
-          <span className="text-win-dark">{item.authorLabel}</span>
-        </div>
+  const toolbar =
+    showHeading || action != null ? (
+      <div
+        className={`mb-1 flex shrink-0 gap-2 ${
+          showHeading ? "items-start" : "items-center justify-end"
+        }`}
+      >
+        {showHeading ? (
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-bold">{item.title}</div>
+            <div className="truncate text-win-dark">{item.authorLabel}</div>
+          </div>
+        ) : null}
         {action != null ? (
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
             {action}
           </div>
         ) : null}
       </div>
+    ) : null;
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      {toolbar}
       <div className="win-sunken min-h-0 flex-1 overflow-auto whitespace-pre-wrap bg-win-paper p-2 leading-5 text-win-ink">
         {item.content}
       </div>
