@@ -243,6 +243,17 @@ textarea {
   font: inherit;
 }
 
+/* Guest Book ruled page — uses content-theme paper/ink tokens. */
+.win-guestbook-wall {
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 19px,
+    color-mix(in srgb, var(--color-win-ink) 14%, transparent) 19px,
+    color-mix(in srgb, var(--color-win-ink) 14%, transparent) 20px
+  );
+  background-position: 0 8px;
+}
+
 /* Win95-style drop target highlight while dragging a file */
 .win-desktop-icon.win-drop-active .win-desktop-icon-label {
   background: var(--color-win-navy);
