@@ -49,6 +49,10 @@ export interface DesktopStore {
   /** Close every open window (taskbar + desktop). */
   closeAllWindows: () => void;
   minimizeWindow: (windowId: string) => void;
+  /** Toggle fill-desktop maximize / restore previous size. */
+  toggleMaximizeWindow: (windowId: string) => void;
+  /** Keep maximized windows fitted after viewport / taskbar changes. */
+  syncMaximizedWindows: () => void;
   focusWindow: (windowId: string) => void;
   updateWindowPosition: (windowId: string, x: number, y: number) => void;
   updateIconPosition: (iconId: string, x: number, y: number) => void;

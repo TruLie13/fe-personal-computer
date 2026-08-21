@@ -58,6 +58,7 @@ export function createWindowFromIcon(
     isOpen: true,
     isFocused: true,
     isMinimized: false,
+    isMaximized: false,
     ...(icon.type === "profile"
       ? centeredWindowPosition({
           width: defaults.width,

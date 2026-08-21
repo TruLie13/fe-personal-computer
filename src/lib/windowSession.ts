@@ -21,14 +21,38 @@ const WINDOW_TYPES = new Set<WindowType>([
   "network",
   "stories",
   "comments",
+  "guestbook",
   "profile",
 ]);
+
+function isRestoreBounds(
+  value: unknown,
+): value is NonNullable<DesktopWindow["restoreBounds"]> {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const bounds = value as NonNullable<DesktopWindow["restoreBounds"]>;
+  return (
+    typeof bounds.x === "number" &&
+    Number.isFinite(bounds.x) &&
+    typeof bounds.y === "number" &&
+    Number.isFinite(bounds.y) &&
+    typeof bounds.width === "number" &&
+    Number.isFinite(bounds.width) &&
+    typeof bounds.height === "number" &&
+    Number.isFinite(bounds.height)
+  );
+}
 
 function isDesktopWindow(value: unknown): value is DesktopWindow {
   if (!value || typeof value !== "object") {
     return false;
   }
   const item = value as DesktopWindow;
+  const maximizedOk =
+    item.isMaximized === undefined || typeof item.isMaximized === "boolean";
+  const restoreOk =
+    item.restoreBounds === undefined || isRestoreBounds(item.restoreBounds);
   return (
     typeof item.id === "string" &&
     typeof item.title === "string" &&
@@ -38,6 +62,8 @@ function isDesktopWindow(value: unknown): value is DesktopWindow {
     typeof item.isOpen === "boolean" &&
     typeof item.isFocused === "boolean" &&
     typeof item.isMinimized === "boolean" &&
+    maximizedOk &&
+    restoreOk &&
     typeof item.x === "number" &&
     Number.isFinite(item.x) &&
     typeof item.y === "number" &&
@@ -104,7 +130,14 @@ export function loadWindowSession(
     if (!Array.isArray(data.windows) || typeof data.nextZIndex !== "number") {
       return null;
     }
-    const windows = data.windows.filter(isDesktopWindow);
+    const windows = data.windows.filter(isDesktopWindow).map((item) => ({
+      ...item,
+      isMaximized: item.isMaximized === true,
+      restoreBounds:
+        item.isMaximized === true && isRestoreBounds(item.restoreBounds)
+          ? item.restoreBounds
+          : undefined,
+    }));
     const fifo = Array.isArray(data.documentWindowFifo)
       ? data.documentWindowFifo.filter(
           (id): id is string => typeof id === "string",

@@ -1,13 +1,3 @@
-export interface Point {
-  x: number;
-  y: number;
-}
-
-export interface Size {
-  width: number;
-  height: number;
-}
-
 import { DEFAULT_TASKBAR_HEIGHT } from "@/lib/storage";
 
 export interface Point {
@@ -35,22 +25,44 @@ export function clampIconPosition(
   };
 }
 
-/** Center a window in the visible desktop (viewport minus taskbar). */
-export function centeredWindowPosition(
-  windowSize: Size,
-  viewport?: Size,
+/** Visible desktop surface above the taskbar. */
+export function desktopContentSize(
   taskbarHeight: number = DEFAULT_TASKBAR_HEIGHT,
-): Point {
+  viewport?: Size,
+): Size {
   const width =
     viewport?.width ??
     (typeof window !== "undefined" ? window.innerWidth : 1024);
   const height =
     viewport?.height ??
     (typeof window !== "undefined" ? window.innerHeight : 768);
-  const desktop: Size = {
-    width,
-    height: Math.max(0, height - taskbarHeight),
+  return {
+    width: Math.max(0, Math.floor(width)),
+    height: Math.max(0, Math.floor(height - taskbarHeight)),
   };
+}
+
+/** Full-bleed window bounds for a maximized app (above the taskbar). */
+export function maximizedWindowBounds(
+  taskbarHeight: number = DEFAULT_TASKBAR_HEIGHT,
+  viewport?: Size,
+): { x: number; y: number; width: number; height: number } {
+  const desktop = desktopContentSize(taskbarHeight, viewport);
+  return {
+    x: 0,
+    y: 0,
+    width: desktop.width,
+    height: desktop.height,
+  };
+}
+
+/** Center a window in the visible desktop (viewport minus taskbar). */
+export function centeredWindowPosition(
+  windowSize: Size,
+  viewport?: Size,
+  taskbarHeight: number = DEFAULT_TASKBAR_HEIGHT,
+): Point {
+  const desktop = desktopContentSize(taskbarHeight, viewport);
   return clampIconPosition(
     {
       x: Math.round((desktop.width - windowSize.width) / 2),
