@@ -55,6 +55,13 @@ export const DEFAULT_ICONS: DesktopIcon[] = [
     x: 116,
     y: 208,
   },
+  {
+    id: "guestbook",
+    label: "Guest Book",
+    type: "guestbook",
+    x: 216,
+    y: 16,
+  },
 ];
 
 export const DEFAULT_DOCUMENTS: TextDocument[] = [];

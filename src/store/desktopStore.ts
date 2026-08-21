@@ -3,6 +3,7 @@ import type { DesktopStore } from "@/store/desktopStoreTypes";
 import { createBbsSlice } from "@/store/slices/bbsSlice";
 import { createCommentsSlice } from "@/store/slices/commentsSlice";
 import { createFsSlice } from "@/store/slices/fsSlice";
+import { createGuestbookSlice } from "@/store/slices/guestbookSlice";
 import { createNetworkSlice } from "@/store/slices/networkSlice";
 import { createProfileSlice } from "@/store/slices/profileSlice";
 import { createSessionSlice } from "@/store/slices/sessionSlice";
@@ -28,6 +29,7 @@ export const useDesktopStore = create<DesktopStore>()((...a) => ({
   ...createFsSlice(...a),
   ...createBbsSlice(...a),
   ...createCommentsSlice(...a),
+  ...createGuestbookSlice(...a),
   ...createNetworkSlice(...a),
   ...createProfileSlice(...a),
 }));

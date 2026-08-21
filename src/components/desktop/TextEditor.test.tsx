@@ -37,6 +37,7 @@ function resetStore() {
     favorites: [],
     localBbsNotes: [],
     localStoryComments: [],
+    localGuestbookEntries: [],
     localProfile: {
       displayName: "Writer",
       computerName: "WRITER-PC",

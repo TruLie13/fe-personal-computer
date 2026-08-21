@@ -9,6 +9,7 @@ import {
 import { BulletinBoard } from "@/components/desktop/BulletinBoard";
 import { DisplayProperties } from "@/components/desktop/DisplayProperties";
 import { FolderWindow } from "@/components/desktop/FolderWindow";
+import { GuestBookWindow } from "@/components/desktop/GuestBookWindow";
 import { iconForType } from "@/components/desktop/icons";
 import { NetworkNeighborhood } from "@/components/desktop/NetworkNeighborhood";
 import { ProfileWindow } from "@/components/desktop/ProfileWindow";
@@ -66,6 +67,10 @@ function WindowBody({
 
   if (window.type === "comments") {
     return <CommentsWindow documentId={window.documentId} />;
+  }
+
+  if (window.type === "guestbook") {
+    return <GuestBookWindow />;
   }
 
   if (window.type === "network") {

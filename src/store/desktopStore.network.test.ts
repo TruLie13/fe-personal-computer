@@ -53,7 +53,8 @@ describe("desktopStore network", () => {
       remoteUserId: null,
       favorites: [],
       localBbsNotes: [],
-    localStoryComments: [],
+      localStoryComments: [],
+      localGuestbookEntries: [],
       localProfile: {
         displayName: "Writer",
         computerName: "WRITER-PC",
@@ -70,6 +71,7 @@ describe("desktopStore network", () => {
     openWindow("bulletin-board");
     openWindow("story-explorer");
     openWindow("network-neighborhood");
+    openWindow("guestbook");
 
     const { windows } = useDesktopStore.getState();
     expect(windows.some((window) => window.type === "bbs" && window.isOpen)).toBe(
@@ -80,6 +82,9 @@ describe("desktopStore network", () => {
     ).toBe(true);
     expect(
       windows.some((window) => window.type === "network" && window.isOpen),
+    ).toBe(true);
+    expect(
+      windows.some((window) => window.type === "guestbook" && window.isOpen),
     ).toBe(true);
   });
 
@@ -567,5 +572,29 @@ describe("desktopStore network", () => {
           window.isOpen,
       ),
     ).toBe(true);
+  });
+
+  it("signs a remote Guest Book and blocks signing own book", () => {
+    const { signGuestbook } = useDesktopStore.getState();
+    expect(signGuestbook(LOCAL_USER_ID, "hello")).toBe("");
+
+    const id = signGuestbook("maya", "Nice purple machine.");
+    expect(id).toBeTruthy();
+    const { localGuestbookEntries } = useDesktopStore.getState();
+    expect(localGuestbookEntries).toHaveLength(1);
+    expect(localGuestbookEntries[0]?.hostUserId).toBe("maya");
+    expect(localGuestbookEntries[0]?.authorId).toBe(LOCAL_USER_ID);
+  });
+
+  it("soft-deletes own Guest Book signature without refunding daily quota", () => {
+    const { signGuestbook, deleteGuestbookEntry } = useDesktopStore.getState();
+    const id = signGuestbook("rex", "Green chrome forever.");
+    expect(id).toBeTruthy();
+    expect(deleteGuestbookEntry(id)).toBe(true);
+    const entries = useDesktopStore.getState().localGuestbookEntries;
+    expect(entries[0]?.deletedAt).toBeTruthy();
+    expect(signGuestbook("rex", "Second today")).toBeTruthy();
+    expect(signGuestbook("rex", "Third today")).toBeTruthy();
+    expect(signGuestbook("rex", "Fourth today")).toBe("");
   });
 });

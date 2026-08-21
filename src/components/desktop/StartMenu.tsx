@@ -5,6 +5,7 @@ import {
   ComputerIcon,
   DisplayIcon,
   FolderIcon,
+  GuestBookIcon,
   NetworkIcon,
   NotepadIcon,
   StoryExplorerIcon,
@@ -147,6 +148,15 @@ export function StartMenu() {
             >
               <NetworkIcon size={16} />
               Network Neighborhood
+            </button>
+            <button
+              type="button"
+              className="win-menu-item"
+              role="menuitem"
+              onClick={() => openWindow("guestbook")}
+            >
+              <GuestBookIcon size={16} />
+              Guest Book
             </button>
             <button
               type="button"

@@ -7,6 +7,7 @@ import type {
   BbsPost,
   DesktopViewMode,
   FavoritePc,
+  GuestbookEntry,
   NetworkUserId,
   StoryComment,
   UserProfile,
@@ -36,6 +37,7 @@ export interface DesktopStore {
   favorites: FavoritePc[];
   localBbsNotes: BbsPost[];
   localStoryComments: StoryComment[];
+  localGuestbookEntries: GuestbookEntry[];
   localProfile: UserProfile;
   hydrate: () => void;
   selectIcon: (iconId: string | null) => void;
@@ -105,6 +107,10 @@ export interface DesktopStore {
     documentId: string;
     storyTitle: string;
   }) => void;
+  /** Leave a message on another user's Guest Book (remote visit only). */
+  signGuestbook: (hostUserId: NetworkUserId, content: string) => string;
+  /** Soft-delete; host (own PC) or author. Does not refund daily sign quota. */
+  deleteGuestbookEntry: (entryId: string) => boolean;
   updateLocalProfile: (patch: Partial<UserProfile>) => void;
   openProfile: () => void;
 }
