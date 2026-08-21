@@ -59,4 +59,34 @@ describe("MasterDetail", () => {
 
     expect(screen.getByText("Select a story to read.")).toBeInTheDocument();
   });
+
+  it("adds space under meta when a subtitle preview is present", () => {
+    const { rerender } = render(
+      <ul>
+        <MasterDetailListItem
+          active={false}
+          onSelect={() => undefined}
+          title="chapter-zero"
+          meta="Rex Ortega · Aug 13"
+          subtitle="CHAPTER ZERO A stranger inherits…"
+        />
+      </ul>,
+    );
+
+    const withSubtitle = screen.getByText("Rex Ortega · Aug 13");
+    expect(withSubtitle.className).toContain("mb-1.5");
+
+    rerender(
+      <ul>
+        <MasterDetailListItem
+          active={false}
+          onSelect={() => undefined}
+          title="chapter-zero"
+          meta="Rex Ortega · Aug 13"
+        />
+      </ul>,
+    );
+    const withoutSubtitle = screen.getByText("Rex Ortega · Aug 13");
+    expect(withoutSubtitle.className).not.toContain("mb-1.5");
+  });
 });

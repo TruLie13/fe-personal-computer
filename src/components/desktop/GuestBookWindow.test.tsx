@@ -58,4 +58,44 @@ describe("GuestBookWindow", () => {
     expect(wall?.className).toContain("bg-win-paper");
     expect(wall?.className).toContain("text-win-ink");
   });
+
+  it("lets a visitor delete their own signature", async () => {
+    const user = userEvent.setup();
+    useDesktopStore.setState({
+      viewMode: "remote",
+      remoteUserId: "maya",
+      localGuestbookEntries: [
+        {
+          id: "mine",
+          hostUserId: "maya",
+          authorId: "local",
+          content: "I was here",
+          createdAt: "2026-08-20T10:00:00.000Z",
+        },
+      ],
+    });
+    render(<GuestBookWindow />);
+
+    expect(screen.getByText("I was here")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Delete signature" }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(screen.queryByText("I was here")).not.toBeInTheDocument();
+    expect(
+      useDesktopStore.getState().localGuestbookEntries.find((e) => e.id === "mine")
+        ?.deletedAt,
+    ).toBeTruthy();
+  });
+
+  it("shows Visit PC on another author's seed signature", () => {
+    useDesktopStore.setState({
+      viewMode: "remote",
+      remoteUserId: "maya",
+    });
+    render(<GuestBookWindow />);
+    expect(screen.getByText(/Rex Ortega/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Visit PC/i }),
+    ).toBeInTheDocument();
+  });
 });
