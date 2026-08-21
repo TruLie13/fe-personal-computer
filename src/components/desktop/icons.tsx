@@ -149,6 +149,48 @@ export function BbsPinIcon({ className, size = 32 }: IconProps) {
   );
 }
 
+/** Compact delete mark for toolbar buttons (BBS Delete, etc.). */
+export function DeleteIcon({ className, size = 32 }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      style={{ display: "block", flexShrink: 0 }}
+      aria-hidden="true"
+    >
+      <path
+        d="M9 9l14 14M23 9L9 23"
+        stroke="#c00000"
+        strokeWidth="3.5"
+        strokeLinecap="square"
+      />
+    </svg>
+  );
+}
+
+/** Green plus for “New …” toolbar actions — readable at 14px, fully in-frame. */
+export function PlusIcon({ className, size = 32 }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      style={{ display: "block", flexShrink: 0 }}
+      aria-hidden="true"
+    >
+      <path
+        d="M14 7h4v18h-4zM7 14h18v4H7z"
+        fill="#008000"
+        stroke="#000"
+        strokeWidth="1"
+      />
+    </svg>
+  );
+}
+
 export function NetworkIcon({ className, size = 32 }: IconProps) {
   return (
     <svg

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
-import { BbsPinIcon } from "@/components/desktop/icons";
+import { BbsPinIcon, DeleteIcon, PlusIcon } from "@/components/desktop/icons";
 import {
   MasterDetail,
   MasterDetailListItem,
@@ -130,9 +130,12 @@ export function BulletinBoard() {
       return (
         <button
           type="button"
-          className="win-raised px-2 py-0.5"
+          className="win-raised flex items-center gap-1 px-2 py-0.5"
           onClick={requestDelete}
         >
+          <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+            <DeleteIcon size={14} />
+          </span>
           Delete
         </button>
       );
@@ -150,10 +153,19 @@ export function BulletinBoard() {
             </span>
             <button
               type="button"
-              className="win-raised px-2 py-0.5"
+              className="win-raised flex items-center gap-1 px-2 py-0.5"
               onClick={onNewPostClick}
             >
-              {composing ? "Cancel" : "New Post"}
+              {composing ? (
+                "Cancel"
+              ) : (
+                <>
+                  <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+                    <PlusIcon size={14} />
+                  </span>
+                  New Post
+                </>
+              )}
             </button>
           </>
         }
