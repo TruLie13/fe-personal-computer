@@ -21,16 +21,17 @@ export function clampStoryCommentContent(content: string): string {
 }
 
 export function countStoryCommentsOnUtcDay(
-  comments: ReadonlyArray<Pick<StoryComment, "createdAt">>,
+  comments: ReadonlyArray<Pick<StoryComment, "createdAt" | "deletedAt">>,
   dayKey: string = utcDayKey(),
 ): number {
+  // Includes soft-deleted comments — deletes do not refund the daily create quota.
   return comments.filter(
     (comment) => utcDayKey(comment.createdAt) === dayKey,
   ).length;
 }
 
 export function canPostStoryCommentToday(
-  comments: ReadonlyArray<Pick<StoryComment, "createdAt">>,
+  comments: ReadonlyArray<Pick<StoryComment, "createdAt" | "deletedAt">>,
   now: Date = new Date(),
 ): boolean {
   return (
@@ -44,12 +45,15 @@ function isStoryComment(value: unknown): value is StoryComment {
     return false;
   }
   const comment = value as StoryComment;
+  const deletedOk =
+    comment.deletedAt === undefined || typeof comment.deletedAt === "string";
   return (
     typeof comment.id === "string" &&
     typeof comment.documentId === "string" &&
     typeof comment.authorId === "string" &&
     typeof comment.content === "string" &&
-    typeof comment.createdAt === "string"
+    typeof comment.createdAt === "string" &&
+    deletedOk
   );
 }
 

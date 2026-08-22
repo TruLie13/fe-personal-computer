@@ -24,6 +24,56 @@ export function createId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** Cascade offset used by icon-backed and typed (non-icon) windows. */
+export function cascadedWindowPosition(openCount: number): {
+  x: number;
+  y: number;
+} {
+  return {
+    x: 80 + openCount * 24,
+    y: 48 + openCount * 24,
+  };
+}
+
+/**
+ * Create an app window that is not backed by a desktop icon
+ * (e.g. Comments opened from Story Explorer / Notepad).
+ */
+export function createTypedWindow(input: {
+  type: WindowType;
+  title: string;
+  iconId: string;
+  documentId?: string | null;
+  zIndex: number;
+  openCount: number;
+  idPrefix?: string;
+}): DesktopWindow {
+  const defaults = WINDOW_DEFAULTS[input.type];
+  const position =
+    input.openCount === 0
+      ? centeredWindowPosition({
+          width: defaults.width,
+          height: defaults.height,
+        })
+      : cascadedWindowPosition(input.openCount);
+
+  return {
+    id: createId(input.idPrefix ?? `window-${input.type}`),
+    title: input.title,
+    type: input.type,
+    iconId: input.iconId,
+    documentId: input.documentId ?? null,
+    isOpen: true,
+    isFocused: true,
+    isMinimized: false,
+    isMaximized: false,
+    ...position,
+    width: defaults.width,
+    height: defaults.height,
+    zIndex: input.zIndex,
+  };
+}
+
 export function createWindowFromIcon(
   icon: DesktopIcon,
   zIndex: number,
@@ -64,10 +114,7 @@ export function createWindowFromIcon(
           width: defaults.width,
           height: defaults.height,
         })
-      : {
-          x: 80 + offset * 24,
-          y: 48 + offset * 24,
-        }),
+      : cascadedWindowPosition(offset)),
     width: defaults.width,
     height: defaults.height,
     zIndex,

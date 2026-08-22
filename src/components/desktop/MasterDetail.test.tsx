@@ -13,14 +13,14 @@ describe("MasterDetail", () => {
 
     render(
       <MasterDetail
-        header={<span>Board</span>}
+        header={<span>Story Explorer</span>}
         list={
           <ul>
             <MasterDetailListItem
               active
               onSelect={onSelect}
-              title="First note"
-              meta="Maya · today"
+              title="chapter-zero"
+              meta="Rex · today"
               subtitle="hello world"
             />
           </ul>
@@ -28,28 +28,28 @@ describe("MasterDetail", () => {
         detail={
           <MasterDetailPane
             item={{
-              title: "First note",
-              authorLabel: "by Maya",
+              title: "chapter-zero",
+              authorLabel: "by Rex",
               content: "full body",
             }}
-            emptyMessage="Select a post to read."
+            emptyMessage="Select a story to read."
           />
         }
       />,
     );
 
-    expect(screen.getByText("Board")).toBeInTheDocument();
+    expect(screen.getByText("Story Explorer")).toBeInTheDocument();
     expect(screen.getByText("full body")).toBeInTheDocument();
     expect(screen.getByText("hello world")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /First note/i }));
+    await user.click(screen.getByRole("button", { name: /chapter-zero/i }));
     expect(onSelect).toHaveBeenCalledTimes(1);
   });
 
   it("shows empty detail message when nothing is selected", () => {
     render(
       <MasterDetail
-        header={<span>Stories</span>}
+        header={<span>Story Explorer</span>}
         list={<p>No items</p>}
         detail={
           <MasterDetailPane item={null} emptyMessage="Select a story to read." />

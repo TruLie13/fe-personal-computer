@@ -62,14 +62,14 @@ export function LandingPage() {
           <h2 className="landing-section-title">How it works</h2>
           <ol className="list-decimal pl-6">
             <li>
-              <strong>Write</strong> in Notepad on your desktop.
+              <strong>Write</strong> - use the text editor on your desktop.
             </li>
             <li>
               <strong>Save</strong> — the story becomes a file on your PC (
               <code className="text-[0.9em]">C:\users\you\…</code>).
             </li>
             <li>
-              <strong>Others visit</strong> your PC on the network and open
+              <strong>Others visit</strong> - your PC on the network and open
               those files. Read-only for guests and other writers.
             </li>
           </ol>
