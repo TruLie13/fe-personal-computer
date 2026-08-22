@@ -34,4 +34,21 @@ describe("storyComments limits", () => {
       ),
     ).toBe(true);
   });
+
+  it("still counts soft-deleted comments toward the daily create quota", () => {
+    const day = "2026-08-20";
+    const comments = Array.from(
+      { length: MAX_STORY_COMMENTS_PER_UTC_DAY },
+      (_, i) => ({
+        createdAt: `${day}T${String(i).padStart(2, "0")}:00:00.000Z`,
+        deletedAt: `${day}T12:00:00.000Z`,
+      }),
+    );
+    expect(countStoryCommentsOnUtcDay(comments, day)).toBe(
+      MAX_STORY_COMMENTS_PER_UTC_DAY,
+    );
+    expect(
+      canPostStoryCommentToday(comments, new Date(`${day}T18:00:00.000Z`)),
+    ).toBe(false);
+  });
 });

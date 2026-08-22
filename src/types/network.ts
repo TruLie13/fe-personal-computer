@@ -50,6 +50,8 @@ export interface StoryComment {
   authorId: NetworkUserId;
   content: string;
   createdAt: string;
+  /** Soft-delete; author may delete. Does not refund UTC daily create quota. */
+  deletedAt?: string;
 }
 
 /** Message left on a user's Guest Book (Myspace-style wall for that PC). */

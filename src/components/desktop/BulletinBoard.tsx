@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
+import { ComposeQuotaFooter } from "@/components/desktop/ComposeQuotaFooter";
+import { DailyLimitDialog } from "@/components/desktop/DailyLimitDialog";
 import { BbsPinIcon, DeleteIcon, PlusIcon } from "@/components/desktop/icons";
 import { VisitPcButton } from "@/components/desktop/VisitPcButton";
 import { formatShortDateTime } from "@/lib/formatDate";
@@ -44,7 +46,6 @@ export function BulletinBoard() {
   const postsToday = countBbsNotesOnUtcDay(localBbsNotes);
   const atDailyLimit = !canPostBbsNoteToday(localBbsNotes);
   const charCount = draftBody.length;
-  const atCharLimit = charCount >= MAX_BBS_NOTE_CHARS;
 
   const onNewPostClick = () => {
     if (composing) {
@@ -152,26 +153,16 @@ export function BulletinBoard() {
               maxLength={MAX_BBS_NOTE_CHARS}
             />
           </div>
-          <div className="flex items-center justify-between gap-2 border-t border-win-dark px-2 py-0.5">
-            <span className="text-[11px] text-win-dark" aria-live="polite">
-              <span aria-label="Character count">
-                {charCount}/{MAX_BBS_NOTE_CHARS}
-                {atCharLimit ? " (limit reached)" : ""}
-              </span>
-              <span aria-hidden="true"> · </span>
-              <span aria-label="Daily post count">
-                {postsToday}/{MAX_BBS_NOTES_PER_UTC_DAY} today
-              </span>
-            </span>
-            <button
-              type="button"
-              className="win-raised px-3 py-0.5 disabled:opacity-50"
-              disabled={!draftTitle.trim() || !draftBody.trim()}
-              onClick={onPost}
-            >
-              Post
-            </button>
-          </div>
+          <ComposeQuotaFooter
+            charCount={charCount}
+            charMax={MAX_BBS_NOTE_CHARS}
+            dailyCountLabel="Daily post count"
+            usedToday={postsToday}
+            dailyMax={MAX_BBS_NOTES_PER_UTC_DAY}
+            submitLabel="Post"
+            canSubmit={Boolean(draftTitle.trim() && draftBody.trim())}
+            onSubmit={onPost}
+          />
         </div>
       ) : null}
 
@@ -248,13 +239,12 @@ export function BulletinBoard() {
       </div>
 
       {showDailyLimit ? (
-        <ConfirmDialog
+        <DailyLimitDialog
           title="Bulletin Board"
-          message={`You have reached the daily limit of ${MAX_BBS_NOTES_PER_UTC_DAY} posts (${postsToday}/${MAX_BBS_NOTES_PER_UTC_DAY}).\n\nThe limit resets at midnight UTC.`}
-          confirmLabel="OK"
-          showCancel={false}
-          onConfirm={() => setShowDailyLimit(false)}
-          onCancel={() => setShowDailyLimit(false)}
+          unitLabel="posts"
+          usedToday={postsToday}
+          dailyMax={MAX_BBS_NOTES_PER_UTC_DAY}
+          onDismiss={() => setShowDailyLimit(false)}
         />
       ) : null}
       {pendingDeleteId ? (

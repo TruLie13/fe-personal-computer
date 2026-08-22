@@ -395,15 +395,27 @@ export function mergeStoryCommentsOldestFirst(
   documentId: string,
   localComments: StoryComment[],
 ): StoryComment[] {
-  const localForDoc = localComments.filter(
-    (comment) => comment.documentId === documentId,
+  const deletedIds = new Set(
+    localComments
+      .filter((comment) => comment.deletedAt)
+      .map((comment) => comment.id),
   );
-  return [...SEED_STORY_COMMENTS, ...localForDoc]
-    .filter((comment) => comment.documentId === documentId)
-    .sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    );
+  const localLive = localComments.filter(
+    (comment) =>
+      comment.documentId === documentId &&
+      !comment.deletedAt &&
+      !SEED_STORY_COMMENTS.some((seed) => seed.id === comment.id),
+  );
+  const seedLive = SEED_STORY_COMMENTS.filter(
+    (comment) =>
+      comment.documentId === documentId &&
+      !comment.deletedAt &&
+      !deletedIds.has(comment.id),
+  );
+  return [...seedLive, ...localLive].sort(
+    (a, b) =>
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
 }
 
 export function mergeBbsPostsNewestFirst(localPosts: BbsPost[]): BbsPost[] {
@@ -412,11 +424,6 @@ export function mergeBbsPostsNewestFirst(localPosts: BbsPost[]): BbsPost[] {
     (a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
-}
-
-/** @deprecated use mergeBbsPostsNewestFirst with local notes */
-export function listBbsPostsNewestFirst(): BbsPost[] {
-  return mergeBbsPostsNewestFirst([]);
 }
 
 export function remoteDesktopPath(user: NetworkUser): string {

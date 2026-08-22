@@ -1,5 +1,4 @@
 import type { StateCreator } from "zustand";
-import { centeredWindowPosition } from "@/lib/desktopBounds";
 import {
   canPostStoryCommentToday,
   clampStoryCommentContent,
@@ -7,7 +6,7 @@ import {
 } from "@/lib/storyComments";
 import { LOCAL_USER_ID } from "@/lib/networkSeed";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
-import { createId, WINDOW_DEFAULTS } from "@/store/desktopWindowFactory";
+import { createId, createTypedWindow } from "@/store/desktopWindowFactory";
 import type { StoryComment } from "@/types/network";
 
 export type CommentsSlice = Pick<
@@ -53,12 +52,17 @@ export const createCommentsSlice: StateCreator<
     const existing = get().localStoryComments.find(
       (comment) => comment.id === commentId,
     );
-    if (!existing || existing.authorId !== LOCAL_USER_ID) {
+    if (
+      !existing ||
+      existing.authorId !== LOCAL_USER_ID ||
+      existing.deletedAt
+    ) {
       return false;
     }
+    const deletedAt = new Date().toISOString();
     set((state) => {
-      const localStoryComments = state.localStoryComments.filter(
-        (comment) => comment.id !== commentId,
+      const localStoryComments = state.localStoryComments.map((comment) =>
+        comment.id === commentId ? { ...comment, deletedAt } : comment,
       );
       saveLocalStoryComments(localStoryComments);
       return { localStoryComments };
@@ -98,35 +102,17 @@ export const createCommentsSlice: StateCreator<
       return;
     }
 
-    const defaults = WINDOW_DEFAULTS.comments;
     const zIndex = state.nextZIndex;
     const openCount = state.windows.filter((window) => window.isOpen).length;
-    const position =
-      openCount === 0
-        ? centeredWindowPosition({
-            width: defaults.width,
-            height: defaults.height,
-          })
-        : {
-            x: 100 + openCount * 24,
-            y: 64 + openCount * 24,
-          };
-
-    const nextWindow = {
-      id: createId("window-comments"),
+    const nextWindow = createTypedWindow({
+      type: "comments",
       title: `Comments — ${storyTitle}`,
-      type: "comments" as const,
       iconId: "comments",
       documentId,
-      isOpen: true,
-      isFocused: true,
-      isMinimized: false,
-      isMaximized: false,
-      ...position,
-      width: defaults.width,
-      height: defaults.height,
       zIndex,
-    };
+      openCount,
+      idPrefix: "window-comments",
+    });
 
     set({
       windows: [

@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
+import { ComposeQuotaFooter } from "@/components/desktop/ComposeQuotaFooter";
+import { DailyLimitDialog } from "@/components/desktop/DailyLimitDialog";
 import { DeleteIcon } from "@/components/desktop/icons";
 import { formatShortDateTime } from "@/lib/formatDate";
 import {
@@ -44,9 +46,7 @@ export function CommentsWindow({ documentId }: CommentsWindowProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const commentsToday = countStoryCommentsOnUtcDay(localStoryComments);
-  const atDailyLimit = !canPostStoryCommentToday(localStoryComments);
   const charCount = draft.length;
-  const atCharLimit = charCount >= MAX_STORY_COMMENT_CHARS;
 
   const onPost = () => {
     if (!documentId) {
@@ -151,41 +151,30 @@ export function CommentsWindow({ documentId }: CommentsWindowProps) {
           aria-label="Comment content"
           maxLength={MAX_STORY_COMMENT_CHARS}
         />
-        <div className="flex items-center justify-between gap-2 px-2 py-0.5">
-          <span className="text-[11px] text-win-dark" aria-live="polite">
-            <span aria-label="Character count">
-              {charCount}/{MAX_STORY_COMMENT_CHARS}
-              {atCharLimit ? " (limit reached)" : ""}
-            </span>
-            <span aria-hidden="true"> · </span>
-            <span aria-label="Daily comment count">
-              {commentsToday}/{MAX_STORY_COMMENTS_PER_UTC_DAY} today
-            </span>
-          </span>
-          <button
-            type="button"
-            className="win-raised px-3 py-0.5 disabled:opacity-50"
-            disabled={!draft.trim() || atDailyLimit}
-            onClick={onPost}
-          >
-            Post
-          </button>
-        </div>
+        <ComposeQuotaFooter
+          charCount={charCount}
+          charMax={MAX_STORY_COMMENT_CHARS}
+          dailyCountLabel="Daily comment count"
+          usedToday={commentsToday}
+          dailyMax={MAX_STORY_COMMENTS_PER_UTC_DAY}
+          submitLabel="Post"
+          canSubmit={Boolean(draft.trim())}
+          onSubmit={onPost}
+        />
       </div>
       {showDailyLimit ? (
-        <ConfirmDialog
+        <DailyLimitDialog
           title="Comments"
-          message={`You have reached the daily limit of ${MAX_STORY_COMMENTS_PER_UTC_DAY} comments (${commentsToday}/${MAX_STORY_COMMENTS_PER_UTC_DAY}).\n\nThe limit resets at midnight UTC.`}
-          confirmLabel="OK"
-          showCancel={false}
-          onConfirm={() => setShowDailyLimit(false)}
-          onCancel={() => setShowDailyLimit(false)}
+          unitLabel="comments"
+          usedToday={commentsToday}
+          dailyMax={MAX_STORY_COMMENTS_PER_UTC_DAY}
+          onDismiss={() => setShowDailyLimit(false)}
         />
       ) : null}
       {pendingDeleteId ? (
         <ConfirmDialog
           title="Comments"
-          message="Delete this comment?"
+          message="Delete this comment? Your daily comment limit is not refunded."
           confirmLabel="Delete"
           cancelLabel="Cancel"
           onConfirm={confirmDelete}

@@ -105,6 +105,7 @@ export interface DesktopStore {
   /** Soft-delete own post; does not refund the UTC daily create quota. */
   deleteBbsNote: (postId: string) => boolean;
   postStoryComment: (documentId: string, content: string) => string;
+/** Soft-delete own comment; does not refund the UTC daily create quota. */
   deleteStoryComment: (commentId: string) => boolean;
   /** One Comments window per story `documentId` (focus if already open). */
   openStoryComments: (input: {

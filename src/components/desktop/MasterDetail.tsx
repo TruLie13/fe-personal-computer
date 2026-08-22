@@ -2,27 +2,17 @@ import type { ReactNode } from "react";
 
 interface MasterDetailProps {
   header: ReactNode;
-  /** Optional strip between header and the list/detail split (e.g. compose form). */
-  aboveSplit?: ReactNode;
   list: ReactNode;
   detail: ReactNode;
 }
 
 /** Win95-style left list + right detail layout (Story Explorer). */
-export function MasterDetail({
-  header,
-  aboveSplit,
-  list,
-  detail,
-}: MasterDetailProps) {
+export function MasterDetail({ header, list, detail }: MasterDetailProps) {
   return (
     <div className="flex h-full min-h-0 flex-col bg-win-face text-[12px]">
       <div className="flex items-center gap-2 border-b border-win-dark px-2 py-1">
         {header}
       </div>
-      {aboveSplit != null ? (
-        <div className="shrink-0">{aboveSplit}</div>
-      ) : null}
       <div className="flex min-h-0 flex-1">
         <div className="win-sunken m-1 w-[42%] overflow-auto bg-win-paper text-win-ink">
           {list}

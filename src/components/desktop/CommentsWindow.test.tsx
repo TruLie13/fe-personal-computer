@@ -50,4 +50,35 @@ describe("CommentsWindow", () => {
       commentWindows.filter((window) => window.documentId === "maya-doc-poem"),
     ).toHaveLength(1);
   });
+
+  it("soft-deletes a comment without refunding the daily quota", async () => {
+    const user = userEvent.setup();
+    const day = new Date().toISOString().slice(0, 10);
+    useDesktopStore.setState({
+      localStoryComments: Array.from({ length: 20 }, (_, i) => ({
+        id: `cmt-${i}`,
+        documentId: "maya-doc-poem",
+        authorId: "local",
+        content: `comment ${i}`,
+        createdAt: `${day}T${String(i).padStart(2, "0")}:00:00.000Z`,
+      })),
+    });
+    render(<CommentsWindow documentId="maya-doc-poem" />);
+
+    await user.click(screen.getAllByRole("button", { name: "Delete comment" })[0]!);
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(
+      useDesktopStore.getState().localStoryComments.find((c) => c.id === "cmt-0")
+        ?.deletedAt,
+    ).toBeTruthy();
+    expect(screen.queryByText("comment 0")).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Comment content"), "one more");
+    await user.click(screen.getByRole("button", { name: "Post" }));
+    expect(
+      screen.getByRole("alertdialog", { name: "Comments" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/daily limit of 20 comments/i)).toBeInTheDocument();
+  });
 });

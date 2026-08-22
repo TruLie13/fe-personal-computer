@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
+import { ComposeQuotaFooter } from "@/components/desktop/ComposeQuotaFooter";
+import { DailyLimitDialog } from "@/components/desktop/DailyLimitDialog";
 import { DeleteIcon } from "@/components/desktop/icons";
 import { VisitPcButton } from "@/components/desktop/VisitPcButton";
 import { formatShortDateTime } from "@/lib/formatDate";
@@ -60,13 +62,7 @@ export function GuestBookWindow() {
     hostUserId,
     LOCAL_USER_ID,
   );
-  const atDailyLimit = !canSignGuestbookToday(
-    localGuestbookEntries,
-    hostUserId,
-    LOCAL_USER_ID,
-  );
   const charCount = draft.length;
-  const atCharLimit = charCount >= MAX_GUESTBOOK_ENTRY_CHARS;
 
   const hostLabel =
     hostUserId === LOCAL_USER_ID
@@ -187,32 +183,16 @@ export function GuestBookWindow() {
             aria-label="Guest Book message"
             maxLength={MAX_GUESTBOOK_ENTRY_CHARS}
           />
-          <div className="flex items-center justify-between gap-2 px-2 py-0.5">
-            <span className="text-[11px] text-win-dark" aria-live="polite">
-              <span aria-label="Character count">
-                {charCount}/{MAX_GUESTBOOK_ENTRY_CHARS}
-                {atCharLimit ? " (limit reached)" : ""}
-              </span>
-              <span aria-hidden="true"> · </span>
-              <span aria-label="Daily sign count">
-                {signsToday}/{MAX_GUESTBOOK_SIGNS_PER_HOST_PER_UTC_DAY} today
-              </span>
-            </span>
-            <button
-              type="button"
-              className="win-raised px-3 py-0.5 disabled:opacity-50"
-              disabled={!draft.trim() || atDailyLimit}
-              onClick={() => {
-                if (atDailyLimit) {
-                  setShowDailyLimit(true);
-                  return;
-                }
-                onSign();
-              }}
-            >
-              Sign
-            </button>
-          </div>
+          <ComposeQuotaFooter
+            charCount={charCount}
+            charMax={MAX_GUESTBOOK_ENTRY_CHARS}
+            dailyCountLabel="Daily sign count"
+            usedToday={signsToday}
+            dailyMax={MAX_GUESTBOOK_SIGNS_PER_HOST_PER_UTC_DAY}
+            submitLabel="Sign"
+            canSubmit={Boolean(draft.trim())}
+            onSubmit={onSign}
+          />
         </div>
       ) : (
         <div className="shrink-0 border-t border-win-dark px-2 py-1 text-[11px] text-win-dark">
@@ -221,13 +201,12 @@ export function GuestBookWindow() {
       )}
 
       {showDailyLimit ? (
-        <ConfirmDialog
+        <DailyLimitDialog
           title="Guest Book"
-          message={`You have reached the daily limit of ${MAX_GUESTBOOK_SIGNS_PER_HOST_PER_UTC_DAY} messages on this PC (${signsToday}/${MAX_GUESTBOOK_SIGNS_PER_HOST_PER_UTC_DAY}).\n\nThe limit resets at midnight UTC.`}
-          confirmLabel="OK"
-          showCancel={false}
-          onConfirm={() => setShowDailyLimit(false)}
-          onCancel={() => setShowDailyLimit(false)}
+          unitLabel="messages on this PC"
+          usedToday={signsToday}
+          dailyMax={MAX_GUESTBOOK_SIGNS_PER_HOST_PER_UTC_DAY}
+          onDismiss={() => setShowDailyLimit(false)}
         />
       ) : null}
       {pendingDeleteId ? (
