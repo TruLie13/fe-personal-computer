@@ -15,7 +15,7 @@ import {
   MIN_TASKBAR_HEIGHT,
 } from "@/lib/storage";
 import { selectActiveIcons, useDesktopStore } from "@/store/desktopStore";
-import { usePcRoutes } from "@/hooks/usePcRoutes";
+import { useGuestChrome } from "@/hooks/useGuestChrome";
 
 export function Taskbar() {
   const windows = useDesktopStore((state) => state.windows);
@@ -31,7 +31,7 @@ export function Taskbar() {
   const minimizeWindow = useDesktopStore((state) => state.minimizeWindow);
   const closeWindow = useDesktopStore((state) => state.closeWindow);
   const openProfile = useDesktopStore((state) => state.openProfile);
-  const { goHome } = usePcRoutes();
+  const { showGuestChrome, goHome, goToSetup, goToSignIn } = useGuestChrome();
   const { menu, openMenu, closeMenu } = useContextMenuState();
 
   const dragOrigin = useRef<{ y: number; height: number } | null>(null);
@@ -114,7 +114,26 @@ export function Taskbar() {
         Start
       </button>
 
-      {isRemote ? (
+      {isRemote && showGuestChrome ? (
+        <>
+          <button
+            type="button"
+            className="win-raised ml-1 flex items-center gap-1 px-2 text-[11px] font-bold"
+            onClick={goToSetup}
+          >
+            <ComputerIcon size={14} />
+            Get your PC
+          </button>
+          <button
+            type="button"
+            className="win-raised ml-1 px-2 text-[11px]"
+            onClick={goToSignIn}
+          >
+            Sign in
+          </button>
+        </>
+      ) : null}
+      {isRemote && !showGuestChrome ? (
         <button
           type="button"
           className="win-raised ml-1 flex items-center gap-1 px-2 text-[11px]"

@@ -1,19 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
 import { ContextMenu } from "@/components/desktop/ContextMenu";
 import { DesktopIcon } from "@/components/desktop/DesktopIcon";
+import { GuestChromeBanner } from "@/components/desktop/GuestChromeBanner";
 import { Taskbar } from "@/components/desktop/Taskbar";
 import { WindowFrame } from "@/components/desktop/WindowFrame";
 import { useContextMenuState } from "@/hooks/useContextMenuState";
 import { useDeleteConfirm } from "@/hooks/useDeleteConfirm";
 import { useDesktopMarquee } from "@/hooks/useDesktopMarquee";
 import { useFolderCreateGuard } from "@/hooks/useFolderCreateGuard";
-import { usePcRoutes } from "@/hooks/usePcRoutes";
+import { useGuestChrome } from "@/hooks/useGuestChrome";
 import { useDesktopUrlSync } from "@/hooks/useDesktopUrlSync";
 import { clampIconPosition } from "@/lib/desktopBounds";
 import { DESKTOP_ATTR } from "@/lib/dragDrop";
+import { DEFAULT_WALLPAPER } from "@/lib/storage";
 import { saveWindowSession } from "@/lib/windowSession";
 import {
   selectActiveIcons,
@@ -54,11 +56,14 @@ export function Desktop({
   const deleteIcons = useDesktopStore((state) => state.deleteIcons);
   const openWindow = useDesktopStore((state) => state.openWindow);
   const closeAllWindows = useDesktopStore((state) => state.closeAllWindows);
-  const { goHome } = usePcRoutes();
+  const { showGuestChrome, goHome, goToSetup, goToSignIn } = useGuestChrome();
   const appliedDeepLinkKey = useRef<string | null>(null);
   const [urlSyncReady, setUrlSyncReady] = useState(!deepLinkUsername);
 
-  useDesktopUrlSync({ enabled: hydrated && urlSyncReady });
+  useDesktopUrlSync({
+    enabled: hydrated && urlSyncReady,
+    deepLinkUsername,
+  });
 
   const isRemote = viewMode === "remote";
   const desktopIcons = selectDesktopIcons(icons);
@@ -84,7 +89,7 @@ export function Desktop({
     },
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     hydrate();
   }, [hydrate]);
 
@@ -157,6 +162,17 @@ export function Desktop({
     setUrlSyncReady(true);
   }, [hydrated, deepLinkUsername, deepLinkFileSlug, applyDeepLink]);
 
+  if (!hydrated) {
+    return (
+      <div
+        className="h-dvh w-screen"
+        style={{ background: DEFAULT_WALLPAPER }}
+        aria-busy="true"
+        aria-label="Loading desktop"
+      />
+    );
+  }
+
   return (
     <div
       className="flex h-dvh w-screen flex-col overflow-hidden"
@@ -200,12 +216,27 @@ export function Desktop({
           if (isRemote) {
             openMenu(event, [
               closeAllEntry,
-              { id: "sep-go-home", separator: true },
-              {
-                id: "go-home",
-                label: "Go Home (My Computer)",
-                onSelect: () => goHome(),
-              },
+              { id: "sep-guest", separator: true },
+              ...(showGuestChrome
+                ? [
+                    {
+                      id: "get-pc",
+                      label: "Get your PC",
+                      onSelect: () => goToSetup(),
+                    },
+                    {
+                      id: "sign-in",
+                      label: "Sign in",
+                      onSelect: () => goToSignIn(),
+                    },
+                  ]
+                : [
+                    {
+                      id: "go-home",
+                      label: "Go Home (My Computer)",
+                      onSelect: () => goHome(),
+                    },
+                  ]),
             ]);
             return;
           }
@@ -244,6 +275,7 @@ export function Desktop({
           ]);
         }}
       >
+        <GuestChromeBanner />
         {desktopIcons.map((icon) => (
           <DesktopIcon
             key={icon.id}

@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProfileWindow } from "@/components/desktop/ProfileWindow";
+import { markMockSignedIn } from "@/lib/ownPc";
 import {
   DEFAULT_DOCUMENTS,
   DEFAULT_ICONS,
@@ -8,6 +9,10 @@ import {
   DEFAULT_WALLPAPER,
 } from "@/lib/storage";
 import { useDesktopStore } from "@/store/desktopStore";
+
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: jest.fn() }),
+}));
 
 describe("ProfileWindow", () => {
   beforeEach(() => {
@@ -110,8 +115,18 @@ describe("ProfileWindow", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows remote bio actions and can go home", async () => {
+  it("shows guest actions on a remote profile without a PC", () => {
+    useDesktopStore.getState().visitRemotePc("maya");
+    render(<ProfileWindow />);
+
+    expect(screen.getByRole("button", { name: "Get your PC" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Go Home" })).not.toBeInTheDocument();
+  });
+
+  it("shows remote bio actions and can go home when the user has a PC", async () => {
     const user = userEvent.setup();
+    markMockSignedIn();
     useDesktopStore.getState().visitRemotePc("maya");
     render(<ProfileWindow />);
 

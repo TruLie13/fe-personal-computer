@@ -45,6 +45,10 @@ describe("SetupWizard", () => {
     expect(
       screen.getByRole("button", { name: /back/i }),
     ).toBeDisabled();
+    expect(screen.getByRole("link", { name: /sign in/i })).toHaveAttribute(
+      "href",
+      "/sign-in",
+    );
   });
 
   it("moves to user information and back", async () => {

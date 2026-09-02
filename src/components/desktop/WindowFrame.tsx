@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type MutableRefObject,
@@ -16,6 +17,7 @@ import { ProfileWindow } from "@/components/desktop/ProfileWindow";
 import { CommentsWindow } from "@/components/desktop/CommentsWindow";
 import { StoryExplorer } from "@/components/desktop/StoryExplorer";
 import { TextEditor } from "@/components/desktop/TextEditor";
+import { useGuestChrome } from "@/hooks/useGuestChrome";
 import { getNetworkUser } from "@/lib/networkSeed";
 import { displayWindowTitle } from "@/lib/storage";
 import { selectActiveIcons, useDesktopStore } from "@/store/desktopStore";
@@ -38,6 +40,8 @@ function WindowBody({
     viewMode === "remote" && remoteUserId
       ? getNetworkUser(remoteUserId)
       : undefined;
+
+  const { showGuestChrome } = useGuestChrome();
 
   if (window.type === "editor" || window.type === "text") {
     return (
@@ -89,8 +93,10 @@ function WindowBody({
           computer ({remoteUser.computerName}).
         </p>
         <p className="text-win-dark">
-          This visit is read-only. Open folders and text files, then use Go Home
-          on the taskbar to return to your desktop.
+          This visit is read-only. Open folders and text files
+          {showGuestChrome
+            ? ", then use Get your PC or Sign in on the taskbar when you are ready to write."
+            : ", then use Go Home on the taskbar to return to your desktop."}
         </p>
       </div>
     );
@@ -130,7 +136,7 @@ export function WindowFrame({ window }: WindowFrameProps) {
   const closeInterceptorRef = useRef<(() => boolean) | null>(null);
   const [position, setPosition] = useState({ x: window.x, y: window.y });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setPosition({ x: window.x, y: window.y });
     latest.current = { x: window.x, y: window.y };
   }, [window.x, window.y]);

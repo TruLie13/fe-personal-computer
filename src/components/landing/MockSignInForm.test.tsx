@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MockSignInForm } from "@/components/landing/MockSignInForm";
+import { hasMockSignedIn } from "@/lib/ownPc";
 
 const push = jest.fn();
 
@@ -11,6 +12,7 @@ jest.mock("next/navigation", () => ({
 describe("MockSignInForm", () => {
   beforeEach(() => {
     push.mockClear();
+    window.localStorage.clear();
   });
 
   it("submits to the local desktop stub", async () => {
@@ -19,6 +21,7 @@ describe("MockSignInForm", () => {
     await user.type(screen.getByLabelText(/email/i), "writer@example.com");
     await user.type(screen.getByLabelText(/password/i), "secret");
     await user.click(screen.getByRole("button", { name: /^sign in$/i }));
+    expect(hasMockSignedIn()).toBe(true);
     expect(push).toHaveBeenCalledWith("/C/users/local");
   });
 

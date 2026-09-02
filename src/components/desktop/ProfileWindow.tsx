@@ -14,7 +14,7 @@ import {
 } from "@/lib/profile";
 import { profilePath, currentUsername } from "@/lib/seo/paths";
 import { loadLocalSession } from "@/lib/setupAccount";
-import { usePcRoutes } from "@/hooks/usePcRoutes";
+import { useGuestChrome } from "@/hooks/useGuestChrome";
 import { useDesktopStore } from "@/store/desktopStore";
 
 export function ProfileWindow() {
@@ -27,7 +27,7 @@ export function ProfileWindow() {
   );
   const addFavorite = useDesktopStore((state) => state.addFavorite);
   const removeFavorite = useDesktopStore((state) => state.removeFavorite);
-  const { goHome } = usePcRoutes();
+  const { showGuestChrome, goHome, goToSetup, goToSignIn } = useGuestChrome();
 
   const isRemote = viewMode === "remote" && remoteUserId != null;
   const remoteUser = isRemote ? getNetworkUser(remoteUserId) : undefined;
@@ -158,13 +158,32 @@ export function ProfileWindow() {
             >
               {favorited ? "Remove from Network" : "Add to Network"}
             </button>
-            <button
-              type="button"
-              className="win-raised px-2 py-0.5"
-              onClick={goHome}
-            >
-              Go Home
-            </button>
+            {showGuestChrome ? (
+              <>
+                <button
+                  type="button"
+                  className="win-raised px-2 py-0.5 font-bold"
+                  onClick={goToSetup}
+                >
+                  Get your PC
+                </button>
+                <button
+                  type="button"
+                  className="win-raised px-2 py-0.5"
+                  onClick={goToSignIn}
+                >
+                  Sign in
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="win-raised px-2 py-0.5"
+                onClick={goHome}
+              >
+                Go Home
+              </button>
+            )}
           </>
         ) : (
           <>

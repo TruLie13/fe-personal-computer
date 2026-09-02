@@ -12,7 +12,7 @@ import {
 } from "@/components/desktop/icons";
 import { ProfileAvatar } from "@/components/desktop/ProfileAvatar";
 import { useFolderCreateGuard } from "@/hooks/useFolderCreateGuard";
-import { usePcRoutes } from "@/hooks/usePcRoutes";
+import { useGuestChrome } from "@/hooks/useGuestChrome";
 import { getNetworkUser } from "@/lib/networkSeed";
 import { computerLabel } from "@/lib/profile";
 import { PROFILE_ICON_ID } from "@/lib/storage";
@@ -27,7 +27,8 @@ export function StartMenu() {
   const openWindow = useDesktopStore((state) => state.openWindow);
   const openProfile = useDesktopStore((state) => state.openProfile);
   const closeStartMenu = useDesktopStore((state) => state.closeStartMenu);
-  const { goHome } = usePcRoutes();
+  const { showGuestChrome, hasOwnPc, goHome, goToSetup, goToSignIn, signOut } =
+    useGuestChrome();
   const { tryCreateFolder, folderLimitDialog } = useFolderCreateGuard();
 
   if (!isStartMenuOpen) {
@@ -70,15 +71,59 @@ export function StartMenu() {
               />
               {identityLabel}
             </button>
-            <button
-              type="button"
-              className="win-menu-item"
-              role="menuitem"
-              onClick={() => goHome()}
-            >
-              <ComputerIcon size={16} />
-              Go Home
-            </button>
+            {showGuestChrome ? (
+              <>
+                <button
+                  type="button"
+                  className="win-menu-item"
+                  role="menuitem"
+                  onClick={() => {
+                    goToSetup();
+                    closeStartMenu();
+                  }}
+                >
+                  <ComputerIcon size={16} />
+                  Get your PC
+                </button>
+                <button
+                  type="button"
+                  className="win-menu-item"
+                  role="menuitem"
+                  onClick={() => {
+                    goToSignIn();
+                    closeStartMenu();
+                  }}
+                >
+                  Sign in
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="win-menu-item"
+                role="menuitem"
+                onClick={() => goHome()}
+              >
+                <ComputerIcon size={16} />
+                Go Home
+              </button>
+            )}
+            {hasOwnPc ? (
+              <>
+                <div className="win-menu-separator" />
+                <button
+                  type="button"
+                  className="win-menu-item"
+                  role="menuitem"
+                  onClick={() => {
+                    signOut();
+                    closeStartMenu();
+                  }}
+                >
+                  Sign out
+                </button>
+              </>
+            ) : null}
             <div className="win-menu-separator" />
             <button
               type="button"
@@ -178,6 +223,18 @@ export function StartMenu() {
             >
               <FolderIcon size={16} />
               New Folder
+            </button>
+            <div className="win-menu-separator" />
+            <button
+              type="button"
+              className="win-menu-item"
+              role="menuitem"
+              onClick={() => {
+                signOut();
+                closeStartMenu();
+              }}
+            >
+              Sign out
             </button>
             <div className="win-menu-separator" />
             <button

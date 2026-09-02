@@ -1,11 +1,19 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Taskbar } from "@/components/desktop/Taskbar";
+import { markMockSignedIn } from "@/lib/ownPc";
 import { resetDesktopStore } from "@/test/resetDesktopStore";
 import { useDesktopStore } from "@/store/desktopStore";
 
+const push = jest.fn();
+
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push }),
+}));
+
 describe("Taskbar", () => {
   beforeEach(() => {
+    push.mockClear();
     resetDesktopStore();
   });
 
@@ -18,12 +26,23 @@ describe("Taskbar", () => {
     expect(screen.getByRole("menu", { name: "Start" })).toBeInTheDocument();
   });
 
-  it("shows Go Home while visiting a remote PC", async () => {
+  it("shows guest chrome while visiting without a PC", () => {
+    useDesktopStore.getState().visitRemotePc("maya");
+    render(<Taskbar />);
+
+    expect(screen.getByRole("button", { name: /Get your PC/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Sign in/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Go Home/i })).not.toBeInTheDocument();
+  });
+
+  it("shows Go Home while visiting when the user already has a PC", async () => {
     const user = userEvent.setup();
+    markMockSignedIn();
     useDesktopStore.getState().visitRemotePc("maya");
     render(<Taskbar />);
 
     expect(screen.getByText("Maya Chen")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Get your PC/i })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Go Home/i }));
     expect(useDesktopStore.getState().viewMode).toBe("local");
   });

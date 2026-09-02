@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { markMockSignedIn } from "@/lib/ownPc";
 import { PRODUCT_NAME, SPOKEN_NAME } from "@/lib/seo/brand";
 import { homePath, setupPath } from "@/lib/seo/paths";
 
@@ -16,6 +17,7 @@ export function MockSignInForm() {
     // Stub auth: any submit enters the local owner desktop.
     void email;
     void password;
+    markMockSignedIn();
     router.push(homePath());
   }
 

@@ -1,3 +1,4 @@
+import { notifyOwnPcChanged } from "@/lib/ownPc";
 import { useDesktopStore } from "@/store/desktopStore";
 
 export const LOCAL_SESSION_STORAGE_KEY = "personal-computer-local-session-v1";
@@ -140,4 +141,5 @@ export function applyLocalSetupAccount(input: LocalSetupInput): void {
     email: input.email.trim(),
     createdAt: new Date().toISOString(),
   });
+  notifyOwnPcChanged();
 }

@@ -15,6 +15,8 @@ export interface UseDesktopUrlSyncOptions {
    * clobber `/C/users/maya` back to `/C/users/local` on first paint.
    */
   enabled?: boolean;
+  /** Route username from `/C/users/[username]` — guards stale store state. */
+  deepLinkUsername?: string;
 }
 
 /**
@@ -23,10 +25,15 @@ export interface UseDesktopUrlSyncOptions {
  * anything else → `/C/users/[user]`
  * Works for both your desktop and a visited remote PC.
  */
+function isLocalRouteUsername(username: string | undefined): boolean {
+  return !username || username === LOCAL_USER_ID;
+}
+
 export function useDesktopUrlSync(
   options: UseDesktopUrlSyncOptions = {},
 ) {
   const enabled = options.enabled ?? true;
+  const deepLinkUsername = options.deepLinkUsername;
   const viewMode = useDesktopStore((state) => state.viewMode);
   const remoteUserId = useDesktopStore((state) => state.remoteUserId);
   const windows = useDesktopStore((state) => state.windows);
@@ -36,6 +43,19 @@ export function useDesktopUrlSync(
   useEffect(() => {
     if (!enabled) {
       return;
+    }
+
+    // Client nav can render the new route before applyDeepLink / goHome runs.
+    if (deepLinkUsername) {
+      if (
+        !isLocalRouteUsername(deepLinkUsername) &&
+        viewMode === "local"
+      ) {
+        return;
+      }
+      if (isLocalRouteUsername(deepLinkUsername) && viewMode === "remote") {
+        return;
+      }
     }
 
     const username =
@@ -62,10 +82,16 @@ export function useDesktopUrlSync(
       }
     }
 
+    // Never rewrite the marketing home or other routes (e.g. during Sign out).
+    if (!window.location.pathname.startsWith("/C/users/")) {
+      lastSyncedPath.current = null;
+      return;
+    }
+
     if (lastSyncedPath.current === target) {
       return;
     }
     lastSyncedPath.current = target;
     window.history.replaceState(window.history.state, "", target);
-  }, [enabled, viewMode, remoteUserId, windows, documents]);
+  }, [enabled, deepLinkUsername, viewMode, remoteUserId, windows, documents]);
 }

@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
 import { ComputerIcon } from "@/components/desktop/icons";
 import { SetupSidebarArt } from "@/components/setup/SetupSidebarArt";
 import { SPOKEN_NAME } from "@/lib/seo/brand";
-import { homePath } from "@/lib/seo/paths";
+import { homePath, signInPath } from "@/lib/seo/paths";
 import {
   analyzingStatus,
   applyLocalSetupAccount,
@@ -300,6 +301,12 @@ function WelcomeStep() {
         Note: You do not need an account to visit someone else&apos;s PC and
         read. Setup is how you get a PC of your own.
       </p>
+      <p className="mt-3">
+        Already have a PC?{" "}
+        <Link href={signInPath()} className="text-win-navy underline">
+          Sign in
+        </Link>
+      </p>
     </div>
   );
 }
@@ -409,6 +416,12 @@ function UserInfoStep({
           {formError}
         </p>
       ) : null}
+      <p className="mt-4">
+        Already have a PC?{" "}
+        <Link href={signInPath()} className="text-win-navy underline">
+          Sign in
+        </Link>
+      </p>
       </fieldset>
     </form>
   );

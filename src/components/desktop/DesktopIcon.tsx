@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ContextMenuEntry } from "@/components/desktop/ContextMenu";
 import { iconForType } from "@/components/desktop/icons";
 import { ProfileAvatar } from "@/components/desktop/ProfileAvatar";
@@ -93,7 +93,7 @@ export function DesktopIcon({
   const [position, setPosition] = useState({ x: icon.x, y: icon.y });
   const [draftName, setDraftName] = useState(icon.label);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = buttonRef.current;
     if (!element) {
       setPosition({ x: icon.x, y: icon.y });
