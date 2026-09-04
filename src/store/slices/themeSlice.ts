@@ -17,11 +17,13 @@ function queueThemeFromState(state: {
   wallpaper: string;
   titleBarColor: string;
   contentDark: boolean;
+  taskbarHeight: number;
 }) {
   scheduleRemoteThemeSave({
     wallpaper: state.wallpaper,
     titleBarColor: state.titleBarColor,
     contentDark: state.contentDark,
+    taskbarHeight: state.taskbarHeight,
   });
 }
 
@@ -60,6 +62,7 @@ export const createThemeSlice: StateCreator<
         wallpaper,
         titleBarColor: state.titleBarColor,
         contentDark: state.contentDark,
+        taskbarHeight: state.taskbarHeight,
       });
       return patch;
     });
@@ -76,6 +79,7 @@ export const createThemeSlice: StateCreator<
         wallpaper: state.wallpaper,
         titleBarColor,
         contentDark: state.contentDark,
+        taskbarHeight: state.taskbarHeight,
       });
       return patch;
     });
@@ -91,19 +95,29 @@ export const createThemeSlice: StateCreator<
         wallpaper: state.wallpaper,
         titleBarColor: state.titleBarColor,
         contentDark: enabled,
+        taskbarHeight: state.taskbarHeight,
       });
       return patch;
     });
   },
 
   setTaskbarHeight: (height) => {
+    if (!assertLocalWritable(get)) {
+      return;
+    }
     const taskbarHeight = clampTaskbarHeight(height);
     set((state) => {
       if (state.taskbarHeight === taskbarHeight) {
         return state;
       }
-      // Taskbar height stays local-only (not on users/{uid} yet).
-      return commitDesktopPatch(state, { taskbarHeight });
+      const patch = commitDesktopPatch(state, { taskbarHeight });
+      queueThemeFromState({
+        wallpaper: state.wallpaper,
+        titleBarColor: state.titleBarColor,
+        contentDark: state.contentDark,
+        taskbarHeight,
+      });
+      return patch;
     });
   },
 
@@ -122,6 +136,7 @@ export const createThemeSlice: StateCreator<
         wallpaper: DEFAULT_WALLPAPER,
         titleBarColor: DEFAULT_TITLE_BAR_COLOR,
         contentDark: DEFAULT_CONTENT_DARK,
+        taskbarHeight: DEFAULT_TASKBAR_HEIGHT,
       });
       return patch;
     });

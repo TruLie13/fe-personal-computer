@@ -1,6 +1,10 @@
 "use client";
 
 import { signUpWithEmail } from "@/lib/firebase/auth";
+import {
+  clearLocalSocialCaches,
+  resetSocialStoreState,
+} from "@/lib/clearLocalSocialCaches";
 import { getDesktopRepository } from "@/lib/repository";
 import { applySignedInSession, normalizeUsername } from "@/lib/setupAccount";
 
@@ -20,6 +24,8 @@ export interface RegisterPcResult {
 export async function registerPcAccount(
   input: RegisterPcInput,
 ): Promise<RegisterPcResult> {
+  clearLocalSocialCaches();
+  resetSocialStoreState();
   const username = normalizeUsername(input.username);
   const user = await signUpWithEmail({
     email: input.email,

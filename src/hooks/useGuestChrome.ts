@@ -7,6 +7,10 @@ import {
   hasOwnPc as readHasOwnPc,
   OWN_PC_CHANGED_EVENT,
 } from "@/lib/ownPc";
+import {
+  clearLocalSocialCaches,
+  resetSocialStoreState,
+} from "@/lib/clearLocalSocialCaches";
 import { signOutFirebase } from "@/lib/firebase/auth";
 import { setupPath, signInPath } from "@/lib/seo/paths";
 import { useDesktopStore } from "@/store/desktopStore";
@@ -49,6 +53,8 @@ export function useGuestChrome() {
         } catch {
           // Already signed out or Firebase not reachable.
         }
+        clearLocalSocialCaches();
+        resetSocialStoreState();
         clearOwnPcAccess();
         router.push("/");
       })();

@@ -5,7 +5,9 @@ import {
   DEFAULT_LOCAL_PROFILE,
 } from "@/lib/profile";
 import {
+  clampTaskbarHeight,
   DEFAULT_CONTENT_DARK,
+  DEFAULT_TASKBAR_HEIGHT,
   DEFAULT_TITLE_BAR_COLOR,
   DEFAULT_WALLPAPER,
 } from "@/lib/storage";
@@ -32,6 +34,7 @@ export function userDocFromClaim(input: ClaimUsernameInput): FirestoreUserDoc {
     wallpaper: DEFAULT_WALLPAPER,
     titleBarColor: DEFAULT_TITLE_BAR_COLOR,
     contentDark: DEFAULT_CONTENT_DARK,
+    taskbarHeight: DEFAULT_TASKBAR_HEIGHT,
     createdAt: now,
     updatedAt: now,
   };
@@ -96,6 +99,9 @@ export function parseUserDoc(value: unknown): FirestoreUserDoc | null {
         ? record.titleBarColor
         : DEFAULT_TITLE_BAR_COLOR,
     contentDark: record.contentDark === true,
+    ...(typeof record.taskbarHeight === "number"
+      ? { taskbarHeight: clampTaskbarHeight(record.taskbarHeight) }
+      : {}),
     createdAt,
     updatedAt,
   };

@@ -15,6 +15,14 @@
         { "fieldPath": "hostUid", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "guestbookEntries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "hostUsername", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

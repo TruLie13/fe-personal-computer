@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
 import { ComposeQuotaFooter } from "@/components/desktop/ComposeQuotaFooter";
 import { DailyLimitDialog } from "@/components/desktop/DailyLimitDialog";
@@ -14,21 +14,28 @@ import {
   MAX_GUESTBOOK_ENTRY_CHARS,
   MAX_GUESTBOOK_SIGNS_PER_HOST_PER_UTC_DAY,
 } from "@/lib/guestbook";
+import { sessionUsername } from "@/lib/localSession";
 import {
   authorDisplayName,
   getNetworkUser,
   LOCAL_USER_ID,
   mergeGuestbookOldestFirst,
 } from "@/lib/networkSeed";
+import { pullRemoteGuestbookEntries } from "@/lib/remoteSocialPersist";
 import { useDesktopStore } from "@/store/desktopStore";
+import type { GuestbookEntry } from "@/types/network";
 
 function canDeleteEntry(
   entry: { authorId: string; hostUserId: string },
   isOwnBook: boolean,
+  ownUsername: string | null,
 ): boolean {
   return (
     entry.authorId === LOCAL_USER_ID ||
-    (isOwnBook && entry.hostUserId === LOCAL_USER_ID)
+    (ownUsername != null && entry.authorId === ownUsername) ||
+    (isOwnBook &&
+      (entry.hostUserId === LOCAL_USER_ID ||
+        (ownUsername != null && entry.hostUserId === ownUsername)))
   );
 }
 
@@ -42,15 +49,41 @@ export function GuestBookWindow() {
   const deleteGuestbookEntry = useDesktopStore(
     (state) => state.deleteGuestbookEntry,
   );
+  const ownUsername = sessionUsername();
+  const [remoteEntries, setRemoteEntries] = useState<GuestbookEntry[]>([]);
 
   const hostUserId =
-    viewMode === "remote" && remoteUserId ? remoteUserId : LOCAL_USER_ID;
-  const canSign = viewMode === "remote" && hostUserId !== LOCAL_USER_ID;
-  const isOwnBook = hostUserId === LOCAL_USER_ID;
+    viewMode === "remote" && remoteUserId
+      ? remoteUserId
+      : (ownUsername ?? LOCAL_USER_ID);
+  const canSign =
+    viewMode === "remote" &&
+    hostUserId !== LOCAL_USER_ID &&
+    hostUserId !== ownUsername;
+  const isOwnBook =
+    viewMode !== "remote" ||
+    hostUserId === LOCAL_USER_ID ||
+    (ownUsername != null && hostUserId === ownUsername);
+
+  useEffect(() => {
+    let cancelled = false;
+    void pullRemoteGuestbookEntries(hostUserId).then((entries) => {
+      if (!cancelled) {
+        setRemoteEntries(entries.filter((entry) => !entry.deletedAt));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hostUserId]);
 
   const entries = useMemo(
-    () => mergeGuestbookOldestFirst(hostUserId, localGuestbookEntries),
-    [hostUserId, localGuestbookEntries],
+    () =>
+      mergeGuestbookOldestFirst(hostUserId, [
+        ...remoteEntries,
+        ...localGuestbookEntries,
+      ]),
+    [hostUserId, remoteEntries, localGuestbookEntries],
   );
 
   const [draft, setDraft] = useState("");
@@ -58,14 +91,14 @@ export function GuestBookWindow() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const signsToday = countGuestbookSignsOnHostUtcDay(
-    localGuestbookEntries,
+    [...remoteEntries, ...localGuestbookEntries],
     hostUserId,
-    LOCAL_USER_ID,
+    ownUsername ?? LOCAL_USER_ID,
   );
   const charCount = draft.length;
 
   const hostLabel =
-    hostUserId === LOCAL_USER_ID
+    isOwnBook
       ? "this PC"
       : (getNetworkUser(hostUserId)?.displayName ?? hostUserId);
 
@@ -76,9 +109,9 @@ export function GuestBookWindow() {
     }
     if (
       !canSignGuestbookToday(
-        useDesktopStore.getState().localGuestbookEntries,
+        [...remoteEntries, ...useDesktopStore.getState().localGuestbookEntries],
         hostUserId,
-        LOCAL_USER_ID,
+        ownUsername ?? LOCAL_USER_ID,
       )
     ) {
       setShowDailyLimit(true);
@@ -123,8 +156,8 @@ export function GuestBookWindow() {
             {entries.map((entry) => {
               const canVisit =
                 entry.authorId !== LOCAL_USER_ID &&
-                Boolean(getNetworkUser(entry.authorId));
-              const canDelete = canDeleteEntry(entry, isOwnBook);
+                entry.authorId !== ownUsername;
+              const canDelete = canDeleteEntry(entry, isOwnBook, ownUsername);
               return (
                 <li
                   key={entry.id}

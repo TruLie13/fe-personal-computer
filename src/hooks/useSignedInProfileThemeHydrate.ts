@@ -92,14 +92,12 @@ export function useSignedInProfileThemeHydrate() {
                 pullRemoteFavorites(),
                 pullRemoteBbsNotes(),
               ]);
-              if (favorites.length > 0) {
-                persistFavorites(favorites);
-                useDesktopStore.setState({ favorites });
-              }
-              if (bbsNotes.length > 0) {
-                saveLocalBbsNotes(bbsNotes);
-                useDesktopStore.setState({ localBbsNotes: bbsNotes });
-              }
+              // Always replace — empty remote must clear prior account's favorites.
+              persistFavorites(favorites);
+              useDesktopStore.setState({ favorites });
+              const liveBbs = bbsNotes.filter((note) => !note.deletedAt);
+              saveLocalBbsNotes(liveBbs);
+              useDesktopStore.setState({ localBbsNotes: liveBbs });
             } catch {
               // Social feeds optional if emulator/index missing.
             }

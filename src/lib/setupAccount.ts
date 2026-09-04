@@ -97,6 +97,7 @@ export function applySignedInSession(input: {
     wallpaper: string;
     titleBarColor: string;
     contentDark: boolean;
+    taskbarHeight?: number;
   };
   /** Firestore FS nodes (folders + text). Merged with local app icon positions. */
   fs?: {
@@ -127,6 +128,9 @@ export function applySignedInSession(input: {
       store.setWallpaper(input.theme.wallpaper);
       store.setTitleBarColor(input.theme.titleBarColor);
       store.setContentDark(input.theme.contentDark);
+      if (typeof input.theme.taskbarHeight === "number") {
+        store.setTaskbarHeight(input.theme.taskbarHeight);
+      }
     }
 
     if (input.fs) {

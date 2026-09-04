@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
 import { ComposeQuotaFooter } from "@/components/desktop/ComposeQuotaFooter";
 import { DailyLimitDialog } from "@/components/desktop/DailyLimitDialog";
@@ -25,15 +25,32 @@ import {
   mergeBbsPostsNewestFirst,
 } from "@/lib/networkSeed";
 import { sessionUsername } from "@/lib/localSession";
+import { pullRemoteBbsNotes } from "@/lib/remoteSocialPersist";
 import { useDesktopStore } from "@/store/desktopStore";
+import type { BbsPost } from "@/types/network";
 
 export function BulletinBoard() {
   const localBbsNotes = useDesktopStore((state) => state.localBbsNotes);
   const postBbsNote = useDesktopStore((state) => state.postBbsNote);
   const deleteBbsNote = useDesktopStore((state) => state.deleteBbsNote);
+  const [remoteBbsNotes, setRemoteBbsNotes] = useState<BbsPost[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void pullRemoteBbsNotes().then((notes) => {
+      if (cancelled) {
+        return;
+      }
+      setRemoteBbsNotes(notes.filter((note) => !note.deletedAt));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const posts = useMemo(
-    () => mergeBbsPostsNewestFirst(localBbsNotes),
-    [localBbsNotes],
+    () => mergeBbsPostsNewestFirst([...remoteBbsNotes, ...localBbsNotes]),
+    [remoteBbsNotes, localBbsNotes],
   );
   const [composing, setComposing] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");

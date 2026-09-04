@@ -111,6 +111,9 @@ export function createFirestoreDesktopRepository(): DesktopRepository {
           wallpaper: parsed.wallpaper,
           titleBarColor: parsed.titleBarColor,
           contentDark: parsed.contentDark,
+          ...(parsed.taskbarHeight !== undefined
+            ? { taskbarHeight: parsed.taskbarHeight }
+            : {}),
         },
         icons: fs.icons,
         documents: fs.documents,
@@ -159,6 +162,9 @@ export function createFirestoreDesktopRepository(): DesktopRepository {
         wallpaper: theme.wallpaper,
         titleBarColor: theme.titleBarColor,
         contentDark: theme.contentDark,
+        ...(theme.taskbarHeight !== undefined
+          ? { taskbarHeight: theme.taskbarHeight }
+          : {}),
         updatedAt: serverTimestamp(),
       });
     },

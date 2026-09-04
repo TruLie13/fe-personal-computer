@@ -2,12 +2,14 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GuestBookWindow } from "@/components/desktop/GuestBookWindow";
 import { MAX_GUESTBOOK_ENTRY_CHARS } from "@/lib/guestbook";
+import { getSocialRepository } from "@/lib/repository";
 import { resetDesktopStore } from "@/test/resetDesktopStore";
 import { useDesktopStore } from "@/store/desktopStore";
 
 describe("GuestBookWindow", () => {
   beforeEach(() => {
     resetDesktopStore();
+    jest.mocked(getSocialRepository).mockClear();
   });
 
   it("shows own-book empty state without a Sign composer", () => {
@@ -87,15 +89,30 @@ describe("GuestBookWindow", () => {
     ).toBeTruthy();
   });
 
-  it("shows Visit PC on another author's seed signature", () => {
+  it("merges remote guestbook entries onto the wall", async () => {
+    const listGuestbookEntries = jest.fn(async () => [
+      {
+        id: "remote-gb-1",
+        hostUserId: "maya",
+        authorId: "testuser",
+        content: "Signed from another PC",
+        createdAt: "2026-09-01T12:00:00.000Z",
+      },
+    ]);
+    jest.mocked(getSocialRepository).mockReturnValueOnce({
+      ...jest.mocked(getSocialRepository)(),
+      listGuestbookEntries,
+    } as ReturnType<typeof getSocialRepository>);
+
     useDesktopStore.setState({
       viewMode: "remote",
       remoteUserId: "maya",
     });
     render(<GuestBookWindow />);
-    expect(screen.getByText(/Rex Ortega/i)).toBeInTheDocument();
+
     expect(
-      screen.getByRole("button", { name: /Visit PC/i }),
+      await screen.findByText("Signed from another PC"),
     ).toBeInTheDocument();
+    expect(listGuestbookEntries).toHaveBeenCalledWith("maya");
   });
 });

@@ -3,6 +3,10 @@ import {
   loadLocalSession,
   LOCAL_SESSION_STORAGE_KEY,
 } from "@/lib/localSession";
+import {
+  clearLocalSocialCaches,
+  resetSocialStoreState,
+} from "@/lib/clearLocalSocialCaches";
 
 /** Stub until Firebase Auth replaces mock sign-in. */
 export const MOCK_SIGNED_IN_STORAGE_KEY = "personal-computer-mock-signed-in-v1";
@@ -41,6 +45,8 @@ export function clearOwnPcAccess(): void {
   if (typeof window === "undefined") {
     return;
   }
+  clearLocalSocialCaches();
+  resetSocialStoreState();
   clearLocalSession();
   window.localStorage.removeItem(MOCK_SIGNED_IN_STORAGE_KEY);
   notifyOwnPcChanged();

@@ -363,6 +363,7 @@ export const SEED_GUESTBOOK_ENTRIES: GuestbookEntry[] = [
 ];
 
 /** Oldest-first messages for a host's Guest Book. */
+/** Oldest-first reading order for a Guest Book. */
 export function mergeGuestbookOldestFirst(
   hostUserId: NetworkUserId,
   localEntries: GuestbookEntry[],
@@ -372,19 +373,27 @@ export function mergeGuestbookOldestFirst(
       .filter((entry) => entry.deletedAt)
       .map((entry) => entry.id),
   );
-  const localLive = localEntries.filter(
-    (entry) =>
+  const byId = new Map<string, GuestbookEntry>();
+  for (const entry of SEED_GUESTBOOK_ENTRIES) {
+    if (
       entry.hostUserId === hostUserId &&
       !entry.deletedAt &&
-      !SEED_GUESTBOOK_ENTRIES.some((seed) => seed.id === entry.id),
-  );
-  const seedLive = SEED_GUESTBOOK_ENTRIES.filter(
-    (entry) =>
-      entry.hostUserId === hostUserId &&
-      !entry.deletedAt &&
-      !deletedIds.has(entry.id),
-  );
-  return [...seedLive, ...localLive].sort(
+      !deletedIds.has(entry.id)
+    ) {
+      byId.set(entry.id, entry);
+    }
+  }
+  for (const entry of localEntries) {
+    if (
+      entry.hostUserId !== hostUserId ||
+      entry.deletedAt ||
+      deletedIds.has(entry.id)
+    ) {
+      continue;
+    }
+    byId.set(entry.id, entry);
+  }
+  return [...byId.values()].sort(
     (a, b) =>
       new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
@@ -400,27 +409,46 @@ export function mergeStoryCommentsOldestFirst(
       .filter((comment) => comment.deletedAt)
       .map((comment) => comment.id),
   );
-  const localLive = localComments.filter(
-    (comment) =>
+  const byId = new Map<string, StoryComment>();
+  for (const comment of SEED_STORY_COMMENTS) {
+    if (
       comment.documentId === documentId &&
       !comment.deletedAt &&
-      !SEED_STORY_COMMENTS.some((seed) => seed.id === comment.id),
-  );
-  const seedLive = SEED_STORY_COMMENTS.filter(
-    (comment) =>
-      comment.documentId === documentId &&
-      !comment.deletedAt &&
-      !deletedIds.has(comment.id),
-  );
-  return [...seedLive, ...localLive].sort(
+      !deletedIds.has(comment.id)
+    ) {
+      byId.set(comment.id, comment);
+    }
+  }
+  for (const comment of localComments) {
+    if (
+      comment.documentId !== documentId ||
+      comment.deletedAt ||
+      deletedIds.has(comment.id)
+    ) {
+      continue;
+    }
+    byId.set(comment.id, comment);
+  }
+  return [...byId.values()].sort(
     (a, b) =>
       new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
 }
 
 export function mergeBbsPostsNewestFirst(localPosts: BbsPost[]): BbsPost[] {
-  const visibleLocal = localPosts.filter((post) => !post.deletedAt);
-  return [...SEED_BBS_POSTS, ...visibleLocal].sort(
+  const byId = new Map<string, BbsPost>();
+  for (const post of SEED_BBS_POSTS) {
+    if (!post.deletedAt) {
+      byId.set(post.id, post);
+    }
+  }
+  for (const post of localPosts) {
+    if (post.deletedAt) {
+      continue;
+    }
+    byId.set(post.id, post);
+  }
+  return [...byId.values()].sort(
     (a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );

@@ -79,7 +79,10 @@ export async function softDeleteRemoteBbsNote(noteId: string): Promise<boolean> 
 export async function pullRemoteBbsNotes(): Promise<BbsPost[]> {
   try {
     return await getSocialRepository().listBbsNotes();
-  } catch {
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[remoteSocialPersist] listBbsNotes failed", err);
+    }
     return [];
   }
 }
@@ -154,7 +157,10 @@ export async function createRemoteGuestbookEntry(input: {
       username,
       content: input.content,
     });
-  } catch {
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[remoteSocialPersist] createGuestbookEntry failed", err);
+    }
     return null;
   }
 }
@@ -173,15 +179,53 @@ export async function softDeleteRemoteGuestbookEntry(
       actorUid: uid,
       asHost,
     });
-  } catch {
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[remoteSocialPersist] softDeleteGuestbookEntry failed", err);
+    }
     return false;
+  }
+}
+
+export async function pullRemoteGuestbookEntries(
+  hostUsername: string,
+): Promise<GuestbookEntry[]> {
+  if (!hostUsername) {
+    return [];
+  }
+  try {
+    return await getSocialRepository().listGuestbookEntries(hostUsername);
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[remoteSocialPersist] listGuestbookEntries failed", err);
+    }
+    return [];
+  }
+}
+
+export async function pullRemoteStoryComments(
+  documentId: string,
+): Promise<StoryComment[]> {
+  if (!documentId) {
+    return [];
+  }
+  try {
+    return await getSocialRepository().listStoryComments(documentId);
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[remoteSocialPersist] listStoryComments failed", err);
+    }
+    return [];
   }
 }
 
 export async function pullRemotePublicStories(): Promise<PublicStory[]> {
   try {
     return await getSocialRepository().listPublicStories();
-  } catch {
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[remoteSocialPersist] listPublicStories failed", err);
+    }
     return [];
   }
 }

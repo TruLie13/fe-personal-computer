@@ -10,6 +10,8 @@ export interface DesktopThemeState {
   wallpaper: string;
   titleBarColor: string;
   contentDark: boolean;
+  /** Optional; omitted on older clients / docs. */
+  taskbarHeight?: number;
 }
 
 export interface DesktopLoadResult {

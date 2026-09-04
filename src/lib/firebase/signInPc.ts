@@ -1,6 +1,10 @@
 "use client";
 
 import { signInWithEmail } from "@/lib/firebase/auth";
+import {
+  clearLocalSocialCaches,
+  resetSocialStoreState,
+} from "@/lib/clearLocalSocialCaches";
 import { getDesktopRepository } from "@/lib/repository";
 import { applySignedInSession } from "@/lib/setupAccount";
 
@@ -21,6 +25,8 @@ export async function signInToPc(input: {
   email: string;
   password: string;
 }): Promise<SignInPcResult> {
+  clearLocalSocialCaches();
+  resetSocialStoreState();
   const user = await signInWithEmail(input);
   const desktop = await getDesktopRepository().loadDesktop(user.uid);
   if (!desktop) {

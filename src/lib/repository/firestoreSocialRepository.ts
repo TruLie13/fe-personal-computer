@@ -181,15 +181,30 @@ export function createFirestoreSocialRepository(): SocialRepository {
     },
 
     async listGuestbookEntries(hostUserId, max = 100) {
-      const snap = await getDocs(
+      // Prefer hostUsername (stable public id); fall back to hostUid for older docs.
+      const db = getClientFirestore();
+      const byUsername = await getDocs(
         query(
-          collection(getClientFirestore(), "guestbookEntries"),
+          collection(db, "guestbookEntries"),
+          where("hostUsername", "==", hostUserId),
+          orderBy("createdAt", "desc"),
+          limit(max),
+        ),
+      );
+      if (!byUsername.empty) {
+        return byUsername.docs.map((entrySnap) =>
+          guestbookFromSnap(entrySnap.id, entrySnap.data()),
+        );
+      }
+      const byUid = await getDocs(
+        query(
+          collection(db, "guestbookEntries"),
           where("hostUid", "==", hostUserId),
           orderBy("createdAt", "desc"),
           limit(max),
         ),
       );
-      return snap.docs.map((entrySnap) =>
+      return byUid.docs.map((entrySnap) =>
         guestbookFromSnap(entrySnap.id, entrySnap.data()),
       );
     },
@@ -208,7 +223,7 @@ export function createFirestoreSocialRepository(): SocialRepository {
       });
       return {
         id: ref.id,
-        hostUserId: input.hostUid,
+        hostUserId: input.hostUsername,
         authorId: input.username,
         content: input.content,
         createdAt,
@@ -290,7 +305,12 @@ function guestbookFromSnap(
     deletedRaw == null ? undefined : timestampToIso(deletedRaw);
   return {
     id,
-    hostUserId: typeof data.hostUid === "string" ? data.hostUid : "",
+    hostUserId:
+      typeof data.hostUsername === "string" && data.hostUsername.length > 0
+        ? data.hostUsername
+        : typeof data.hostUid === "string"
+          ? data.hostUid
+          : "",
     authorId: typeof data.username === "string" ? data.username : "unknown",
     content: typeof data.content === "string" ? data.content : "",
     createdAt: timestampToIso(data.createdAt),

@@ -16,18 +16,32 @@ export function NetworkNeighborhood() {
   const addFavorite = useDesktopStore((state) => state.addFavorite);
   const removeFavorite = useDesktopStore((state) => state.removeFavorite);
   const [networkUsers, setNetworkUsers] = useState<NetworkUser[]>(NETWORK_USERS);
+  const [directoryStatus, setDirectoryStatus] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
 
   useEffect(() => {
     let cancelled = false;
-    void pullNetworkNeighborhoodUsers().then((users) => {
-      if (!cancelled) {
+    setDirectoryStatus("loading");
+    void pullNetworkNeighborhoodUsers()
+      .then((users) => {
+        if (cancelled) {
+          return;
+        }
         setNetworkUsers(users);
-      }
-    });
+        setDirectoryStatus("ready");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDirectoryStatus("error");
+        }
+      });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const claimedCount = networkUsers.length - NETWORK_USERS.length;
 
   const usersById = useMemo(() => {
     const map = new Map<string, NetworkUser>();
@@ -45,6 +59,13 @@ export function NetworkNeighborhood() {
     <div className="flex h-full min-h-0 flex-col bg-win-face text-[12px]">
       <div className="border-b border-win-dark px-2 py-1 text-win-dark">
         Network Neighborhood — browse PCs and keep Favorites
+        {directoryStatus === "loading" ? " (loading network…)" : null}
+        {directoryStatus === "error"
+          ? " (could not reach network directory)"
+          : null}
+        {directoryStatus === "ready" && claimedCount > 0
+          ? ` (${claimedCount} claimed PC${claimedCount === 1 ? "" : "s"} online)`
+          : null}
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto p-2">

@@ -14,6 +14,8 @@ export interface FirestoreUserDoc {
   wallpaper: string;
   titleBarColor: string;
   contentDark: boolean;
+  /** Optional device chrome preference (px). */
+  taskbarHeight?: number;
   createdAt: string;
   updatedAt: string;
 }

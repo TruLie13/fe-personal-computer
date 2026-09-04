@@ -125,7 +125,7 @@ export function StoryExplorer() {
     <MasterDetail
       header={
         <span className="min-w-0 flex-1 text-win-dark">
-          Story Explorer — public writing from the network (no follow required)
+          Story Explorer — public writing from the network (Publish in Notepad)
         </span>
       }
       list={

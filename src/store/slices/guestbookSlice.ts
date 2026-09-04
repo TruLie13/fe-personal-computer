@@ -10,6 +10,7 @@ import {
   createRemoteGuestbookEntry,
   softDeleteRemoteGuestbookEntry,
 } from "@/lib/remoteSocialPersist";
+import { getDesktopRepository } from "@/lib/repository";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
 import { createId } from "@/store/desktopWindowFactory";
 import type { GuestbookEntry } from "@/types/network";
@@ -74,11 +75,22 @@ export const createGuestbookSlice: StateCreator<
       return { localGuestbookEntries };
     });
 
-    void createRemoteGuestbookEntry({
-      hostUid: hostUserId,
-      hostUsername: hostUserId,
-      content: trimmed,
-    }).then((remote) => {
+    void (async () => {
+      let hostUid = hostUserId;
+      try {
+        const resolved =
+          await getDesktopRepository().getUidForUsername(hostUserId);
+        if (resolved) {
+          hostUid = resolved;
+        }
+      } catch {
+        // Seed hosts (maya/rex) keep username as hostUid.
+      }
+      const remote = await createRemoteGuestbookEntry({
+        hostUid,
+        hostUsername: hostUserId,
+        content: trimmed,
+      });
       if (!remote) {
         return;
       }
@@ -96,7 +108,7 @@ export const createGuestbookSlice: StateCreator<
         saveLocalGuestbookEntries(localGuestbookEntries);
         return { localGuestbookEntries };
       });
-    });
+    })();
 
     return localId;
   },

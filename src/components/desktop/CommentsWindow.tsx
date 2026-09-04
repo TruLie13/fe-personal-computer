@@ -1,16 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
 import { ComposeQuotaFooter } from "@/components/desktop/ComposeQuotaFooter";
 import { DailyLimitDialog } from "@/components/desktop/DailyLimitDialog";
 import { DeleteIcon } from "@/components/desktop/icons";
 import { formatShortDateTime } from "@/lib/formatDate";
+import { sessionUsername } from "@/lib/localSession";
 import {
   authorDisplayName,
   LOCAL_USER_ID,
   mergeStoryCommentsOldestFirst,
 } from "@/lib/networkSeed";
+import { pullRemoteStoryComments } from "@/lib/remoteSocialPersist";
 import {
   canPostStoryCommentToday,
   clampStoryCommentContent,
@@ -19,6 +21,7 @@ import {
   MAX_STORY_COMMENTS_PER_UTC_DAY,
 } from "@/lib/storyComments";
 import { useDesktopStore } from "@/store/desktopStore";
+import type { StoryComment } from "@/types/network";
 
 interface CommentsWindowProps {
   documentId: string | null;
@@ -32,13 +35,34 @@ export function CommentsWindow({ documentId }: CommentsWindowProps) {
   const deleteStoryComment = useDesktopStore(
     (state) => state.deleteStoryComment,
   );
+  const [remoteComments, setRemoteComments] = useState<StoryComment[]>([]);
+  const ownUsername = sessionUsername();
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!documentId) {
+      setRemoteComments([]);
+      return;
+    }
+    void pullRemoteStoryComments(documentId).then((comments) => {
+      if (!cancelled) {
+        setRemoteComments(comments.filter((comment) => !comment.deletedAt));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [documentId]);
 
   const comments = useMemo(
     () =>
       documentId
-        ? mergeStoryCommentsOldestFirst(documentId, localStoryComments)
+        ? mergeStoryCommentsOldestFirst(documentId, [
+            ...remoteComments,
+            ...localStoryComments,
+          ])
         : [],
-    [documentId, localStoryComments],
+    [documentId, remoteComments, localStoryComments],
   );
 
   const [draft, setDraft] = useState("");
@@ -99,7 +123,9 @@ export function CommentsWindow({ documentId }: CommentsWindowProps) {
         ) : (
           <ul className="list-none">
             {comments.map((comment) => {
-              const isOwn = comment.authorId === LOCAL_USER_ID;
+              const isOwn =
+                comment.authorId === LOCAL_USER_ID ||
+                (ownUsername != null && comment.authorId === ownUsername);
               return (
                 <li
                   key={comment.id}

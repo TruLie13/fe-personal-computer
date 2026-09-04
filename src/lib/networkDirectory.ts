@@ -40,7 +40,10 @@ export async function pullNetworkNeighborhoodUsers(): Promise<NetworkUser[]> {
   let claimed: NetworkDirectoryEntry[] = [];
   try {
     claimed = await getDesktopRepository().listNetworkDirectory();
-  } catch {
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[networkDirectory] listNetworkDirectory failed", err);
+    }
     claimed = [];
   }
 
