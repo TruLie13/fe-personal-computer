@@ -72,3 +72,22 @@ export function centeredWindowPosition(
     desktop,
   );
 }
+
+/**
+ * Keep a window on-screen: shrink if taller/wider than the desktop, then clamp.
+ * Fixes cascaded windows opening entirely below the fold (taskbar shows them,
+ * but `overflow:hidden` on the desktop clips them).
+ */
+export function fitWindowInDesktop(
+  position: Point,
+  size: Size,
+  taskbarHeight: number = DEFAULT_TASKBAR_HEIGHT,
+  viewport?: Size,
+): { x: number; y: number; width: number; height: number } {
+  const desktop = desktopContentSize(taskbarHeight, viewport);
+  const width = Math.min(size.width, Math.max(200, desktop.width));
+  const height = Math.min(size.height, Math.max(160, desktop.height));
+  const fitted = { width, height };
+  const pos = clampIconPosition(position, fitted, desktop);
+  return { ...pos, ...fitted };
+}

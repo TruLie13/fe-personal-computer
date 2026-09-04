@@ -1,15 +1,20 @@
 import { notifyOwnPcChanged } from "@/lib/ownPc";
+import {
+  saveLocalSession,
+  loadLocalSession,
+  LOCAL_SESSION_STORAGE_KEY,
+} from "@/lib/localSession";
+import { withRemotePersistSuppressed } from "@/lib/remoteDesktopPersist";
+import { DOCUMENTS_FOLDER_ID } from "@/lib/repository/desktopFiles";
+import { isAppIcon, mergeAppIcons } from "@/lib/storage";
 import { useDesktopStore } from "@/store/desktopStore";
+import { commitDesktopPatch } from "@/store/desktopWrite";
+import type { DesktopIcon, TextDocument } from "@/types/desktop";
+import type { UserProfile } from "@/types/network";
 
-export const LOCAL_SESSION_STORAGE_KEY = "personal-computer-local-session-v1";
+export { loadLocalSession, LOCAL_SESSION_STORAGE_KEY };
 
 export const USERNAME_PATTERN = /^[a-z][a-z0-9_-]{1,19}$/;
-
-export interface LocalSession {
-  username: string;
-  email: string;
-  createdAt: string;
-}
 
 export interface LocalSetupInput {
   username: string;
@@ -84,56 +89,59 @@ export function analyzingStatus(progress: number): string {
   return "Setup is complete.";
 }
 
-function isLocalSession(value: unknown): value is LocalSession {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  const record = value as Record<string, unknown>;
-  return (
-    typeof record.username === "string" &&
-    typeof record.email === "string" &&
-    typeof record.createdAt === "string"
-  );
-}
-
-export function loadLocalSession(): LocalSession | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  try {
-    const raw = window.localStorage.getItem(LOCAL_SESSION_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-    const parsed: unknown = JSON.parse(raw);
-    return isLocalSession(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-export function saveLocalSession(session: LocalSession): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-  window.localStorage.setItem(
-    LOCAL_SESSION_STORAGE_KEY,
-    JSON.stringify(session),
-  );
-}
-
-/**
- * Frontend-only signup: stamp the local profile and a stub session.
- * Password is never stored. Email is kept on the stub session only.
- */
-export function applyLocalSetupAccount(input: LocalSetupInput): void {
+export function applySignedInSession(input: {
+  username: string;
+  email: string;
+  profile?: Partial<UserProfile>;
+  theme?: {
+    wallpaper: string;
+    titleBarColor: string;
+    contentDark: boolean;
+  };
+  /** Firestore FS nodes (folders + text). Merged with local app icon positions. */
+  fs?: {
+    icons: DesktopIcon[];
+    documents: TextDocument[];
+  };
+}): void {
   const username = normalizeUsername(input.username);
-  const displayName = input.displayName.trim() || username;
-  const computerName = `${username.toUpperCase()}-PC`;
+  const displayName = input.profile?.displayName?.trim() || username;
+  const computerName =
+    input.profile?.computerName?.trim() || `${username.toUpperCase()}-PC`;
 
-  useDesktopStore.getState().updateLocalProfile({
-    displayName,
-    computerName,
+  withRemotePersistSuppressed(() => {
+    const store = useDesktopStore.getState();
+    store.updateLocalProfile({
+      displayName,
+      computerName,
+      ...(input.profile?.bio !== undefined ? { bio: input.profile.bio } : {}),
+      ...(input.profile?.avatarColor !== undefined
+        ? { avatarColor: input.profile.avatarColor }
+        : {}),
+      ...(input.profile?.avatarUrl !== undefined
+        ? { avatarUrl: input.profile.avatarUrl }
+        : {}),
+    });
+
+    if (input.theme) {
+      store.setWallpaper(input.theme.wallpaper);
+      store.setTitleBarColor(input.theme.titleBarColor);
+      store.setContentDark(input.theme.contentDark);
+    }
+
+    if (input.fs) {
+      const state = useDesktopStore.getState();
+      const appIcons = state.icons.filter(
+        (icon) => isAppIcon(icon.id) && icon.id !== DOCUMENTS_FOLDER_ID,
+      );
+      const icons = mergeAppIcons([...appIcons, ...input.fs.icons]);
+      useDesktopStore.setState(
+        commitDesktopPatch(state, {
+          icons,
+          documents: input.fs.documents,
+        }),
+      );
+    }
   });
 
   saveLocalSession({
@@ -142,4 +150,16 @@ export function applyLocalSetupAccount(input: LocalSetupInput): void {
     createdAt: new Date().toISOString(),
   });
   notifyOwnPcChanged();
+}
+
+/**
+ * Frontend-only signup: stamp the local profile and a stub session.
+ * Password is never stored. Email is kept on the stub session only.
+ */
+export function applyLocalSetupAccount(input: LocalSetupInput): void {
+  applySignedInSession({
+    username: input.username,
+    email: input.email,
+    profile: { displayName: input.displayName },
+  });
 }

@@ -7,6 +7,7 @@ import {
   hasOwnPc as readHasOwnPc,
   OWN_PC_CHANGED_EVENT,
 } from "@/lib/ownPc";
+import { signOutFirebase } from "@/lib/firebase/auth";
 import { setupPath, signInPath } from "@/lib/seo/paths";
 import { useDesktopStore } from "@/store/desktopStore";
 import { usePcRoutes } from "@/hooks/usePcRoutes";
@@ -42,10 +43,15 @@ export function useGuestChrome() {
     goToSetup: () => router.push(setupPath()),
     goToSignIn: () => router.push(signInPath()),
     signOut: () => {
-      if (readHasOwnPc()) {
+      void (async () => {
+        try {
+          await signOutFirebase();
+        } catch {
+          // Already signed out or Firebase not reachable.
+        }
         clearOwnPcAccess();
-      }
-      router.push("/");
+        router.push("/");
+      })();
     },
   };
 }

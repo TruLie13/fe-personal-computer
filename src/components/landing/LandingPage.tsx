@@ -3,7 +3,6 @@ import { DevDesktopFloat } from "@/components/landing/DevDesktopFloat";
 import {
   LANDING_PITCH,
   LANDING_TAGLINE,
-  PRODUCT_NAME,
   SPOKEN_NAME,
 } from "@/lib/seo/brand";
 import { samplePcPath, setupPath, signInPath } from "@/lib/seo/paths";
@@ -111,8 +110,7 @@ export function LandingPage() {
           <p>
             Please note: you do not need an account to visit a PC and read.
             When you are ready to write and publish,{" "}
-            <a href={setupHref}>get your PC</a> (local Setup Wizard — no real
-            accounts yet).
+            <a href={setupHref}>get your PC</a>.
           </p>
         </section>
 
@@ -130,10 +128,9 @@ export function LandingPage() {
             <a href={setupHref}>Get your PC</a>]
           </p>
           <p className="mt-3 text-[13px]">
-            Copyright © {new Date().getFullYear()} {SPOKEN_NAME} /{" "}
-            {PRODUCT_NAME}.
+            Copyright © {new Date().getFullYear()} {SPOKEN_NAME}.
             <br />
-            A place for writers to create and share stories on their personal computer.
+            A social desktop for writers.
           </p>
         </footer>
       </main>

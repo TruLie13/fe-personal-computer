@@ -4,7 +4,7 @@ export function DesktopPreview() {
     <div
       className="my-3 inline-block border-2 border-black bg-[#008080] p-1"
       role="img"
-      aria-label="Preview of a MyPC writer desktop with story files"
+      aria-label="Preview of a Teal95 writer desktop with story files"
     >
       <div className="border border-white bg-[#c0c0c0] p-0.5">
         <div className="flex items-center gap-1 bg-[#000080] px-1 py-0.5 text-[11px] text-white">

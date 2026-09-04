@@ -1,3 +1,4 @@
+import { sessionUsername } from "@/lib/localSession";
 import { LOCAL_USER_ID } from "@/lib/networkSeed";
 import type { NetworkUserId } from "@/types/network";
 
@@ -17,6 +18,11 @@ export function currentUsername(): string {
 /** Canonical home desktop for the signed-in user. */
 export function homePath(): string {
   return profilePath(currentUsername());
+}
+
+/** Client-only: `/C/users/{claimed}` after Setup, else stub `/C/users/local`. */
+export function clientHomePath(): string {
+  return profilePath(sessionUsername() ?? currentUsername());
 }
 
 export function profilePath(username: NetworkUserId | string): string {

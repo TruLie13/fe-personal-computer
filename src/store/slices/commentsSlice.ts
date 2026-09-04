@@ -4,7 +4,13 @@ import {
   clampStoryCommentContent,
   saveLocalStoryComments,
 } from "@/lib/storyComments";
+import { sessionUsername } from "@/lib/localSession";
 import { LOCAL_USER_ID } from "@/lib/networkSeed";
+import {
+  createRemoteStoryComment,
+  softDeleteRemoteStoryComment,
+} from "@/lib/remoteSocialPersist";
+import { getCurrentAuthUser } from "@/lib/firebase/auth";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
 import { createId, createTypedWindow } from "@/store/desktopWindowFactory";
 import type { StoryComment } from "@/types/network";
@@ -16,6 +22,24 @@ export type CommentsSlice = Pick<
   | "deleteStoryComment"
   | "openStoryComments"
 >;
+
+function commentAuthorId(): string {
+  return sessionUsername() ?? LOCAL_USER_ID;
+}
+
+function guessOwnerUid(documentId: string): string {
+  if (documentId.startsWith("maya-")) {
+    return "maya";
+  }
+  if (documentId.startsWith("rex-")) {
+    return "rex";
+  }
+  try {
+    return getCurrentAuthUser()?.uid ?? LOCAL_USER_ID;
+  } catch {
+    return LOCAL_USER_ID;
+  }
+}
 
 export const createCommentsSlice: StateCreator<
   DesktopStore,
@@ -33,10 +57,12 @@ export const createCommentsSlice: StateCreator<
     if (!canPostStoryCommentToday(get().localStoryComments)) {
       return "";
     }
+    const authorId = commentAuthorId();
+    const localId = createId("cmt");
     const comment: StoryComment = {
-      id: createId("cmt"),
+      id: localId,
       documentId,
-      authorId: LOCAL_USER_ID,
+      authorId,
       content: trimmed,
       createdAt: new Date().toISOString(),
     };
@@ -45,16 +71,43 @@ export const createCommentsSlice: StateCreator<
       saveLocalStoryComments(localStoryComments);
       return { localStoryComments };
     });
-    return comment.id;
+
+    void createRemoteStoryComment({
+      documentId,
+      ownerUid: guessOwnerUid(documentId),
+      content: trimmed,
+    }).then((remote) => {
+      if (!remote) {
+        return;
+      }
+      set((state) => {
+        const localStoryComments = state.localStoryComments.map((item) =>
+          item.id === localId
+            ? {
+                ...item,
+                id: remote.id,
+                authorId: remote.authorId,
+                createdAt: remote.createdAt,
+              }
+            : item,
+        );
+        saveLocalStoryComments(localStoryComments);
+        return { localStoryComments };
+      });
+    });
+
+    return localId;
   },
 
   deleteStoryComment: (commentId) => {
+    const authorId = commentAuthorId();
     const existing = get().localStoryComments.find(
       (comment) => comment.id === commentId,
     );
     if (
       !existing ||
-      existing.authorId !== LOCAL_USER_ID ||
+      (existing.authorId !== authorId &&
+        existing.authorId !== LOCAL_USER_ID) ||
       existing.deletedAt
     ) {
       return false;
@@ -67,6 +120,7 @@ export const createCommentsSlice: StateCreator<
       saveLocalStoryComments(localStoryComments);
       return { localStoryComments };
     });
+    void softDeleteRemoteStoryComment(commentId);
     return true;
   },
 

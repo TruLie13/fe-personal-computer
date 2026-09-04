@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProfileWindow } from "@/components/desktop/ProfileWindow";
 import { markMockSignedIn } from "@/lib/ownPc";
+import { saveRemoteProfileNow } from "@/lib/remoteDesktopPersist";
 import {
   DEFAULT_DOCUMENTS,
   DEFAULT_ICONS,
@@ -14,8 +15,14 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn() }),
 }));
 
+jest.mock("@/lib/remoteDesktopPersist", () => ({
+  ...jest.requireActual("@/lib/remoteDesktopPersist"),
+  saveRemoteProfileNow: jest.fn(async () => "saved"),
+}));
+
 describe("ProfileWindow", () => {
   beforeEach(() => {
+    jest.mocked(saveRemoteProfileNow).mockResolvedValue("saved");
     useDesktopStore.setState({
       icons: DEFAULT_ICONS,
       documents: DEFAULT_DOCUMENTS,
@@ -33,6 +40,7 @@ describe("ProfileWindow", () => {
       hydrated: false,
       viewMode: "local",
       remoteUserId: null,
+      remoteProfile: null,
       favorites: [],
       localBbsNotes: [],
     localStoryComments: [],
@@ -65,7 +73,7 @@ describe("ProfileWindow", () => {
     expect(icons.find((icon) => icon.id === "profile")?.label).toBe(
       "Truth's PC",
     );
-    expect(screen.getByText("Saved")).toBeInTheDocument();
+    expect(await screen.findByText("Saved")).toBeInTheDocument();
   });
 
   it("clamps bio to the character limit", async () => {

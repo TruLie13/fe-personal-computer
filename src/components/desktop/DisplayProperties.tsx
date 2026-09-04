@@ -69,7 +69,7 @@ export function DisplayProperties() {
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-3">
         <p className="text-[12px] leading-5">
           Change your desktop wallpaper, window title bar, and content colors.
-          Settings are saved on this computer.
+          Settings are saved on this PC and to your account when signed in.
         </p>
 
         <div className="win-sunken bg-win-paper p-2 text-win-ink">

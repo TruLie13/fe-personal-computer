@@ -74,6 +74,8 @@ export interface PublicStory {
   title: string;
   content: string;
   publishedAt: string;
+  /** Present for Firestore-backed stories (Open file / SEO). */
+  slug?: string;
 }
 
 export interface FavoritePc {

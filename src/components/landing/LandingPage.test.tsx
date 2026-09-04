@@ -2,12 +2,12 @@ import { render, screen } from "@testing-library/react";
 import { LandingPage } from "@/components/landing/LandingPage";
 
 describe("LandingPage", () => {
-  it("leads with writers / social network positioning", () => {
+  it("leads with writers / social desktop positioning", () => {
     render(<LandingPage />);
     expect(screen.getByRole("main")).toBeInTheDocument();
     expect(
-      screen.getByText(/social network for writers/i),
-    ).toBeInTheDocument();
+      screen.getAllByText(/social desktop for writers/i).length,
+    ).toBeGreaterThan(0);
     expect(
       screen.getByText(/write stories on your own pc/i),
     ).toBeInTheDocument();

@@ -1,6 +1,7 @@
 import {
   centeredWindowPosition,
   clampIconPosition,
+  fitWindowInDesktop,
   maximizedWindowBounds,
 } from "@/lib/desktopBounds";
 
@@ -61,5 +62,28 @@ describe("maximizedWindowBounds", () => {
       width: 1280,
       height: 760,
     });
+  });
+});
+
+describe("fitWindowInDesktop", () => {
+  it("clamps cascaded windows that would open below the fold", () => {
+    const fitted = fitWindowInDesktop(
+      { x: 80, y: 600 },
+      { width: 420, height: 460 },
+      36,
+      { width: 800, height: 700 },
+    );
+    expect(fitted.y + fitted.height).toBeLessThanOrEqual(700 - 36);
+    expect(fitted.y).toBeGreaterThanOrEqual(0);
+  });
+
+  it("shrinks windows taller than the desktop", () => {
+    const fitted = fitWindowInDesktop(
+      { x: 0, y: 0 },
+      { width: 420, height: 900 },
+      36,
+      { width: 800, height: 500 },
+    );
+    expect(fitted.height).toBe(500 - 36);
   });
 });

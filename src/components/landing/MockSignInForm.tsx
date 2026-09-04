@@ -3,22 +3,40 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { markMockSignedIn } from "@/lib/ownPc";
+import { mapAuthError } from "@/lib/firebase/mapAuthError";
+import { ProfileMissingError, signInToPc } from "@/lib/firebase/signInPc";
 import { PRODUCT_NAME, SPOKEN_NAME } from "@/lib/seo/brand";
-import { homePath, setupPath } from "@/lib/seo/paths";
+import { profilePath, setupPath } from "@/lib/seo/paths";
+import { emailError, passwordError } from "@/lib/setupAccount";
 
 export function MockSignInForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // Stub auth: any submit enters the local owner desktop.
-    void email;
-    void password;
-    markMockSignedIn();
-    router.push(homePath());
+    const invalid = emailError(email) ?? passwordError(password);
+    if (invalid) {
+      setError(invalid);
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const result = await signInToPc({ email, password });
+      router.push(profilePath(result.username));
+    } catch (caught) {
+      if (caught instanceof ProfileMissingError) {
+        setError(caught.message);
+        return;
+      }
+      setError(mapAuthError(caught));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -31,7 +49,7 @@ export function MockSignInForm() {
         </p>
         <h1 className="mt-2 text-[1.5em]">Sign in to {SPOKEN_NAME}</h1>
         <p className="landing-muted mt-1">
-          Mock form — submitting opens your local desktop. New PCs use the{" "}
+          Log on with the e-mail you used in Setup. New PCs use the{" "}
           {PRODUCT_NAME} Setup Wizard.
         </p>
 
@@ -66,18 +84,23 @@ export function MockSignInForm() {
               className="mt-1 w-full border border-[#808080] bg-white px-1 py-0.5 font-serif text-[16px] text-black"
             />
           </div>
+          {error ? (
+            <p role="alert" className="text-[14px]">
+              {error}
+            </p>
+          ) : null}
           <button
             type="submit"
+            disabled={submitting}
             className="border border-[#808080] bg-[#c0c0c0] px-3 py-1 font-serif text-[16px] text-black"
           >
-            Sign in
+            {submitting ? "Signing in…" : "Sign in"}
           </button>
         </form>
 
         <p className="mt-4 text-[14px]">
           New here?{" "}
-          <Link href={setupPath()}>Get your PC</Link> — run the Setup Wizard
-          (local preview; {PRODUCT_NAME} accounts come later).
+          <Link href={setupPath()}>Get your PC</Link> — run the Setup Wizard.
         </p>
         <p className="mt-2 text-[14px]">
           <Link href="/">← Back to home</Link>

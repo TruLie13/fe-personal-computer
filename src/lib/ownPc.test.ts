@@ -8,7 +8,7 @@ import {
 import {
   LOCAL_SESSION_STORAGE_KEY,
   saveLocalSession,
-} from "@/lib/setupAccount";
+} from "@/lib/localSession";
 
 describe("ownPc", () => {
   beforeEach(() => {

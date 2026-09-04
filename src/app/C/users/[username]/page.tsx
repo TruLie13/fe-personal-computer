@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { Desktop } from "@/components/desktop/Desktop";
 import { LOCAL_USER_ID } from "@/lib/networkSeed";
 import { DEFAULT_LOCAL_PROFILE } from "@/lib/profile";
-import {
-  notFoundMetaTitle,
-  profileMetaTitle,
-} from "@/lib/seo/brand";
+import { profileMetaTitle } from "@/lib/seo/brand";
 import {
   JsonLd,
   profileJsonLd,
@@ -17,6 +13,7 @@ import {
   profileUrl,
 } from "@/lib/seo/paths";
 import { resolvePublicUser } from "@/lib/seo/publicContent";
+import { resolvePublicUserAdmin } from "@/lib/seo/publicContentAdmin";
 import type { NetworkUser } from "@/types/network";
 
 interface ProfilePageProps {
@@ -53,9 +50,13 @@ export async function generateMetadata({
       robots: { index: false, follow: false },
     };
   }
-  const user = resolvePublicUser(username);
+  const user =
+    resolvePublicUser(username) ?? (await resolvePublicUserAdmin(username));
   if (!user) {
-    return { title: notFoundMetaTitle("pc") };
+    return {
+      title: profileMetaTitle(username),
+      robots: { index: false, follow: false },
+    };
   }
   return {
     title: profileMetaTitle(user.displayName),
@@ -77,15 +78,17 @@ export default async function UserProfilePage({ params }: ProfilePageProps) {
     );
   }
 
-  const user = resolvePublicUser(username);
-  if (!user) {
-    notFound();
+  const user =
+    resolvePublicUser(username) ?? (await resolvePublicUserAdmin(username));
+  if (user) {
+    return (
+      <>
+        <JsonLd data={profileJsonLd(user)} />
+        <Desktop deepLinkUsername={user.id} />
+      </>
+    );
   }
 
-  return (
-    <>
-      <JsonLd data={profileJsonLd(user)} />
-      <Desktop deepLinkUsername={user.id} />
-    </>
-  );
+  // Own claimed username (client session) or unknown — Desktop decides.
+  return <Desktop deepLinkUsername={username} />;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { isOwnDesktopUsername, sessionUsername } from "@/lib/localSession";
 import { LOCAL_USER_ID } from "@/lib/networkSeed";
 import { filePath, profilePath } from "@/lib/seo/paths";
 import {
@@ -25,8 +26,12 @@ export interface UseDesktopUrlSyncOptions {
  * anything else → `/C/users/[user]`
  * Works for both your desktop and a visited remote PC.
  */
-function isLocalRouteUsername(username: string | undefined): boolean {
-  return !username || username === LOCAL_USER_ID;
+function isOwnRouteUsername(username: string | undefined): boolean {
+  return (
+    !username ||
+    username === LOCAL_USER_ID ||
+    isOwnDesktopUsername(username)
+  );
 }
 
 export function useDesktopUrlSync(
@@ -48,12 +53,12 @@ export function useDesktopUrlSync(
     // Client nav can render the new route before applyDeepLink / goHome runs.
     if (deepLinkUsername) {
       if (
-        !isLocalRouteUsername(deepLinkUsername) &&
+        !isOwnRouteUsername(deepLinkUsername) &&
         viewMode === "local"
       ) {
         return;
       }
-      if (isLocalRouteUsername(deepLinkUsername) && viewMode === "remote") {
+      if (isOwnRouteUsername(deepLinkUsername) && viewMode === "remote") {
         return;
       }
     }
@@ -61,7 +66,7 @@ export function useDesktopUrlSync(
     const username =
       viewMode === "remote" && remoteUserId
         ? remoteUserId
-        : LOCAL_USER_ID;
+        : (sessionUsername() ?? LOCAL_USER_ID);
 
     const focusedText = windows.find(
       (window) =>

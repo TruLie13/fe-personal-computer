@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CommentsIcon, TextFileIcon } from "@/components/desktop/icons";
 import {
   MasterDetail,
@@ -16,6 +16,8 @@ import {
   listPublicStoriesNewestFirst,
   LOCAL_USER_ID,
 } from "@/lib/networkSeed";
+import { sessionUsername } from "@/lib/localSession";
+import { pullRemotePublicStories } from "@/lib/remoteSocialPersist";
 import { findDocumentSlugForUser } from "@/lib/seo/publicContent";
 import { useDesktopStore } from "@/store/desktopStore";
 import type { PublicStory } from "@/types/network";
@@ -28,15 +30,79 @@ function snippet(content: string, max = 80): string {
   return `${flat.slice(0, max - 1)}…`;
 }
 
+function mergePublicStories(
+  remote: PublicStory[],
+  seeds: PublicStory[],
+): PublicStory[] {
+  const byId = new Map<string, PublicStory>();
+  for (const story of seeds) {
+    byId.set(story.id, story);
+  }
+  for (const story of remote) {
+    byId.set(story.id, story);
+  }
+  return [...byId.values()].sort(
+    (a, b) =>
+      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+  );
+}
+
 export function StoryExplorer() {
-  const stories = useMemo(() => listPublicStoriesNewestFirst(), []);
+  const seedStories = useMemo(() => listPublicStoriesNewestFirst(), []);
+  const documents = useDesktopStore((state) => state.documents);
+  const ownUsername = sessionUsername();
+  const localPublicStories = useMemo((): PublicStory[] => {
+    if (!ownUsername) {
+      return [];
+    }
+    return documents
+      .filter((doc) => doc.isPublic === true)
+      .map((doc) => ({
+        id: doc.id,
+        authorId: ownUsername,
+        documentId: doc.id,
+        title: doc.title,
+        content: doc.content,
+        publishedAt: doc.updatedAt,
+        slug: doc.slug,
+      }));
+  }, [documents, ownUsername]);
+  const [remoteStories, setRemoteStories] = useState<PublicStory[]>([]);
+  const stories = useMemo(
+    () =>
+      mergePublicStories(
+        remoteStories,
+        mergePublicStories(localPublicStories, seedStories),
+      ),
+    [remoteStories, localPublicStories, seedStories],
+  );
   const [selectedId, setSelectedId] = useState<string | null>(
-    stories[0]?.id ?? null,
+    seedStories[0]?.id ?? null,
   );
   const { openPublicFile } = usePcRoutes();
   const openStoryComments = useDesktopStore(
     (state) => state.openStoryComments,
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    void pullRemotePublicStories().then((remote) => {
+      if (cancelled || remote.length === 0) {
+        return;
+      }
+      setRemoteStories(remote);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedId && stories.some((story) => story.id === selectedId)) {
+      return;
+    }
+    setSelectedId(stories[0]?.id ?? null);
+  }, [stories, selectedId]);
 
   const selected: PublicStory | undefined = stories.find(
     (story) => story.id === selectedId,
@@ -46,8 +112,13 @@ export function StoryExplorer() {
       ? getNetworkUser(selected.authorId)
       : undefined;
   const fileSlug =
-    selected && author
+    selected?.slug ??
+    (selected && author
       ? findDocumentSlugForUser(author.id, selected.documentId)
+      : undefined);
+  const visitUserId =
+    selected && selected.authorId !== LOCAL_USER_ID
+      ? selected.authorId
       : undefined;
 
   return (
@@ -106,11 +177,11 @@ export function StoryExplorer() {
           action={
             selected ? (
               <>
-                {author && fileSlug ? (
+                {visitUserId && fileSlug ? (
                   <button
                     type="button"
                     className="win-raised flex items-center gap-1 px-2 py-0.5"
-                    onClick={() => openPublicFile(author.id, fileSlug)}
+                    onClick={() => openPublicFile(visitUserId, fileSlug)}
                   >
                     <TextFileIcon size={14} />
                     Open file
@@ -131,7 +202,7 @@ export function StoryExplorer() {
                   </span>
                   Comments
                 </button>
-                {author ? <VisitPcButton userId={author.id} /> : null}
+                {visitUserId ? <VisitPcButton userId={visitUserId} /> : null}
               </>
             ) : null
           }

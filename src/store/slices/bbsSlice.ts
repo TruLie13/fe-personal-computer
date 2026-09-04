@@ -5,7 +5,12 @@ import {
   clampBbsNoteTitle,
   saveLocalBbsNotes,
 } from "@/lib/bbsNotes";
+import { sessionUsername } from "@/lib/localSession";
 import { LOCAL_USER_ID } from "@/lib/networkSeed";
+import {
+  createRemoteBbsNote,
+  softDeleteRemoteBbsNote,
+} from "@/lib/remoteSocialPersist";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
 import { createId } from "@/store/desktopWindowFactory";
 import type { BbsPost } from "@/types/network";
@@ -14,6 +19,10 @@ export type BbsSlice = Pick<
   DesktopStore,
   "localBbsNotes" | "postBbsNote" | "deleteBbsNote"
 >;
+
+function bbsAuthorId(): string {
+  return sessionUsername() ?? LOCAL_USER_ID;
+}
 
 export const createBbsSlice: StateCreator<DesktopStore, [], [], BbsSlice> = (
   set,
@@ -30,9 +39,11 @@ export const createBbsSlice: StateCreator<DesktopStore, [], [], BbsSlice> = (
     if (!canPostBbsNoteToday(get().localBbsNotes)) {
       return "";
     }
+    const authorId = bbsAuthorId();
+    const localId = createId("bbs");
     const note: BbsPost = {
-      id: createId("bbs"),
-      authorId: LOCAL_USER_ID,
+      id: localId,
+      authorId,
       title: trimmedTitle,
       content: trimmedContent,
       createdAt: new Date().toISOString(),
@@ -42,14 +53,40 @@ export const createBbsSlice: StateCreator<DesktopStore, [], [], BbsSlice> = (
       saveLocalBbsNotes(localBbsNotes);
       return { localBbsNotes };
     });
-    return note.id;
+
+    void createRemoteBbsNote({
+      title: trimmedTitle,
+      body: trimmedContent,
+    }).then((remote) => {
+      if (!remote) {
+        return;
+      }
+      set((state) => {
+        const localBbsNotes = state.localBbsNotes.map((item) =>
+          item.id === localId
+            ? {
+                ...item,
+                id: remote.id,
+                authorId: remote.authorId,
+                createdAt: remote.createdAt,
+              }
+            : item,
+        );
+        saveLocalBbsNotes(localBbsNotes);
+        return { localBbsNotes };
+      });
+    });
+
+    return localId;
   },
 
   deleteBbsNote: (postId) => {
+    const authorId = bbsAuthorId();
     const existing = get().localBbsNotes.find((post) => post.id === postId);
     if (
       !existing ||
-      existing.authorId !== LOCAL_USER_ID ||
+      (existing.authorId !== authorId &&
+        existing.authorId !== LOCAL_USER_ID) ||
       existing.deletedAt
     ) {
       return false;
@@ -62,6 +99,7 @@ export const createBbsSlice: StateCreator<DesktopStore, [], [], BbsSlice> = (
       saveLocalBbsNotes(localBbsNotes);
       return { localBbsNotes };
     });
+    void softDeleteRemoteBbsNote(postId);
     return true;
   },
 });

@@ -13,6 +13,7 @@ import {
 } from "@/lib/seo/jsonLd";
 import { fileUrl, isLocalUsername } from "@/lib/seo/paths";
 import { resolvePublicFile } from "@/lib/seo/publicContent";
+import { resolvePublicFileAdmin } from "@/lib/seo/publicContentAdmin";
 import { isReservedFileSlug } from "@/lib/seo/slugs";
 import { DEFAULT_LOCAL_PROFILE } from "@/lib/profile";
 
@@ -34,7 +35,9 @@ export async function generateMetadata({
       alternates: { canonical: fileUrl(LOCAL_USER_ID, fileSlug) },
     };
   }
-  const record = resolvePublicFile(username, fileSlug);
+  const record =
+    resolvePublicFile(username, fileSlug) ??
+    (await resolvePublicFileAdmin(username, fileSlug));
   if (!record) {
     return { title: notFoundMetaTitle("file") };
   }
@@ -62,7 +65,9 @@ export default async function UserFilePage({ params }: FilePageProps) {
     );
   }
 
-  const record = resolvePublicFile(username, fileSlug);
+  const record =
+    resolvePublicFile(username, fileSlug) ??
+    (await resolvePublicFileAdmin(username, fileSlug));
   if (!record) {
     notFound();
   }

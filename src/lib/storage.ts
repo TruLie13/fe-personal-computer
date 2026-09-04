@@ -434,6 +434,7 @@ function normalizeDocuments(value: unknown): TextDocument[] {
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
         slug: typeof doc.slug === "string" ? doc.slug : undefined,
+        isPublic: doc.isPublic === true,
       },
     ];
   });

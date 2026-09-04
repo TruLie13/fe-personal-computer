@@ -1,4 +1,8 @@
-import { centeredWindowPosition } from "@/lib/desktopBounds";
+import {
+  centeredWindowPosition,
+  fitWindowInDesktop,
+} from "@/lib/desktopBounds";
+import { SPOKEN_NAME } from "@/lib/seo/brand";
 import { folderWindowTitle, stripTextExtension } from "@/lib/storage";
 import type { DesktopIcon, DesktopWindow, WindowType } from "@/types/desktop";
 
@@ -6,7 +10,7 @@ export const WINDOW_DEFAULTS: Record<
   WindowType,
   { title: string; width: number; height: number }
 > = {
-  about: { title: "About Personal Computer", width: 360, height: 240 },
+  about: { title: `About ${SPOKEN_NAME}`, width: 360, height: 240 },
   folder: { title: "Folder", width: 420, height: 300 },
   text: { title: "Untitled", width: 440, height: 320 },
   editor: { title: "Untitled - Notepad", width: 440, height: 320 },
@@ -35,6 +39,18 @@ export function cascadedWindowPosition(openCount: number): {
   };
 }
 
+function placeWindow(
+  size: { width: number; height: number },
+  openCount: number,
+  preferCenter: boolean,
+): { x: number; y: number; width: number; height: number } {
+  const position =
+    preferCenter || openCount === 0
+      ? centeredWindowPosition(size)
+      : cascadedWindowPosition(openCount);
+  return fitWindowInDesktop(position, size);
+}
+
 /**
  * Create an app window that is not backed by a desktop icon
  * (e.g. Comments opened from Story Explorer / Notepad).
@@ -49,13 +65,11 @@ export function createTypedWindow(input: {
   idPrefix?: string;
 }): DesktopWindow {
   const defaults = WINDOW_DEFAULTS[input.type];
-  const position =
-    input.openCount === 0
-      ? centeredWindowPosition({
-          width: defaults.width,
-          height: defaults.height,
-        })
-      : cascadedWindowPosition(input.openCount);
+  const placed = placeWindow(
+    { width: defaults.width, height: defaults.height },
+    input.openCount,
+    false,
+  );
 
   return {
     id: createId(input.idPrefix ?? `window-${input.type}`),
@@ -67,9 +81,7 @@ export function createTypedWindow(input: {
     isFocused: true,
     isMinimized: false,
     isMaximized: false,
-    ...position,
-    width: defaults.width,
-    height: defaults.height,
+    ...placed,
     zIndex: input.zIndex,
   };
 }
@@ -96,6 +108,13 @@ export function createWindowFromIcon(
             ? icon.label
             : defaults.title;
 
+  const preferCenter = icon.type === "profile" || icon.type === "display";
+  const placed = placeWindow(
+    { width: defaults.width, height: defaults.height },
+    offset,
+    preferCenter,
+  );
+
   return {
     id:
       icon.type === "editor" || icon.type === "text" || Boolean(icon.documentId)
@@ -109,14 +128,7 @@ export function createWindowFromIcon(
     isFocused: true,
     isMinimized: false,
     isMaximized: false,
-    ...(icon.type === "profile"
-      ? centeredWindowPosition({
-          width: defaults.width,
-          height: defaults.height,
-        })
-      : cascadedWindowPosition(offset)),
-    width: defaults.width,
-    height: defaults.height,
+    ...placed,
     zIndex,
   };
 }

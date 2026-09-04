@@ -24,6 +24,7 @@ import {
   LOCAL_USER_ID,
   mergeBbsPostsNewestFirst,
 } from "@/lib/networkSeed";
+import { sessionUsername } from "@/lib/localSession";
 import { useDesktopStore } from "@/store/desktopStore";
 
 export function BulletinBoard() {
@@ -102,7 +103,7 @@ export function BulletinBoard() {
   };
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-win-face text-[12px]">
+    <div className="relative flex h-full min-h-0 flex-col bg-win-face text-[14px]">
       <div className="flex shrink-0 items-center gap-2 border-b border-win-dark px-2 py-1 text-win-dark">
         <span className="min-w-0 flex-1">
           Bulletin Board — leave a post for the community
@@ -174,9 +175,14 @@ export function BulletinBoard() {
         ) : (
           <ul className="list-none">
             {posts.map((post) => {
-              const isOwn = post.authorId === LOCAL_USER_ID;
+              const ownUsername = sessionUsername();
+              const isOwn =
+                post.authorId === LOCAL_USER_ID ||
+                (ownUsername != null && post.authorId === ownUsername);
               const canVisit =
-                !isOwn && Boolean(getNetworkUser(post.authorId));
+                !isOwn &&
+                (Boolean(getNetworkUser(post.authorId)) ||
+                  post.authorId !== LOCAL_USER_ID);
               const needsCollapse = bbsPostNeedsCollapse(post.content);
               const expanded = expandedPostIds.has(post.id);
               const bodyText =
@@ -193,8 +199,8 @@ export function BulletinBoard() {
                       <BbsPinIcon size={14} />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-bold leading-4">{post.title}</h3>
-                      <p className="mt-0.5 text-[11px] leading-4 text-win-paper-muted">
+                      <h3 className="text-[16px] font-bold leading-5">{post.title}</h3>
+                      <p className="mt-0.5 text-[12px] leading-4 text-win-paper-muted">
                         {authorDisplayName(post.authorId)} ·{" "}
                         {formatShortDateTime(post.createdAt)}
                       </p>

@@ -19,6 +19,7 @@ import { StoryExplorer } from "@/components/desktop/StoryExplorer";
 import { TextEditor } from "@/components/desktop/TextEditor";
 import { useGuestChrome } from "@/hooks/useGuestChrome";
 import { getNetworkUser } from "@/lib/networkSeed";
+import { SPOKEN_NAME } from "@/lib/seo/brand";
 import { displayWindowTitle } from "@/lib/storage";
 import { selectActiveIcons, useDesktopStore } from "@/store/desktopStore";
 import type { DesktopWindow } from "@/types/desktop";
@@ -105,8 +106,8 @@ function WindowBody({
   return (
     <div className="flex h-full flex-col gap-3 p-3 text-[12px]">
       <p>
-        Personal Computer (MyPC) is a retro desktop for writers. Your profile is
-        this machine.
+        {SPOKEN_NAME} is a social desktop for writers. Your profile is this
+        machine.
       </p>
       <p className="text-win-dark">
         Open your PC profile for bio, Bulletin Board for posts, Story Explorer

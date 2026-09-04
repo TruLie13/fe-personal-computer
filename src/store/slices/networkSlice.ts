@@ -1,6 +1,11 @@
 import type { StateCreator } from "zustand";
 import { isFavorite } from "@/lib/favorites";
+import { isOwnDesktopUsername } from "@/lib/localSession";
 import { getNetworkUser, LOCAL_USER_ID } from "@/lib/networkSeed";
+import {
+  scheduleAddFavorite,
+  scheduleRemoveFavorite,
+} from "@/lib/remoteSocialPersist";
 import { loadWindowSession } from "@/lib/windowSession";
 import { persistFavorites } from "@/store/desktopPersist";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
@@ -10,14 +15,23 @@ import {
   selectActiveIcons,
 } from "@/store/desktopSelectors";
 import { selectionFromIcon } from "@/store/selectionState";
-import type { DesktopWindow } from "@/types/desktop";
+import type {
+  DesktopWindow,
+} from "@/types/desktop";
+import type {
+  RemoteDesktopSnapshot,
+  UserProfile,
+} from "@/types/network";
 
 export type NetworkSlice = Pick<
   DesktopStore,
   | "viewMode"
   | "remoteUserId"
+  | "remoteSnapshot"
+  | "remoteProfile"
   | "favorites"
   | "visitRemotePc"
+  | "visitRemoteDesktop"
   | "goHome"
   | "applyDeepLink"
   | "addFavorite"
@@ -30,10 +44,16 @@ function enterRemoteDesktop(
   windows: DesktopWindow[],
   selectedIconId: string | null,
   nextZIndex: number,
+  remote?: {
+    snapshot: RemoteDesktopSnapshot;
+    profile: UserProfile;
+  } | null,
 ) {
   set({
     viewMode: "remote",
     remoteUserId: userId,
+    remoteSnapshot: remote?.snapshot ?? null,
+    remoteProfile: remote?.profile ?? null,
     windows,
     documentWindowFifo: [],
     ...selectionFromIcon(selectedIconId),
@@ -51,6 +71,8 @@ export const createNetworkSlice: StateCreator<
 > = (set, get) => ({
   viewMode: "local",
   remoteUserId: null,
+  remoteSnapshot: null,
+  remoteProfile: null,
   favorites: [],
 
   visitRemotePc: (userId) => {
@@ -75,6 +97,29 @@ export const createNetworkSlice: StateCreator<
       windows,
       profileIcon?.id ?? null,
       nextZIndex,
+      null,
+    );
+  },
+
+  visitRemoteDesktop: (input) => {
+    const profileIcon = input.snapshot.icons.find(
+      (icon) => icon.type === "profile",
+    );
+    const windows: DesktopWindow[] = [];
+    let nextZIndex = 1;
+    if (profileIcon) {
+      windows.push(
+        createWindowFromIcon(profileIcon, 1, 0, input.snapshot.icons),
+      );
+      nextZIndex = 2;
+    }
+    enterRemoteDesktop(
+      set,
+      input.userId,
+      windows,
+      profileIcon?.id ?? null,
+      nextZIndex,
+      { snapshot: input.snapshot, profile: input.profile },
     );
   },
 
@@ -83,6 +128,8 @@ export const createNetworkSlice: StateCreator<
     set({
       viewMode: "local",
       remoteUserId: null,
+      remoteSnapshot: null,
+      remoteProfile: null,
       windows: session?.windows ?? [],
       documentWindowFifo: session?.documentWindowFifo ?? [],
       ...selectionFromIcon(null),
@@ -97,13 +144,15 @@ export const createNetworkSlice: StateCreator<
     const stateBefore = get();
     const alreadyOnRemote =
       username !== LOCAL_USER_ID &&
+      !isOwnDesktopUsername(username) &&
       stateBefore.viewMode === "remote" &&
       stateBefore.remoteUserId === username;
     const alreadyLocal =
-      username === LOCAL_USER_ID && stateBefore.viewMode === "local";
+      (username === LOCAL_USER_ID || isOwnDesktopUsername(username)) &&
+      stateBefore.viewMode === "local";
 
     if (!fileSlug) {
-      if (username === LOCAL_USER_ID) {
+      if (username === LOCAL_USER_ID || isOwnDesktopUsername(username)) {
         if (!alreadyLocal) {
           goHome();
         }
@@ -118,7 +167,7 @@ export const createNetworkSlice: StateCreator<
       return;
     }
 
-    if (username === LOCAL_USER_ID) {
+    if (username === LOCAL_USER_ID || isOwnDesktopUsername(username)) {
       if (!alreadyLocal) {
         goHome();
       }
@@ -163,7 +212,11 @@ export const createNetworkSlice: StateCreator<
   },
 
   addFavorite: (userId) => {
-    if (!getNetworkUser(userId)) {
+    if (
+      !userId ||
+      userId === LOCAL_USER_ID ||
+      isOwnDesktopUsername(userId)
+    ) {
       return;
     }
     set((state) => {
@@ -175,6 +228,7 @@ export const createNetworkSlice: StateCreator<
         { userId, addedAt: new Date().toISOString() },
       ];
       persistFavorites(favorites);
+      scheduleAddFavorite(userId, userId);
       return { favorites };
     });
   },
@@ -185,6 +239,7 @@ export const createNetworkSlice: StateCreator<
         (favorite) => favorite.userId !== userId,
       );
       persistFavorites(favorites);
+      scheduleRemoveFavorite(userId);
       return { favorites };
     });
   },

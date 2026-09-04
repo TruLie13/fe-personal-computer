@@ -7,15 +7,17 @@ import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
 import { ComputerIcon } from "@/components/desktop/icons";
 import { SetupSidebarArt } from "@/components/setup/SetupSidebarArt";
 import { SPOKEN_NAME } from "@/lib/seo/brand";
-import { homePath, signInPath } from "@/lib/seo/paths";
+import { profilePath, signInPath } from "@/lib/seo/paths";
 import {
   analyzingStatus,
-  applyLocalSetupAccount,
   normalizeUsername,
   userInfoError,
 } from "@/lib/setupAccount";
+import { registerPcAccount } from "@/lib/firebase/registerPc";
+import { mapAuthError } from "@/lib/firebase/mapAuthError";
+import { getDesktopRepository } from "@/lib/repository";
+import { USERNAME_TAKEN_MESSAGE, usernameBlurError } from "@/lib/usernames";
 import { checkUsernameAvailabilityOnNext } from "@/lib/usernameAvailabilityClient";
-import { usernameBlurError } from "@/lib/usernames";
 
 export type SetupStep = "welcome" | "user-info" | "analyzing";
 
@@ -51,6 +53,10 @@ export function SetupWizard({
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [progress, setProgress] = useState(0);
   const [exitOpen, setExitOpen] = useState(false);
+  const [registeredUsername, setRegisteredUsername] = useState<string | null>(
+    null,
+  );
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   const backDisabled = step === "welcome" || step === "analyzing";
   const nextDisabled = step === "analyzing" || checkingUsername;
@@ -74,7 +80,42 @@ export function SetupWizard({
   }, [step, analyzeTickMs, analyzeIncrement]);
 
   useEffect(() => {
-    if (step !== "analyzing" || progress < 100 || finishedRef.current) {
+    if (step !== "analyzing" || registerError) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await registerPcAccount({
+          username,
+          email,
+          password,
+          displayName: username.trim(),
+        });
+        if (!cancelled) {
+          setRegisteredUsername(result.username);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setRegisterError(mapAuthError(error));
+          setStep("user-info");
+          setFormError(mapAuthError(error));
+          setProgress(0);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, registerError, username, email, password]);
+
+  useEffect(() => {
+    if (
+      step !== "analyzing" ||
+      progress < 100 ||
+      !registeredUsername ||
+      finishedRef.current
+    ) {
       return;
     }
     const timeout = window.setTimeout(() => {
@@ -82,15 +123,10 @@ export function SetupWizard({
         return;
       }
       finishedRef.current = true;
-      applyLocalSetupAccount({
-        username,
-        email,
-        displayName: username.trim(),
-      });
-      router.push(homePath());
+      router.push(profilePath(registeredUsername));
     }, analyzeHoldMs);
     return () => window.clearTimeout(timeout);
-  }, [step, progress, analyzeHoldMs, username, email, router]);
+  }, [step, progress, analyzeHoldMs, registeredUsername, router]);
 
   function requestExit() {
     if (finishedRef.current) {
@@ -147,6 +183,19 @@ export function SetupWizard({
           return;
         }
         setUsernameFieldError(null);
+        try {
+          const claimed = await getDesktopRepository().getUidForUsername(
+            normalizeUsername(username),
+          );
+          if (claimed) {
+            setFormError(USERNAME_TAKEN_MESSAGE);
+            return;
+          }
+        } catch {
+          // Emulator down — registerPcAccount will report the connection error.
+        }
+        setRegisterError(null);
+        setRegisteredUsername(null);
         setStep("analyzing");
       } finally {
         setCheckingUsername(false);

@@ -1,5 +1,4 @@
 import type { FavoritePc, NetworkUserId } from "@/types/network";
-import { getNetworkUser } from "@/lib/networkSeed";
 
 export const FAVORITES_STORAGE_KEY = "personal-computer-favorites-v1";
 
@@ -24,8 +23,7 @@ export function loadFavorites(): FavoritePc[] {
         item &&
         typeof item === "object" &&
         typeof (item as FavoritePc).userId === "string" &&
-        typeof (item as FavoritePc).addedAt === "string" &&
-        getNetworkUser((item as FavoritePc).userId)
+        typeof (item as FavoritePc).addedAt === "string"
       ) {
         favorites.push({
           userId: (item as FavoritePc).userId,

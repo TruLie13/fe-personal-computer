@@ -1,14 +1,15 @@
 import {
-  LOCAL_SESSION_STORAGE_KEY,
+  clearLocalSession,
   loadLocalSession,
-} from "@/lib/setupAccount";
+  LOCAL_SESSION_STORAGE_KEY,
+} from "@/lib/localSession";
 
 /** Stub until Firebase Auth replaces mock sign-in. */
 export const MOCK_SIGNED_IN_STORAGE_KEY = "personal-computer-mock-signed-in-v1";
 
 export const OWN_PC_CHANGED_EVENT = "personal-computer-own-pc-changed";
 
-/** True when the visitor has completed Setup or signed in (stub). */
+/** True when the visitor has completed Setup or signed in. */
 export function hasOwnPc(): boolean {
   return loadLocalSession() !== null || hasMockSignedIn();
 }
@@ -40,7 +41,9 @@ export function clearOwnPcAccess(): void {
   if (typeof window === "undefined") {
     return;
   }
-  window.localStorage.removeItem(LOCAL_SESSION_STORAGE_KEY);
+  clearLocalSession();
   window.localStorage.removeItem(MOCK_SIGNED_IN_STORAGE_KEY);
   notifyOwnPcChanged();
 }
+
+export { LOCAL_SESSION_STORAGE_KEY };

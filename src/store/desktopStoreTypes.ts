@@ -9,6 +9,7 @@ import type {
   FavoritePc,
   GuestbookEntry,
   NetworkUserId,
+  RemoteDesktopSnapshot,
   StoryComment,
   UserProfile,
 } from "@/types/network";
@@ -34,6 +35,12 @@ export interface DesktopStore {
   hydrated: boolean;
   viewMode: DesktopViewMode;
   remoteUserId: NetworkUserId | null;
+  /**
+   * Firestore-backed remote desktop when visiting a claimed username
+   * (seed PCs still use `getNetworkUser`).
+   */
+  remoteSnapshot: RemoteDesktopSnapshot | null;
+  remoteProfile: UserProfile | null;
   favorites: FavoritePc[];
   localBbsNotes: BbsPost[];
   localStoryComments: StoryComment[];
@@ -66,6 +73,8 @@ export interface DesktopStore {
     title: string,
     content: string,
   ) => void;
+  /** Publish / unpublish a text file to Story Explorer (`publicStories`). */
+  setDocumentPublic: (documentId: string, isPublic: boolean) => void;
   createFolder: (
     name?: string,
     position?: { x: number; y: number },
@@ -93,6 +102,12 @@ export interface DesktopStore {
   setTaskbarHeight: (height: number) => void;
   resetTheme: () => void;
   visitRemotePc: (userId: NetworkUserId) => void;
+  /** Visit a claimed PC loaded from Firestore (not seed data). */
+  visitRemoteDesktop: (input: {
+    userId: NetworkUserId;
+    profile: UserProfile;
+    snapshot: RemoteDesktopSnapshot;
+  }) => void;
   goHome: () => void;
   /** Deep-link entry: visit PC and optionally open a file (+ parent folder). */
   applyDeepLink: (input: {

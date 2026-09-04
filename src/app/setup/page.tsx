@@ -4,7 +4,7 @@ import { SPOKEN_NAME } from "@/lib/seo/brand";
 
 export const metadata: Metadata = {
   title: `Setup`,
-  description: `Set up your ${SPOKEN_NAME} — a personal computer for writers.`,
+  description: `Set up your ${SPOKEN_NAME} — a social desktop for writers.`,
 };
 
 export default function SetupPage() {

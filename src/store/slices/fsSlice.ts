@@ -92,6 +92,7 @@ export type FsSlice = Pick<
   | "updateIconPosition"
   | "updateDocumentContent"
   | "saveDocumentFromWindow"
+  | "setDocumentPublic"
   | "createFolder"
   | "createTextFile"
   | "moveIconToFolder"
@@ -234,6 +235,25 @@ export const createFsSlice: StateCreator<DesktopStore, [], [], FsSlice> = (
     );
 
     set(commitDesktopPatch(state, { documents, icons, windows }));
+  },
+
+  setDocumentPublic: (documentId, isPublic) => {
+    if (!assertLocalWritable(get)) {
+      return;
+    }
+    set((state) => {
+      const existing = state.documents.find((doc) => doc.id === documentId);
+      if (!existing || existing.isPublic === isPublic) {
+        return state;
+      }
+      const now = new Date().toISOString();
+      const documents = state.documents.map((doc) =>
+        doc.id === documentId
+          ? { ...doc, isPublic, updatedAt: now }
+          : doc,
+      );
+      return commitDesktopPatch(state, { documents });
+    });
   },
 
   createFolder: (name, position, parentId) => {

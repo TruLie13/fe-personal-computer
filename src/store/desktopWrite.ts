@@ -1,4 +1,5 @@
 import { persistDesktop, type DesktopPersistFields } from "@/store/desktopPersist";
+import { scheduleRemoteDesktopLayoutSave } from "@/lib/remoteDesktopPersist";
 import { isRemote } from "@/store/desktopSelectors";
 import type { DesktopViewMode } from "@/types/network";
 
@@ -19,13 +20,18 @@ export function commitDesktopPatch<T extends object>(
   patch: T,
 ): T {
   const persisted = patch as T & Partial<DesktopPersistFields>;
+  const icons = persisted.icons ?? state.icons;
+  const documents = persisted.documents ?? state.documents;
   persistDesktop({
-    icons: persisted.icons ?? state.icons,
-    documents: persisted.documents ?? state.documents,
+    icons,
+    documents,
     wallpaper: persisted.wallpaper ?? state.wallpaper,
     titleBarColor: persisted.titleBarColor ?? state.titleBarColor,
     contentDark: persisted.contentDark ?? state.contentDark,
     taskbarHeight: persisted.taskbarHeight ?? state.taskbarHeight,
   });
+  if (persisted.icons !== undefined || persisted.documents !== undefined) {
+    scheduleRemoteDesktopLayoutSave(icons, documents);
+  }
   return patch;
 }

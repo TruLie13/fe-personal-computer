@@ -63,6 +63,7 @@ export function TextEditor({
   const saveDocumentFromWindow = useDesktopStore(
     (state) => state.saveDocumentFromWindow,
   );
+  const setDocumentPublic = useDesktopStore((state) => state.setDocumentPublic);
   const closeWindow = useDesktopStore((state) => state.closeWindow);
   const openStoryComments = useDesktopStore(
     (state) => state.openStoryComments,
@@ -313,6 +314,18 @@ export function TextEditor({
             </span>
             Comments
           </button>
+        ) : null}
+        {documentId && !readOnly ? (
+          <label className="ml-auto flex items-center gap-1 text-[11px]">
+            <input
+              type="checkbox"
+              checked={document?.isPublic === true}
+              onChange={(event) => {
+                setDocumentPublic(documentId, event.target.checked);
+              }}
+            />
+            Publish to Story Explorer
+          </label>
         ) : null}
         <label className="flex min-w-0 flex-1 items-center gap-2">
           <span className="shrink-0">File name:</span>

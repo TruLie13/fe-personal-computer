@@ -5,7 +5,12 @@ import {
   PROFILE_ICON_POSITION,
 } from "@/lib/storage";
 import type { DesktopIcon, TextDocument } from "@/types/desktop";
-import type { DesktopViewMode, NetworkUserId } from "@/types/network";
+import type {
+  DesktopViewMode,
+  NetworkUserId,
+  RemoteDesktopSnapshot,
+  UserProfile,
+} from "@/types/network";
 
 const EMPTY_ICONS: DesktopIcon[] = [];
 const EMPTY_DOCUMENTS: TextDocument[] = [];
@@ -17,14 +22,43 @@ export function isRemote(state: { viewMode: DesktopViewMode }): boolean {
   return state.viewMode === "remote";
 }
 
+function remoteIcons(state: {
+  remoteUserId: NetworkUserId | null;
+  remoteSnapshot: RemoteDesktopSnapshot | null;
+}): DesktopIcon[] {
+  if (!state.remoteUserId) {
+    return EMPTY_ICONS;
+  }
+  const seed = getNetworkUser(state.remoteUserId)?.snapshot.icons;
+  if (seed) {
+    return seed;
+  }
+  return state.remoteSnapshot?.icons ?? EMPTY_ICONS;
+}
+
+function remoteDocuments(state: {
+  remoteUserId: NetworkUserId | null;
+  remoteSnapshot: RemoteDesktopSnapshot | null;
+}): TextDocument[] {
+  if (!state.remoteUserId) {
+    return EMPTY_DOCUMENTS;
+  }
+  const seed = getNetworkUser(state.remoteUserId)?.snapshot.documents;
+  if (seed) {
+    return seed;
+  }
+  return state.remoteSnapshot?.documents ?? EMPTY_DOCUMENTS;
+}
+
 export function selectActiveIcons(state: {
   viewMode: DesktopViewMode;
   remoteUserId: NetworkUserId | null;
+  remoteSnapshot: RemoteDesktopSnapshot | null;
   icons: DesktopIcon[];
 }): DesktopIcon[] {
   const source =
     state.viewMode === "remote" && state.remoteUserId
-      ? (getNetworkUser(state.remoteUserId)?.snapshot.icons ?? EMPTY_ICONS)
+      ? remoteIcons(state)
       : state.icons;
 
   // Cache by source identity — .map() would return a new array every
@@ -70,12 +104,11 @@ export function selectActiveIcons(state: {
 export function selectActiveDocuments(state: {
   viewMode: DesktopViewMode;
   remoteUserId: NetworkUserId | null;
+  remoteSnapshot: RemoteDesktopSnapshot | null;
   documents: TextDocument[];
 }): TextDocument[] {
   if (state.viewMode === "remote" && state.remoteUserId) {
-    return (
-      getNetworkUser(state.remoteUserId)?.snapshot.documents ?? EMPTY_DOCUMENTS
-    );
+    return remoteDocuments(state);
   }
   return state.documents;
 }
@@ -83,6 +116,7 @@ export function selectActiveDocuments(state: {
 export function selectActiveTextFileCount(state: {
   viewMode: DesktopViewMode;
   remoteUserId: NetworkUserId | null;
+  remoteSnapshot: RemoteDesktopSnapshot | null;
   documents: TextDocument[];
 }): number {
   return selectActiveDocuments(state).length;
@@ -91,12 +125,15 @@ export function selectActiveTextFileCount(state: {
 export function selectActiveWallpaper(state: {
   viewMode: DesktopViewMode;
   remoteUserId: NetworkUserId | null;
+  remoteSnapshot: RemoteDesktopSnapshot | null;
   wallpaper: string;
 }): string {
   if (state.viewMode === "remote" && state.remoteUserId) {
-    return (
-      getNetworkUser(state.remoteUserId)?.snapshot.wallpaper ?? state.wallpaper
-    );
+    const seed = getNetworkUser(state.remoteUserId)?.snapshot.wallpaper;
+    if (seed) {
+      return seed;
+    }
+    return state.remoteSnapshot?.wallpaper ?? state.wallpaper;
   }
   return state.wallpaper;
 }
@@ -104,15 +141,38 @@ export function selectActiveWallpaper(state: {
 export function selectActiveTitleBarColor(state: {
   viewMode: DesktopViewMode;
   remoteUserId: NetworkUserId | null;
+  remoteSnapshot: RemoteDesktopSnapshot | null;
   titleBarColor: string;
 }): string {
   if (state.viewMode === "remote" && state.remoteUserId) {
-    return (
-      getNetworkUser(state.remoteUserId)?.snapshot.titleBarColor ??
-      state.titleBarColor
-    );
+    const seed = getNetworkUser(state.remoteUserId)?.snapshot.titleBarColor;
+    if (seed) {
+      return seed;
+    }
+    return state.remoteSnapshot?.titleBarColor ?? state.titleBarColor;
   }
   return state.titleBarColor;
+}
+
+export function selectRemoteProfile(state: {
+  viewMode: DesktopViewMode;
+  remoteUserId: NetworkUserId | null;
+  remoteProfile: UserProfile | null;
+}): UserProfile | null {
+  if (state.viewMode !== "remote" || !state.remoteUserId) {
+    return null;
+  }
+  const seed = getNetworkUser(state.remoteUserId);
+  if (seed) {
+    return {
+      displayName: seed.displayName,
+      computerName: seed.computerName,
+      bio: seed.bio,
+      avatarColor: seed.avatarColor,
+      avatarUrl: seed.avatarUrl,
+    };
+  }
+  return state.remoteProfile;
 }
 
 export function selectDesktopIcons(icons: DesktopIcon[]): DesktopIcon[] {

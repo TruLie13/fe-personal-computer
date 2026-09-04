@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "dev:clean": "rm -rf .next && next dev",
+    "emulators": "sh scripts/firebase-jdk21.sh emulators:start --only auth,firestore",
+    "dev:firebase": "sh scripts/firebase-jdk21.sh emulators:exec --only auth,firestore -- \"next dev\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -12,6 +14,8 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "firebase": "^12.18.0",
+    "firebase-admin": "^13.10.0",
     "next": "16.3.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -28,6 +32,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
+    "firebase-tools": "^15.28.2",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
     "tailwindcss": "^4",

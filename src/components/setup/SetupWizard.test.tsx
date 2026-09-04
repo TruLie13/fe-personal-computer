@@ -1,14 +1,23 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SetupWizard } from "@/components/setup/SetupWizard";
-import { LOCAL_SESSION_STORAGE_KEY } from "@/lib/setupAccount";
 import { resetDesktopStore } from "@/test/resetDesktopStore";
-import { useDesktopStore } from "@/store/desktopStore";
 
 const push = jest.fn();
+const registerPcAccount = jest.fn();
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
+}));
+
+jest.mock("@/lib/firebase/registerPc", () => ({
+  registerPcAccount: (...args: unknown[]) => registerPcAccount(...args),
+}));
+
+jest.mock("@/lib/repository", () => ({
+  getDesktopRepository: () => ({
+    getUidForUsername: async () => null,
+  }),
 }));
 
 function renderWizard() {
@@ -20,6 +29,8 @@ function renderWizard() {
 describe("SetupWizard", () => {
   beforeEach(() => {
     push.mockClear();
+    registerPcAccount.mockReset();
+    registerPcAccount.mockResolvedValue({ username: "ada", uid: "uid-1" });
     resetDesktopStore();
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
@@ -124,7 +135,7 @@ describe("SetupWizard", () => {
     expect(push).toHaveBeenCalledWith("/");
   });
 
-  it("analyzes then opens the local desktop without storing a password", async () => {
+  it("analyzes then opens the claimed desktop after Firebase register", async () => {
     const user = userEvent.setup();
     renderWizard();
     await user.click(screen.getByRole("button", { name: /next/i }));
@@ -140,13 +151,13 @@ describe("SetupWizard", () => {
     expect(screen.getByRole("button", { name: /next/i })).toBeDisabled();
 
     await waitFor(() => {
-      expect(push).toHaveBeenCalledWith("/C/users/local");
+      expect(registerPcAccount).toHaveBeenCalledWith({
+        username: "Ada",
+        email: "ada@example.com",
+        password: "secret1",
+        displayName: "Ada",
+      });
+      expect(push).toHaveBeenCalledWith("/C/users/ada");
     });
-
-    expect(useDesktopStore.getState().localProfile.displayName).toBe("Ada");
-    expect(useDesktopStore.getState().localProfile.computerName).toBe("ADA-PC");
-    const session = window.localStorage.getItem(LOCAL_SESSION_STORAGE_KEY);
-    expect(session).toContain("ada@example.com");
-    expect(session).not.toContain("secret1");
   });
 });

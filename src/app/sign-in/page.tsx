@@ -4,7 +4,7 @@ import { SPOKEN_NAME } from "@/lib/seo/brand";
 
 export const metadata: Metadata = {
   title: `Sign in`,
-  description: `Sign in to ${SPOKEN_NAME} — a social network for writers.`,
+  description: `Sign in to ${SPOKEN_NAME} — a social desktop for writers.`,
 };
 
 export default function SignInPage() {

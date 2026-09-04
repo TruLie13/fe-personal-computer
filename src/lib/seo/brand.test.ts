@@ -11,12 +11,12 @@ import {
 
 describe("seo brand", () => {
   it("locks spoken and product names", () => {
-    expect(SPOKEN_NAME).toBe("MyPC");
-    expect(PRODUCT_NAME).toBe("Personal Computer");
-    expect(SITE_TITLE).toBe("MyPC — Personal Computer");
-    expect(TITLE_TEMPLATE).toBe("%s — MyPC");
-    expect(SITE_DESCRIPTION).toContain("MyPC");
-    expect(SITE_DESCRIPTION).toContain("social network for writers");
+    expect(SPOKEN_NAME).toBe("Teal95");
+    expect(PRODUCT_NAME).toBe("Teal95");
+    expect(SITE_TITLE).toBe("Teal95 — A social desktop for writers");
+    expect(TITLE_TEMPLATE).toBe("%s — Teal95");
+    expect(SITE_DESCRIPTION).toContain("Teal95");
+    expect(SITE_DESCRIPTION).toContain("social desktop for writers");
   });
 
   it("builds profile and file meta titles", () => {

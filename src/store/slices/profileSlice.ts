@@ -7,6 +7,7 @@ import {
   DEFAULT_LOCAL_PROFILE,
   saveLocalProfile,
 } from "@/lib/profile";
+import { scheduleRemoteProfileSave } from "@/lib/remoteDesktopPersist";
 import { PROFILE_ICON_ID } from "@/lib/storage";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
 import { selectActiveIcons } from "@/store/desktopSelectors";
@@ -61,6 +62,7 @@ export const createProfileSlice: StateCreator<
             : state.localProfile.avatarUrl,
       };
       saveLocalProfile(localProfile);
+      scheduleRemoteProfileSave(localProfile);
       const label = computerLabel(localProfile.displayName);
       const icons = state.icons.map((icon) =>
         icon.id === PROFILE_ICON_ID ? { ...icon, label } : icon,

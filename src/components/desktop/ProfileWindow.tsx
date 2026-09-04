@@ -12,7 +12,8 @@ import {
   MAX_BIO_CHARS,
   MAX_DISPLAY_NAME_CHARS,
 } from "@/lib/profile";
-import { profilePath, currentUsername } from "@/lib/seo/paths";
+import { saveRemoteProfileNow } from "@/lib/remoteDesktopPersist";
+import { currentUsername, profilePath } from "@/lib/seo/paths";
 import { loadLocalSession } from "@/lib/setupAccount";
 import { useGuestChrome } from "@/hooks/useGuestChrome";
 import { useDesktopStore } from "@/store/desktopStore";
@@ -30,7 +31,20 @@ export function ProfileWindow() {
   const { showGuestChrome, goHome, goToSetup, goToSignIn } = useGuestChrome();
 
   const isRemote = viewMode === "remote" && remoteUserId != null;
-  const remoteUser = isRemote ? getNetworkUser(remoteUserId) : undefined;
+  const remoteProfile = useDesktopStore((state) => state.remoteProfile);
+  const seedUser = isRemote ? getNetworkUser(remoteUserId) : undefined;
+  const remoteUser = seedUser
+    ? seedUser
+    : isRemote && remoteProfile
+      ? {
+          id: remoteUserId!,
+          displayName: remoteProfile.displayName,
+          computerName: remoteProfile.computerName,
+          bio: remoteProfile.bio,
+          avatarColor: remoteProfile.avatarColor,
+          avatarUrl: remoteProfile.avatarUrl,
+        }
+      : undefined;
 
   const displayName = remoteUser?.displayName ?? localProfile.displayName;
   const computerName = remoteUser?.computerName ?? localProfile.computerName;
@@ -39,6 +53,8 @@ export function ProfileWindow() {
 
   const [draftName, setDraftName] = useState(localProfile.displayName);
   const [draftBio, setDraftBio] = useState(localProfile.bio);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const { savedFlash, flashSaved } = useSavedFlash();
 
   useEffect(() => {
@@ -61,11 +77,29 @@ export function ProfileWindow() {
   const atBioLimit = bioCount >= MAX_BIO_CHARS;
 
   const onSaveLocal = () => {
+    setSaveError(null);
+    setSaving(true);
     updateLocalProfile({
       displayName: draftName,
       bio: draftBio,
     });
-    flashSaved();
+    const profile = useDesktopStore.getState().localProfile;
+    void saveRemoteProfileNow(profile).then((status) => {
+      setSaving(false);
+      if (status === "saved" || status === "suppressed") {
+        flashSaved();
+        return;
+      }
+      if (status === "queued") {
+        setSaveError(
+          "Saved on this PC only. Sign in again (Start → Log on) so Firebase Auth can sync your bio.",
+        );
+        return;
+      }
+      setSaveError(
+        "Could not sync profile to the network. Is the Auth/Firestore emulator running?",
+      );
+    });
   };
 
   return (
@@ -190,11 +224,17 @@ export function ProfileWindow() {
             <button
               type="button"
               className="win-raised px-3 py-0.5"
+              disabled={saving}
               onClick={onSaveLocal}
             >
               Save
             </button>
             {savedFlash ? <span className="text-win-dark">Saved</span> : null}
+            {saveError ? (
+              <span className="max-w-[280px] text-win-dark" role="alert">
+                {saveError}
+              </span>
+            ) : null}
           </>
         )}
       </div>

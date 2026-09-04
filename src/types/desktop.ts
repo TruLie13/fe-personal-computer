@@ -35,6 +35,8 @@ export interface TextDocument {
   content: string;
   createdAt: string;
   updatedAt: string;
+  /** When true, indexed in Story Explorer / `publicStories`. */
+  isPublic?: boolean;
 }
 
 export interface DesktopWindow {

@@ -1,23 +1,45 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import {
   LocalPcRow,
   NetworkPcRow,
 } from "@/components/desktop/NetworkPcRow";
 import { isFavorite } from "@/lib/favorites";
+import { pullNetworkNeighborhoodUsers } from "@/lib/networkDirectory";
 import { NETWORK_USERS } from "@/lib/networkSeed";
 import { useDesktopStore } from "@/store/desktopStore";
+import type { NetworkUser } from "@/types/network";
 
 export function NetworkNeighborhood() {
   const favorites = useDesktopStore((state) => state.favorites);
   const addFavorite = useDesktopStore((state) => state.addFavorite);
   const removeFavorite = useDesktopStore((state) => state.removeFavorite);
+  const [networkUsers, setNetworkUsers] = useState<NetworkUser[]>(NETWORK_USERS);
+
+  useEffect(() => {
+    let cancelled = false;
+    void pullNetworkNeighborhoodUsers().then((users) => {
+      if (!cancelled) {
+        setNetworkUsers(users);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const usersById = useMemo(() => {
+    const map = new Map<string, NetworkUser>();
+    for (const user of networkUsers) {
+      map.set(user.id, user);
+    }
+    return map;
+  }, [networkUsers]);
 
   const favoriteUsers = favorites
-    .map((favorite) =>
-      NETWORK_USERS.find((user) => user.id === favorite.userId),
-    )
-    .filter((user): user is (typeof NETWORK_USERS)[number] => Boolean(user));
+    .map((favorite) => usersById.get(favorite.userId))
+    .filter((user): user is NetworkUser => Boolean(user));
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-win-face text-[12px]">
@@ -63,7 +85,7 @@ export function NetworkNeighborhood() {
                 title="This PC (you)"
                 subtitle="Local desktop — use Go Home while visiting others"
               />
-              {NETWORK_USERS.map((user) => {
+              {networkUsers.map((user) => {
                 const favorited = isFavorite(favorites, user.id);
                 return (
                   <NetworkPcRow

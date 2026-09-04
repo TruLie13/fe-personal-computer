@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StartMenu } from "@/components/desktop/StartMenu";
+import { OPEN_VERIFY_EMAIL_EVENT } from "@/components/desktop/VerifyEmailDialog";
+import { subscribeAuthState } from "@/lib/firebase/auth";
 import { markMockSignedIn } from "@/lib/ownPc";
 import { resetDesktopStore } from "@/test/resetDesktopStore";
 import { useDesktopStore } from "@/store/desktopStore";
@@ -11,10 +13,13 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
 }));
 
+const subscribe = jest.mocked(subscribeAuthState);
+
 describe("StartMenu", () => {
   beforeEach(() => {
     push.mockClear();
     resetDesktopStore();
+    subscribe.mockImplementation(() => () => undefined);
   });
 
   it("renders nothing when closed", () => {
@@ -73,12 +78,38 @@ describe("StartMenu", () => {
     expect(useDesktopStore.getState().viewMode).toBe("local");
   });
 
+  it("offers Verify e-mail when the account is unverified", async () => {
+    const user = userEvent.setup();
+    const onOpen = jest.fn();
+    subscribe.mockImplementation((onChange) => {
+      onChange({
+        uid: "uid-1",
+        email: "ada@example.com",
+        emailVerified: false,
+      } as never);
+      return () => undefined;
+    });
+    window.addEventListener(OPEN_VERIFY_EMAIL_EVENT, onOpen);
+    useDesktopStore.setState({ isStartMenuOpen: true });
+    render(<StartMenu />);
+
+    await user.click(
+      await screen.findByRole("menuitem", { name: /Verify e-mail/i }),
+    );
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(useDesktopStore.getState().isStartMenuOpen).toBe(false);
+    window.removeEventListener(OPEN_VERIFY_EMAIL_EVENT, onOpen);
+  });
+
   it("offers Sign out on the local menu", async () => {
     const user = userEvent.setup();
     useDesktopStore.setState({ isStartMenuOpen: true });
     render(<StartMenu />);
 
     expect(screen.getByRole("menuitem", { name: /Sign out/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: /Verify e-mail/i }),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole("menuitem", { name: /Sign out/i }));
     expect(push).toHaveBeenCalledWith("/");
   });

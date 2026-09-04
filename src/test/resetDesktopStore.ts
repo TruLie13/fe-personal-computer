@@ -25,6 +25,8 @@ export function resetDesktopStore() {
     hydrated: false,
     viewMode: "local",
     remoteUserId: null,
+    remoteSnapshot: null,
+    remoteProfile: null,
     favorites: [],
     localBbsNotes: [],
     localStoryComments: [],

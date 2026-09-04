@@ -5,6 +5,7 @@ import { ConfirmDialog } from "@/components/desktop/ConfirmDialog";
 import { ContextMenu } from "@/components/desktop/ContextMenu";
 import { DesktopIcon } from "@/components/desktop/DesktopIcon";
 import { GuestChromeBanner } from "@/components/desktop/GuestChromeBanner";
+import { VerifyEmailDialog } from "@/components/desktop/VerifyEmailDialog";
 import { Taskbar } from "@/components/desktop/Taskbar";
 import { WindowFrame } from "@/components/desktop/WindowFrame";
 import { useContextMenuState } from "@/hooks/useContextMenuState";
@@ -13,9 +14,21 @@ import { useDesktopMarquee } from "@/hooks/useDesktopMarquee";
 import { useFolderCreateGuard } from "@/hooks/useFolderCreateGuard";
 import { useGuestChrome } from "@/hooks/useGuestChrome";
 import { useDesktopUrlSync } from "@/hooks/useDesktopUrlSync";
+import { useSignedInProfileThemeHydrate } from "@/hooks/useSignedInProfileThemeHydrate";
 import { clampIconPosition } from "@/lib/desktopBounds";
 import { DESKTOP_ATTR } from "@/lib/dragDrop";
-import { DEFAULT_WALLPAPER } from "@/lib/storage";
+import { isOwnDesktopUsername } from "@/lib/localSession";
+import { getNetworkUser, LOCAL_USER_ID } from "@/lib/networkSeed";
+import { computerLabel } from "@/lib/profile";
+import { getDesktopRepository } from "@/lib/repository";
+import { DOCUMENTS_FOLDER_ID } from "@/lib/repository/desktopFiles";
+import {
+  DEFAULT_ICONS,
+  DEFAULT_WALLPAPER,
+  isAppIcon,
+  mergeAppIcons,
+  PROFILE_ICON_ID,
+} from "@/lib/storage";
 import { saveWindowSession } from "@/lib/windowSession";
 import {
   selectActiveIcons,
@@ -50,6 +63,9 @@ export function Desktop({
     (state) => state.syncMaximizedWindows,
   );
   const applyDeepLink = useDesktopStore((state) => state.applyDeepLink);
+  const visitRemoteDesktop = useDesktopStore((state) => state.visitRemoteDesktop);
+  const remoteUserId = useDesktopStore((state) => state.remoteUserId);
+  const remoteSnapshot = useDesktopStore((state) => state.remoteSnapshot);
   const selectIcon = useDesktopStore((state) => state.selectIcon);
   const setSelectedIcons = useDesktopStore((state) => state.setSelectedIcons);
   const closeStartMenu = useDesktopStore((state) => state.closeStartMenu);
@@ -59,11 +75,15 @@ export function Desktop({
   const { showGuestChrome, goHome, goToSetup, goToSignIn } = useGuestChrome();
   const appliedDeepLinkKey = useRef<string | null>(null);
   const [urlSyncReady, setUrlSyncReady] = useState(!deepLinkUsername);
+  const [remoteLookup, setRemoteLookup] = useState<
+    "idle" | "loading" | "found" | "missing"
+  >("idle");
 
   useDesktopUrlSync({
     enabled: hydrated && urlSyncReady,
     deepLinkUsername,
   });
+  useSignedInProfileThemeHydrate();
 
   const isRemote = viewMode === "remote";
   const desktopIcons = selectDesktopIcons(icons);
@@ -149,20 +169,117 @@ export function Desktop({
     }
     if (!deepLinkUsername) {
       setUrlSyncReady(true);
+      setRemoteLookup("idle");
       return;
     }
-    const key = `${deepLinkUsername}:${deepLinkFileSlug ?? ""}`;
-    if (appliedDeepLinkKey.current !== key) {
-      appliedDeepLinkKey.current = key;
-      applyDeepLink({
-        username: deepLinkUsername,
-        fileSlug: deepLinkFileSlug,
-      });
-    }
-    setUrlSyncReady(true);
-  }, [hydrated, deepLinkUsername, deepLinkFileSlug, applyDeepLink]);
 
-  if (!hydrated) {
+    const key = `${deepLinkUsername}:${deepLinkFileSlug ?? ""}`;
+    const isOwn =
+      deepLinkUsername === LOCAL_USER_ID ||
+      isOwnDesktopUsername(deepLinkUsername);
+    const isSeed = Boolean(getNetworkUser(deepLinkUsername));
+
+    if (isOwn || isSeed) {
+      if (appliedDeepLinkKey.current !== key) {
+        appliedDeepLinkKey.current = key;
+        applyDeepLink({
+          username: deepLinkUsername,
+          fileSlug: deepLinkFileSlug,
+        });
+      }
+      setRemoteLookup("found");
+      setUrlSyncReady(true);
+      return;
+    }
+
+    if (appliedDeepLinkKey.current === key) {
+      setUrlSyncReady(true);
+      return;
+    }
+
+    let cancelled = false;
+    setRemoteLookup("loading");
+    appliedDeepLinkKey.current = key;
+    void (async () => {
+      try {
+        const uid =
+          await getDesktopRepository().getUidForUsername(deepLinkUsername);
+        if (cancelled) {
+          return;
+        }
+        if (!uid) {
+          setRemoteLookup("missing");
+          setUrlSyncReady(true);
+          return;
+        }
+        const desktop = await getDesktopRepository().loadDesktop(uid);
+        if (cancelled) {
+          return;
+        }
+        if (!desktop) {
+          setRemoteLookup("missing");
+          setUrlSyncReady(true);
+          return;
+        }
+        const appIcons = DEFAULT_ICONS.filter(
+          (icon) => isAppIcon(icon.id) && icon.id !== DOCUMENTS_FOLDER_ID,
+        ).map((icon) =>
+          icon.id === PROFILE_ICON_ID
+            ? {
+                ...icon,
+                label: computerLabel(desktop.profile.displayName),
+              }
+            : icon,
+        );
+        const nextIcons = mergeAppIcons([...appIcons, ...desktop.icons]).map(
+          (icon) =>
+            icon.id === PROFILE_ICON_ID
+              ? {
+                  ...icon,
+                  label: computerLabel(desktop.profile.displayName),
+                }
+              : icon,
+        );
+        visitRemoteDesktop({
+          userId: deepLinkUsername,
+          profile: desktop.profile,
+          snapshot: {
+            wallpaper: desktop.theme.wallpaper,
+            titleBarColor: desktop.theme.titleBarColor,
+            icons: nextIcons,
+            documents: desktop.documents,
+          },
+        });
+        if (deepLinkFileSlug) {
+          applyDeepLink({
+            username: deepLinkUsername,
+            fileSlug: deepLinkFileSlug,
+          });
+        }
+        setRemoteLookup("found");
+      } catch {
+        if (!cancelled) {
+          setRemoteLookup("missing");
+        }
+      } finally {
+        if (!cancelled) {
+          setUrlSyncReady(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    hydrated,
+    deepLinkUsername,
+    deepLinkFileSlug,
+    applyDeepLink,
+    visitRemoteDesktop,
+  ]);
+
+  if (!hydrated || remoteLookup === "loading") {
     return (
       <div
         className="h-dvh w-screen"
@@ -170,6 +287,31 @@ export function Desktop({
         aria-busy="true"
         aria-label="Loading desktop"
       />
+    );
+  }
+
+  const unknownPc =
+    Boolean(deepLinkUsername) &&
+    deepLinkUsername !== LOCAL_USER_ID &&
+    !isOwnDesktopUsername(deepLinkUsername) &&
+    !getNetworkUser(deepLinkUsername) &&
+    remoteLookup === "missing" &&
+    !(remoteUserId === deepLinkUsername && remoteSnapshot);
+
+  if (unknownPc) {
+    return (
+      <div className="flex h-dvh items-center justify-center bg-win-desktop p-4 text-[14px]">
+        <div className="win-window max-w-[360px] p-3">
+          <p>
+            This PC is not on the network yet.
+          </p>
+          <p className="mt-3">
+            <a href="/" className="text-win-navy underline">
+              Back to home
+            </a>
+          </p>
+        </div>
+      </div>
     );
   }
 
@@ -324,6 +466,7 @@ export function Desktop({
         />
       ) : null}
       {folderLimitDialog}
+      <VerifyEmailDialog />
     </div>
   );
 }

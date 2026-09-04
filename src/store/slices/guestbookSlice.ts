@@ -4,7 +4,12 @@ import {
   clampGuestbookEntryContent,
   saveLocalGuestbookEntries,
 } from "@/lib/guestbook";
+import { sessionUsername } from "@/lib/localSession";
 import { LOCAL_USER_ID, SEED_GUESTBOOK_ENTRIES } from "@/lib/networkSeed";
+import {
+  createRemoteGuestbookEntry,
+  softDeleteRemoteGuestbookEntry,
+} from "@/lib/remoteSocialPersist";
 import type { DesktopStore } from "@/store/desktopStoreTypes";
 import { createId } from "@/store/desktopWindowFactory";
 import type { GuestbookEntry } from "@/types/network";
@@ -25,6 +30,10 @@ function findEntry(
   return SEED_GUESTBOOK_ENTRIES.find((entry) => entry.id === entryId);
 }
 
+function guestbookAuthorId(): string {
+  return sessionUsername() ?? LOCAL_USER_ID;
+}
+
 export const createGuestbookSlice: StateCreator<
   DesktopStore,
   [],
@@ -34,23 +43,28 @@ export const createGuestbookSlice: StateCreator<
   localGuestbookEntries: [],
 
   signGuestbook: (hostUserId, content) => {
+    const authorId = guestbookAuthorId();
     const trimmed = clampGuestbookEntryContent(content.trim());
     if (!hostUserId || !trimmed || hostUserId === LOCAL_USER_ID) {
+      return "";
+    }
+    if (hostUserId === authorId) {
       return "";
     }
     if (
       !canSignGuestbookToday(
         get().localGuestbookEntries,
         hostUserId,
-        LOCAL_USER_ID,
+        authorId,
       )
     ) {
       return "";
     }
+    const localId = createId("gb");
     const entry: GuestbookEntry = {
-      id: createId("gb"),
+      id: localId,
       hostUserId,
-      authorId: LOCAL_USER_ID,
+      authorId,
       content: trimmed,
       createdAt: new Date().toISOString(),
     };
@@ -59,7 +73,32 @@ export const createGuestbookSlice: StateCreator<
       saveLocalGuestbookEntries(localGuestbookEntries);
       return { localGuestbookEntries };
     });
-    return entry.id;
+
+    void createRemoteGuestbookEntry({
+      hostUid: hostUserId,
+      hostUsername: hostUserId,
+      content: trimmed,
+    }).then((remote) => {
+      if (!remote) {
+        return;
+      }
+      set((state) => {
+        const localGuestbookEntries = state.localGuestbookEntries.map((item) =>
+          item.id === localId
+            ? {
+                ...item,
+                id: remote.id,
+                authorId: remote.authorId,
+                createdAt: remote.createdAt,
+              }
+            : item,
+        );
+        saveLocalGuestbookEntries(localGuestbookEntries);
+        return { localGuestbookEntries };
+      });
+    });
+
+    return localId;
   },
 
   deleteGuestbookEntry: (entryId) => {
@@ -68,11 +107,15 @@ export const createGuestbookSlice: StateCreator<
       return false;
     }
 
-    const onOwnPc =
-      get().viewMode !== "remote" || get().remoteUserId === LOCAL_USER_ID;
+    const authorId = guestbookAuthorId();
+    const ownUsername = sessionUsername();
+    const onOwnPc = get().viewMode !== "remote";
     const isHostOwner =
-      existing.hostUserId === LOCAL_USER_ID && onOwnPc;
-    const isAuthor = existing.authorId === LOCAL_USER_ID;
+      onOwnPc &&
+      (existing.hostUserId === LOCAL_USER_ID ||
+        (ownUsername != null && existing.hostUserId === ownUsername));
+    const isAuthor =
+      existing.authorId === LOCAL_USER_ID || existing.authorId === authorId;
     if (!isHostOwner && !isAuthor) {
       return false;
     }
@@ -91,6 +134,7 @@ export const createGuestbookSlice: StateCreator<
       saveLocalGuestbookEntries(localGuestbookEntries);
       return { localGuestbookEntries };
     });
+    void softDeleteRemoteGuestbookEntry(entryId, isHostOwner);
     return true;
   },
 });

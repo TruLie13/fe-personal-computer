@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { maximizedWindowBounds } from "@/lib/desktopBounds";
+import { fitWindowInDesktop, maximizedWindowBounds } from "@/lib/desktopBounds";
 import {
   countsTowardOpenDocumentCap,
   MAX_OPEN_DOCUMENT_WINDOWS,
@@ -47,10 +47,19 @@ function syncFifo(
   return kept;
 }
 
-/**
- * Make room to have `openingId` open as a document window.
- * Closes oldest FIFO entries (never `openingId`) until under the cap.
- */
+function reopenWindowBounds(
+  window: DesktopWindow,
+  taskbarHeight: number,
+): Pick<DesktopWindow, "x" | "y" | "width" | "height"> {
+  if (window.isMaximized) {
+    return maximizedWindowBounds(taskbarHeight);
+  }
+  return fitWindowInDesktop(
+    { x: window.x, y: window.y },
+    { width: window.width, height: window.height },
+    taskbarHeight,
+  );
+}
 function makeRoomForDocumentWindow(
   windows: DesktopWindow[],
   fifo: string[],
@@ -145,11 +154,13 @@ export const createWindowSlice: StateCreator<
     );
     if (existing) {
       const zIndex = state.nextZIndex;
+      const bounds = reopenWindowBounds(existing, state.taskbarHeight);
       set({
         windows: state.windows.map((window) =>
           window.id === existing.id
             ? {
                 ...window,
+                ...bounds,
                 isOpen: true,
                 isMinimized: false,
                 isFocused: true,
@@ -233,6 +244,7 @@ export const createWindowSlice: StateCreator<
     );
     if (closed) {
       const zIndex = state.nextZIndex;
+      const bounds = reopenWindowBounds(closed, state.taskbarHeight);
       const capped = makeRoomForDocumentWindow(
         state.windows.map((window) => ({ ...window, isFocused: false })),
         state.documentWindowFifo,
@@ -244,6 +256,7 @@ export const createWindowSlice: StateCreator<
           window.id === closed.id
             ? {
                 ...window,
+                ...bounds,
                 isOpen: true,
                 isMinimized: false,
                 isFocused: true,
@@ -406,11 +419,13 @@ export const createWindowSlice: StateCreator<
     }
 
     const zIndex = state.nextZIndex;
+    const bounds = reopenWindowBounds(target, state.taskbarHeight);
     set({
       windows: state.windows.map((window) =>
         window.id === windowId
           ? {
               ...window,
+              ...bounds,
               isFocused: true,
               isMinimized: false,
               isOpen: true,

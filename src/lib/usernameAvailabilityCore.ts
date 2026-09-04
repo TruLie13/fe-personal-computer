@@ -19,7 +19,7 @@ export interface UsernameAvailabilityResult {
 
 /**
  * Shared username availability logic for the Setup Wizard API and tests.
- * Swap the taken check to Firestore `usernames/{username}` when auth lands.
+ * Route layer also checks Firestore `usernames/{username}` via Admin SDK.
  */
 export function resolveUsernameAvailability(
   raw: string,
