@@ -15,6 +15,11 @@ import {
   where,
 } from "firebase/firestore";
 import { getClientFirestore } from "@/lib/firebase/client";
+import {
+  apiCreateBbsNote,
+  apiCreateGuestbookEntry,
+  apiCreateStoryComment,
+} from "@/lib/socialCreateApi";
 import type { SocialRepository } from "@/lib/repository/SocialRepository";
 import type {
   BbsPost,
@@ -103,23 +108,12 @@ export function createFirestoreSocialRepository(): SocialRepository {
     },
 
     async createBbsNote(input) {
-      const ref = doc(collection(getClientFirestore(), "bbsNotes"));
-      const createdAt = new Date().toISOString();
-      await setDoc(ref, {
-        authorUid: input.authorUid,
+      // Quota-gated Admin write — clients cannot create bbsNotes (rules).
+      return apiCreateBbsNote({
         username: input.username,
         title: input.title,
         body: input.body,
-        createdAt: serverTimestamp(),
-        deletedAt: null,
       });
-      return {
-        id: ref.id,
-        authorId: input.username,
-        title: input.title,
-        content: input.body,
-        createdAt,
-      };
     },
 
     async softDeleteBbsNote(input) {
@@ -150,24 +144,12 @@ export function createFirestoreSocialRepository(): SocialRepository {
     },
 
     async createStoryComment(input) {
-      const ref = doc(collection(getClientFirestore(), "storyComments"));
-      const createdAt = new Date().toISOString();
-      await setDoc(ref, {
+      return apiCreateStoryComment({
+        username: input.username,
         documentId: input.documentId,
         ownerUid: input.ownerUid,
-        authorUid: input.authorUid,
-        username: input.username,
         content: input.content,
-        createdAt: serverTimestamp(),
-        deletedAt: null,
       });
-      return {
-        id: ref.id,
-        documentId: input.documentId,
-        authorId: input.username,
-        content: input.content,
-        createdAt,
-      };
     },
 
     async softDeleteStoryComment(input) {
@@ -210,24 +192,12 @@ export function createFirestoreSocialRepository(): SocialRepository {
     },
 
     async createGuestbookEntry(input) {
-      const ref = doc(collection(getClientFirestore(), "guestbookEntries"));
-      const createdAt = new Date().toISOString();
-      await setDoc(ref, {
+      return apiCreateGuestbookEntry({
+        username: input.username,
         hostUid: input.hostUid,
         hostUsername: input.hostUsername,
-        authorUid: input.authorUid,
-        username: input.username,
         content: input.content,
-        createdAt: serverTimestamp(),
-        deletedAt: null,
       });
-      return {
-        id: ref.id,
-        hostUserId: input.hostUsername,
-        authorId: input.username,
-        content: input.content,
-        createdAt,
-      };
     },
 
     async softDeleteGuestbookEntry(input) {

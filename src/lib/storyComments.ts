@@ -1,17 +1,21 @@
+import {
+  MAX_STORY_COMMENT_CHARS,
+  MAX_STORY_COMMENTS_PER_UTC_DAY,
+} from "@/lib/contentLimits";
 import { LOCAL_USER_ID } from "@/lib/networkSeed";
-import { utcDayKey } from "@/lib/bbsNotes";
+import { utcDayKey } from "@/lib/utcDay";
 import type { StoryComment } from "@/types/network";
+
+export {
+  MAX_STORY_COMMENT_CHARS,
+  MAX_STORY_COMMENTS_PER_UTC_DAY,
+} from "@/lib/contentLimits";
 
 export const STORY_COMMENTS_STORAGE_KEY =
   "personal-computer-story-comments-v1";
 /** One-time migrate from the pre-rename localStorage key. */
 const LEGACY_STORY_COMMENTS_STORAGE_KEY =
   "personal-computer-story-responses-v1";
-
-/** Body — short reaction; long critique belongs in your own Notepad. */
-export const MAX_STORY_COMMENT_CHARS = 500;
-/** Creates per author per UTC calendar day across all stories (resets 00:00 UTC). */
-export const MAX_STORY_COMMENTS_PER_UTC_DAY = 20;
 
 export function clampStoryCommentContent(content: string): string {
   if (content.length <= MAX_STORY_COMMENT_CHARS) {

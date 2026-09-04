@@ -1,17 +1,18 @@
-import type { UserProfile } from "@/types/network";
+import {
+  MAX_BIO_CHARS,
+  MAX_COMPUTER_NAME_CHARS,
+  MAX_DISPLAY_NAME_CHARS,
+} from "@/lib/contentLimits";
 import { profileMetaTitle } from "@/lib/seo/brand";
+import type { UserProfile } from "@/types/network";
+
+export {
+  MAX_BIO_CHARS,
+  MAX_COMPUTER_NAME_CHARS,
+  MAX_DISPLAY_NAME_CHARS,
+} from "@/lib/contentLimits";
 
 export const PROFILE_STORAGE_KEY = "personal-computer-profile-v1";
-
-/** Profile bio body (abuse + SEO payload size). */
-export const MAX_BIO_CHARS = 500;
-/** Shown as `{Name}'s Computer` — not the URL. */
-export const MAX_DISPLAY_NAME_CHARS = 25;
-/**
- * Win95-style PC name (`WRITER-PC`). Not the public URL — that is `username`
- * (2–20 chars). Soft cap for when computerName becomes editable.
- */
-export const MAX_COMPUTER_NAME_CHARS = 24;
 
 export function clampDisplayName(value: string): string {
   if (value.length <= MAX_DISPLAY_NAME_CHARS) {

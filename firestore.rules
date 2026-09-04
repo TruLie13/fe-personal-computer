@@ -1,8 +1,8 @@
 rules_version = '2';
 
 // Owner + public-read ACL.
-// Length caps are enforced here; UTC-day post quotas need Cloud Functions
-// (clients can clear localStorage and bypass browser-side counters).
+// Length caps mirror src/lib/contentLimits.ts (parity test enforced).
+// UTC-day quotas: Admin create paths in /api/social/* (clients cannot create social docs).
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
@@ -13,63 +13,107 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
+    function stringMax(field, maxLen) {
+      return field is string && field.size() <= maxLen;
+    }
+
+    function optionalStringMax(field, maxLen) {
+      return field == null || stringMax(field, maxLen);
+    }
+
+    // Soft-delete: only deletedAt may change, and it must become non-null.
+    function onlySoftDelete() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['deletedAt'])
+        && request.resource.data.deletedAt != null;
+    }
+
+    function validUserProfileFields() {
+      return stringMax(request.resource.data.username, 20)
+        && stringMax(request.resource.data.displayName, 25)
+        && stringMax(request.resource.data.computerName, 24)
+        && stringMax(request.resource.data.bio, 500)
+        && stringMax(request.resource.data.avatarColor, 32)
+        && optionalStringMax(request.resource.data.avatarUrl, 2048)
+        && stringMax(request.resource.data.wallpaper, 2048)
+        && stringMax(request.resource.data.titleBarColor, 32)
+        && request.resource.data.contentDark is bool
+        && (
+          !('taskbarHeight' in request.resource.data)
+          || (
+            request.resource.data.taskbarHeight is number
+            && request.resource.data.taskbarHeight >= 28
+            && request.resource.data.taskbarHeight <= 72
+          )
+        );
+    }
+
+    function validFileFields() {
+      return stringMax(request.resource.data.title, 120)
+        && stringMax(request.resource.data.slug, 120)
+        && request.resource.data.type in ['text', 'folder']
+        && (
+          request.resource.data.type == 'folder'
+          || (
+            request.resource.data.content is string
+            && request.resource.data.content.size() <= 20000
+          )
+        );
+    }
+
     match /usernames/{username} {
       allow read: if true;
       allow create: if signedIn()
-        && request.resource.data.uid == request.auth.uid;
+        && request.resource.data.uid == request.auth.uid
+        && username.size() >= 2
+        && username.size() <= 20;
       allow update, delete: if false;
     }
 
     match /users/{uid} {
       allow read: if true;
-      allow create: if isOwner(uid);
-      allow update: if isOwner(uid);
+      allow create: if isOwner(uid) && validUserProfileFields();
+      allow update: if isOwner(uid) && validUserProfileFields();
       allow delete: if false;
 
       match /files/{fileId} {
         allow read: if true;
-        allow write: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validFileFields();
+        allow delete: if isOwner(uid);
       }
 
       match /favorites/{targetUid} {
         allow read: if isOwner(uid);
-        allow write: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && stringMax(request.resource.data.targetUsername, 20);
+        allow delete: if isOwner(uid);
       }
     }
 
+    // Creates go through Admin (/api/social/*) after UTC-day quota checks.
     match /bbsNotes/{noteId} {
       allow read: if true;
-      allow create: if signedIn()
-        && request.resource.data.authorUid == request.auth.uid
-        && request.resource.data.title is string
-        && request.resource.data.body is string
-        && request.resource.data.title.size() <= 80
-        && request.resource.data.body.size() <= 1000;
+      allow create: if false;
       allow update: if signedIn()
-        && resource.data.authorUid == request.auth.uid;
+        && resource.data.authorUid == request.auth.uid
+        && onlySoftDelete();
       allow delete: if false;
     }
 
     match /storyComments/{commentId} {
       allow read: if true;
-      allow create: if signedIn()
-        && request.resource.data.authorUid == request.auth.uid
-        && request.resource.data.content is string
-        && request.resource.data.content.size() <= 500;
+      allow create: if false;
       allow update: if signedIn()
-        && resource.data.authorUid == request.auth.uid;
+        && resource.data.authorUid == request.auth.uid
+        && onlySoftDelete();
       allow delete: if false;
     }
 
     match /guestbookEntries/{entryId} {
       allow read: if true;
-      allow create: if signedIn()
-        && request.resource.data.authorUid == request.auth.uid
-        && request.resource.data.authorUid != request.resource.data.hostUid
-        && request.resource.data.content is string
-        && request.resource.data.content.size() <= 400;
-      // Author or host (hostUid is Auth uid for claimed PCs; seed hosts use username).
+      allow create: if false;
       allow update: if signedIn()
+        && onlySoftDelete()
         && (resource.data.authorUid == request.auth.uid
           || resource.data.hostUid == request.auth.uid);
       allow delete: if false;
@@ -77,9 +121,12 @@ service cloud.firestore {
 
     match /publicStories/{storyId} {
       allow read: if true;
-      // `write` alone rejects deletes: request.resource is unset on delete.
       allow create, update: if signedIn()
-        && request.resource.data.ownerUid == request.auth.uid;
+        && request.resource.data.ownerUid == request.auth.uid
+        && stringMax(request.resource.data.username, 20)
+        && stringMax(request.resource.data.title, 120)
+        && stringMax(request.resource.data.slug, 120)
+        && stringMax(request.resource.data.excerpt, 400);
       allow delete: if signedIn()
         && resource.data.ownerUid == request.auth.uid;
     }

@@ -69,16 +69,25 @@ export const DEFAULT_DOCUMENTS: TextDocument[] = [];
 export const DEFAULT_WALLPAPER = "#008080";
 export const DEFAULT_TITLE_BAR_COLOR = "#000080";
 export const DEFAULT_CONTENT_DARK = false;
-export const DEFAULT_TASKBAR_HEIGHT = 36;
-export const MIN_TASKBAR_HEIGHT = 28;
-export const MAX_TASKBAR_HEIGHT = 72;
-export const MAX_TEXT_FILE_CHARS = 20_000;
-/** Text documents only — folders are not counted. */
-export const MAX_TEXT_FILES_PER_USER = 50;
-/** Folder icons / FS folder nodes (includes default Documents). */
-export const MAX_FOLDERS_PER_USER = 25;
-/** File / folder display titles (Notepad name, rename, create). */
-export const MAX_FILE_TITLE_CHARS = 120;
+import {
+  DEFAULT_TASKBAR_HEIGHT,
+  MAX_FILE_TITLE_CHARS,
+  MAX_FOLDERS_PER_USER,
+  MAX_TASKBAR_HEIGHT,
+  MAX_TEXT_FILE_CHARS,
+  MAX_TEXT_FILES_PER_USER,
+  MIN_TASKBAR_HEIGHT,
+} from "@/lib/contentLimits";
+
+export {
+  DEFAULT_TASKBAR_HEIGHT,
+  MAX_FILE_TITLE_CHARS,
+  MAX_FOLDERS_PER_USER,
+  MAX_TASKBAR_HEIGHT,
+  MAX_TEXT_FILE_CHARS,
+  MAX_TEXT_FILES_PER_USER,
+  MIN_TASKBAR_HEIGHT,
+} from "@/lib/contentLimits";
 
 export function clampFileTitle(title: string): string {
   if (title.length <= MAX_FILE_TITLE_CHARS) {

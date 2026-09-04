@@ -11,7 +11,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:rules": "FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npx jest --testPathPatterns=firestore.rules --runInBand",
+    "test:rules:exec": "sh scripts/firebase-jdk21.sh emulators:exec --only firestore -- \"npx jest --testPathPatterns=firestore.rules --runInBand\""
   },
   "dependencies": {
     "firebase": "^12.18.0",
@@ -22,6 +24,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",

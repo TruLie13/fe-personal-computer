@@ -1,14 +1,21 @@
+import {
+  MAX_BBS_NOTE_CHARS,
+  MAX_BBS_NOTE_TITLE_CHARS,
+  MAX_BBS_NOTES_PER_UTC_DAY,
+} from "@/lib/contentLimits";
 import { LOCAL_USER_ID } from "@/lib/networkSeed";
+import { utcDayKey } from "@/lib/utcDay";
 import type { BbsPost } from "@/types/network";
+
+export {
+  MAX_BBS_NOTE_CHARS,
+  MAX_BBS_NOTE_TITLE_CHARS,
+  MAX_BBS_NOTES_PER_UTC_DAY,
+} from "@/lib/contentLimits";
+export { utcDayKey } from "@/lib/utcDay";
 
 export const BBS_NOTES_STORAGE_KEY = "personal-computer-bbs-notes-v1";
 
-/** Subject line — already mirrored by the compose `maxLength`. */
-export const MAX_BBS_NOTE_TITLE_CHARS = 80;
-/** Body — short post length; long writing belongs in Notepad. */
-export const MAX_BBS_NOTE_CHARS = 1_000;
-/** Creates per author per UTC calendar day (resets 00:00 UTC). */
-export const MAX_BBS_NOTES_PER_UTC_DAY = 5;
 /** Collapsed post preview — caps height from long bodies or one-char-per-line spam. */
 export const MAX_BBS_COLLAPSED_LINES = 5;
 export const MAX_BBS_COLLAPSED_CHARS = 320;
@@ -32,16 +39,6 @@ export function collapseBbsPostContent(content: string): string {
     preview = preview.slice(0, MAX_BBS_COLLAPSED_CHARS);
   }
   return preview;
-}
-
-/** `YYYY-MM-DD` for the given instant in UTC. */
-export function utcDayKey(isoOrDate: string | Date = new Date()): string {
-  const date =
-    typeof isoOrDate === "string" ? new Date(isoOrDate) : isoOrDate;
-  if (Number.isNaN(date.getTime())) {
-    return new Date().toISOString().slice(0, 10);
-  }
-  return date.toISOString().slice(0, 10);
 }
 
 export function countBbsNotesOnUtcDay(

@@ -1,13 +1,17 @@
-import { utcDayKey } from "@/lib/bbsNotes";
+import {
+  MAX_GUESTBOOK_ENTRY_CHARS,
+  MAX_GUESTBOOK_SIGNS_PER_HOST_PER_UTC_DAY,
+} from "@/lib/contentLimits";
 import { LOCAL_USER_ID } from "@/lib/networkSeed";
+import { utcDayKey } from "@/lib/utcDay";
 import type { GuestbookEntry, NetworkUserId } from "@/types/network";
 
-export const GUESTBOOK_STORAGE_KEY = "personal-computer-guestbook-v1";
+export {
+  MAX_GUESTBOOK_ENTRY_CHARS,
+  MAX_GUESTBOOK_SIGNS_PER_HOST_PER_UTC_DAY,
+} from "@/lib/contentLimits";
 
-/** Short guestbook note — longer writing belongs in Notepad / Comments. */
-export const MAX_GUESTBOOK_ENTRY_CHARS = 400;
-/** Signs by one visitor on one host PC per UTC calendar day. */
-export const MAX_GUESTBOOK_SIGNS_PER_HOST_PER_UTC_DAY = 3;
+export const GUESTBOOK_STORAGE_KEY = "personal-computer-guestbook-v1";
 
 export function clampGuestbookEntryContent(content: string): string {
   if (content.length <= MAX_GUESTBOOK_ENTRY_CHARS) {
