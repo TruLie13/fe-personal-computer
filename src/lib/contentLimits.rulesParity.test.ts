@@ -21,7 +21,6 @@ describe("firestore.rules ↔ CONTENT_LIMITS parity", () => {
       `request.resource.data.content.size() <= ${CONTENT_LIMITS.textFileChars}`,
       `request.resource.data.taskbarHeight >= ${CONTENT_LIMITS.taskbarHeightMin}`,
       `request.resource.data.taskbarHeight <= ${CONTENT_LIMITS.taskbarHeightMax}`,
-      `stringMax(request.resource.data.excerpt, ${CONTENT_LIMITS.publicStoryExcerptChars})`,
     ];
 
     for (const snippet of expectedSnippets) {
@@ -36,6 +35,18 @@ describe("firestore.rules ↔ CONTENT_LIMITS parity", () => {
     );
     expect(rules).toMatch(
       /match \/guestbookEntries\/\{entryId\}[\s\S]*?allow create: if false/,
+    );
+  });
+
+  it("keeps private text files owner-or-public and layout writes Admin-only", () => {
+    expect(rules).toContain("resource.data.isPublic == true");
+    expect(rules).toContain("resource.data.type == 'folder'");
+    expect(rules).toContain("fileId == 'documents'");
+    expect(rules).toMatch(
+      /match \/files\/\{fileId\}[\s\S]*?allow update, delete: if false/,
+    );
+    expect(rules).toMatch(
+      /match \/publicStories\/\{storyId\}[\s\S]*?allow create, update: if false/,
     );
   });
 

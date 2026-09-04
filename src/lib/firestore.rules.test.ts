@@ -179,4 +179,82 @@ describeRules("firestore.rules (emulator)", () => {
     );
     expect(snap.exists()).toBe(true);
   });
+
+  it("hides private text from guests but allows folders and public text", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "users/alice/files/documents"), {
+        type: "folder",
+        title: "Documents",
+        slug: "documents",
+        parentId: null,
+        desktopX: 16,
+        desktopY: 112,
+        isPublic: false,
+      });
+      await setDoc(doc(db, "users/alice/files/pub-1"), {
+        type: "text",
+        title: "Public",
+        slug: "public",
+        content: "hello",
+        parentId: "documents",
+        desktopX: 16,
+        desktopY: 16,
+        isPublic: true,
+      });
+      await setDoc(doc(db, "users/alice/files/priv-1"), {
+        type: "text",
+        title: "Secret",
+        slug: "secret",
+        content: "classified",
+        parentId: "documents",
+        desktopX: 16,
+        desktopY: 32,
+        isPublic: false,
+      });
+    });
+
+    const guest = testEnv.unauthenticatedContext();
+    await assertSucceeds(
+      getDoc(doc(guest.firestore(), "users/alice/files/documents")),
+    );
+    await assertSucceeds(
+      getDoc(doc(guest.firestore(), "users/alice/files/pub-1")),
+    );
+    await assertFails(
+      getDoc(doc(guest.firestore(), "users/alice/files/priv-1")),
+    );
+
+    const alice = testEnv.authenticatedContext("alice");
+    await assertSucceeds(
+      getDoc(doc(alice.firestore(), "users/alice/files/priv-1")),
+    );
+  });
+
+  it("allows Documents folder seed create but blocks other client file writes", async () => {
+    const alice = testEnv.authenticatedContext("alice");
+    await assertSucceeds(
+      setDoc(doc(alice.firestore(), "users/alice/files/documents"), {
+        type: "folder",
+        title: "Documents",
+        slug: "documents",
+        parentId: null,
+        desktopX: 16,
+        desktopY: 112,
+        isPublic: false,
+      }),
+    );
+    await assertFails(
+      setDoc(doc(alice.firestore(), "users/alice/files/doc-1"), {
+        type: "text",
+        title: "Nope",
+        slug: "nope",
+        content: "x",
+        parentId: "documents",
+        desktopX: 16,
+        desktopY: 16,
+        isPublic: false,
+      }),
+    );
+  });
 });

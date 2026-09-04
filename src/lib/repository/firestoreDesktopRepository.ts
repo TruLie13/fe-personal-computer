@@ -8,8 +8,8 @@ import {
   runTransaction,
   serverTimestamp,
   updateDoc,
-  writeBatch,
 } from "firebase/firestore";
+import { apiSaveDesktopLayout } from "@/lib/desktopLayoutApi";
 import { getClientFirestore } from "@/lib/firebase/client";
 import type {
   DesktopRepository,
@@ -17,7 +17,6 @@ import type {
 } from "@/lib/repository/DesktopRepository";
 import {
   defaultDocumentsFolderDoc,
-  desktopFsToFileDocs,
   DOCUMENTS_FOLDER_ID,
   fileDocsToDesktopFs,
   parseFirestoreFileDoc,
@@ -28,7 +27,6 @@ import {
   profileFromUserDoc,
   userDocFromClaim,
 } from "@/lib/repository/userDoc";
-import type { DesktopIcon, TextDocument } from "@/types/desktop";
 import type { FirestoreFileDoc } from "@/types/firestore";
 
 export function createFirestoreDesktopRepository(): DesktopRepository {
@@ -67,6 +65,7 @@ export function createFirestoreDesktopRepository(): DesktopRepository {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
+        // Only client-allowed file create: seed Documents folder (see rules).
         tx.set(documentsRef, {
           type: documentsFolder.type,
           title: documentsFolder.title,
@@ -94,6 +93,7 @@ export function createFirestoreDesktopRepository(): DesktopRepository {
         return null;
       }
 
+      // Guests only receive public texts + folders (private ACL in rules).
       const filesSnap = await getDocs(collection(db, "users", uid, "files"));
       const files: Array<{ id: string; data: FirestoreFileDoc }> = [];
       for (const fileSnap of filesSnap.docs) {
@@ -169,90 +169,9 @@ export function createFirestoreDesktopRepository(): DesktopRepository {
       });
     },
 
-    async saveDesktopLayout(uid, icons, documents) {
-      await writeDesktopFiles(uid, icons, documents);
+    async saveDesktopLayout(_uid, icons, documents) {
+      // Count + length enforced server-side; Auth uid comes from the bearer token.
+      await apiSaveDesktopLayout({ icons, documents });
     },
   };
-}
-
-async function writeDesktopFiles(
-  uid: string,
-  icons: DesktopIcon[],
-  documents: TextDocument[],
-): Promise<void> {
-  const db = getClientFirestore();
-  const filesCol = collection(db, "users", uid, "files");
-  const existingSnap = await getDocs(filesCol);
-  const desired = desktopFsToFileDocs(icons, documents);
-  const userSnap = await getDoc(doc(db, "users", uid));
-  const username =
-    typeof userSnap.data()?.username === "string"
-      ? userSnap.data()!.username
-      : "user";
-  const batch = writeBatch(db);
-  const existingCreatedAt = new Map<string, unknown>();
-  const existingWasPublic = new Set<string>();
-  for (const existing of existingSnap.docs) {
-    existingCreatedAt.set(existing.id, existing.data().createdAt);
-    if (existing.data().isPublic === true) {
-      existingWasPublic.add(existing.id);
-    }
-  }
-
-  for (const [fileId, data] of desired) {
-    const ref = doc(filesCol, fileId);
-    const createdAt = existingCreatedAt.get(fileId) ?? serverTimestamp();
-    batch.set(ref, {
-      type: data.type,
-      title: data.title,
-      slug: data.slug,
-      ...(data.type === "text" ? { content: data.content ?? "" } : {}),
-      parentId: data.parentId,
-      desktopX: data.desktopX,
-      desktopY: data.desktopY,
-      isPublic: data.isPublic,
-      createdAt,
-      updatedAt: serverTimestamp(),
-    });
-
-    if (data.type === "text") {
-      const storyRef = doc(db, "publicStories", fileId);
-      if (data.isPublic) {
-        batch.set(storyRef, {
-          ownerUid: uid,
-          username,
-          fileId,
-          slug: data.slug,
-          title: data.title,
-          excerpt: publicStoryExcerpt(data.content ?? ""),
-          updatedAt: serverTimestamp(),
-        });
-      } else if (existingWasPublic.has(fileId)) {
-        // Only delete when unpublishing — missing publicStories docs fail rules.
-        batch.delete(storyRef);
-      }
-    }
-  }
-
-  for (const existing of existingSnap.docs) {
-    if (!desired.has(existing.id)) {
-      batch.delete(existing.ref);
-      if (
-        existing.data().type === "text" &&
-        existingWasPublic.has(existing.id)
-      ) {
-        batch.delete(doc(db, "publicStories", existing.id));
-      }
-    }
-  }
-
-  await batch.commit();
-}
-
-function publicStoryExcerpt(content: string): string {
-  const flat = content.replace(/\s+/g, " ").trim();
-  if (flat.length <= 200) {
-    return flat;
-  }
-  return `${flat.slice(0, 199)}…`;
 }

@@ -2,7 +2,7 @@ rules_version = '2';
 
 // Owner + public-read ACL.
 // Length caps mirror src/lib/contentLimits.ts (parity test enforced).
-// UTC-day quotas: Admin create paths in /api/social/* (clients cannot create social docs).
+// Social creates + desktop FS layout: Admin routes (/api/social/*, /api/desktop/layout).
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
@@ -77,9 +77,16 @@ service cloud.firestore {
       allow delete: if false;
 
       match /files/{fileId} {
-        allow read: if true;
-        allow create, update: if isOwner(uid) && validFileFields();
-        allow delete: if isOwner(uid);
+        // Private text hidden from guests; folders visible for navigation.
+        allow read: if isOwner(uid)
+          || resource.data.isPublic == true
+          || resource.data.type == 'folder';
+        // Claim seeds Documents only; all other FS writes use Admin layout API.
+        allow create: if isOwner(uid)
+          && fileId == 'documents'
+          && validFileFields()
+          && request.resource.data.type == 'folder';
+        allow update, delete: if false;
       }
 
       match /favorites/{targetUid} {
@@ -121,12 +128,8 @@ service cloud.firestore {
 
     match /publicStories/{storyId} {
       allow read: if true;
-      allow create, update: if signedIn()
-        && request.resource.data.ownerUid == request.auth.uid
-        && stringMax(request.resource.data.username, 20)
-        && stringMax(request.resource.data.title, 120)
-        && stringMax(request.resource.data.slug, 120)
-        && stringMax(request.resource.data.excerpt, 400);
+      // Index docs written by Admin layout / social paths; clients may delete own.
+      allow create, update: if false;
       allow delete: if signedIn()
         && resource.data.ownerUid == request.auth.uid;
     }

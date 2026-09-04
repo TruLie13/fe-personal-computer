@@ -3,8 +3,30 @@ import type {
   DesktopPersistedState,
   TextDocument,
 } from "@/types/desktop";
+import {
+  DEFAULT_TASKBAR_HEIGHT,
+  MAX_FILE_TITLE_CHARS,
+  MAX_FOLDERS_PER_USER,
+  MAX_TASKBAR_HEIGHT,
+  MAX_TEXT_FILE_CHARS,
+  MAX_TEXT_FILES_PER_USER,
+  MIN_TASKBAR_HEIGHT,
+} from "@/lib/contentLimits";
+import { countFolders, countTextFiles } from "@/lib/desktopFsLimits";
 import { computerLabel, DEFAULT_LOCAL_PROFILE } from "@/lib/profile";
 import { ensureDocumentSlugs } from "@/lib/seo/slugs";
+
+export {
+  DEFAULT_TASKBAR_HEIGHT,
+  MAX_FILE_TITLE_CHARS,
+  MAX_FOLDERS_PER_USER,
+  MAX_TASKBAR_HEIGHT,
+  MAX_TEXT_FILE_CHARS,
+  MAX_TEXT_FILES_PER_USER,
+  MIN_TASKBAR_HEIGHT,
+} from "@/lib/contentLimits";
+
+export { countFolders, countTextFiles } from "@/lib/desktopFsLimits";
 
 export const STORAGE_KEY = "personal-computer-desktop-v2";
 
@@ -69,41 +91,12 @@ export const DEFAULT_DOCUMENTS: TextDocument[] = [];
 export const DEFAULT_WALLPAPER = "#008080";
 export const DEFAULT_TITLE_BAR_COLOR = "#000080";
 export const DEFAULT_CONTENT_DARK = false;
-import {
-  DEFAULT_TASKBAR_HEIGHT,
-  MAX_FILE_TITLE_CHARS,
-  MAX_FOLDERS_PER_USER,
-  MAX_TASKBAR_HEIGHT,
-  MAX_TEXT_FILE_CHARS,
-  MAX_TEXT_FILES_PER_USER,
-  MIN_TASKBAR_HEIGHT,
-} from "@/lib/contentLimits";
-
-export {
-  DEFAULT_TASKBAR_HEIGHT,
-  MAX_FILE_TITLE_CHARS,
-  MAX_FOLDERS_PER_USER,
-  MAX_TASKBAR_HEIGHT,
-  MAX_TEXT_FILE_CHARS,
-  MAX_TEXT_FILES_PER_USER,
-  MIN_TASKBAR_HEIGHT,
-} from "@/lib/contentLimits";
 
 export function clampFileTitle(title: string): string {
   if (title.length <= MAX_FILE_TITLE_CHARS) {
     return title;
   }
   return title.slice(0, MAX_FILE_TITLE_CHARS);
-}
-
-export function countTextFiles(documents: ReadonlyArray<TextDocument>): number {
-  return documents.length;
-}
-
-export function countFolders(
-  icons: ReadonlyArray<{ type: string }>,
-): number {
-  return icons.filter((icon) => icon.type === "folder").length;
 }
 
 export function canCreateTextFile(
