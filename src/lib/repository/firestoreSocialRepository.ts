@@ -108,9 +108,8 @@ export function createFirestoreSocialRepository(): SocialRepository {
     },
 
     async createBbsNote(input) {
-      // Quota-gated Admin write — clients cannot create bbsNotes (rules).
+      // Quota-gated Admin write — username resolved server-side from Auth uid.
       return apiCreateBbsNote({
-        username: input.username,
         title: input.title,
         body: input.body,
       });
@@ -145,7 +144,6 @@ export function createFirestoreSocialRepository(): SocialRepository {
 
     async createStoryComment(input) {
       return apiCreateStoryComment({
-        username: input.username,
         documentId: input.documentId,
         ownerUid: input.ownerUid,
         content: input.content,
@@ -193,9 +191,7 @@ export function createFirestoreSocialRepository(): SocialRepository {
 
     async createGuestbookEntry(input) {
       return apiCreateGuestbookEntry({
-        username: input.username,
         hostUid: input.hostUid,
-        hostUsername: input.hostUsername,
         content: input.content,
       });
     },

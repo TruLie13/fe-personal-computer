@@ -5,7 +5,6 @@ import { postAuthedJson, SocialApiError } from "@/lib/clientApi";
 export { SocialApiError };
 
 export async function apiCreateBbsNote(input: {
-  username: string;
   title: string;
   body: string;
 }): Promise<{
@@ -19,7 +18,6 @@ export async function apiCreateBbsNote(input: {
 }
 
 export async function apiCreateStoryComment(input: {
-  username: string;
   documentId: string;
   ownerUid: string;
   content: string;
@@ -34,9 +32,7 @@ export async function apiCreateStoryComment(input: {
 }
 
 export async function apiCreateGuestbookEntry(input: {
-  username: string;
   hostUid: string;
-  hostUsername: string;
   content: string;
 }): Promise<{
   id: string;
@@ -45,5 +41,9 @@ export async function apiCreateGuestbookEntry(input: {
   content: string;
   createdAt: string;
 }> {
-  return postAuthedJson("/api/social/guestbook", input);
+  // hostUsername is resolved server-side from hostUid.
+  return postAuthedJson("/api/social/guestbook", {
+    hostUid: input.hostUid,
+    content: input.content,
+  });
 }

@@ -19,6 +19,20 @@ jest.mock("@/lib/server/requireUidFromBearer", () => ({
   requireUidFromBearer: jest.fn(async () => "uid-alice"),
 }));
 
+jest.mock("@/lib/server/resolveProfileUsername", () => ({
+  ProfileUsernameError: class ProfileUsernameError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = "ProfileUsernameError";
+    }
+  },
+  requireUsernameForUid: jest.fn(async () => "alice"),
+  resolveGuestbookHost: jest.fn(async (hostId: string) => ({
+    hostUid: hostId === "maya" ? "maya" : "uid-bob",
+    hostUsername: hostId === "maya" ? "maya" : "bob",
+  })),
+}));
+
 jest.mock("@/lib/server/adminSocialCreates", () => ({
   adminCreateBbsNote: jest.fn(),
   adminCreateStoryComment: jest.fn(),
@@ -26,6 +40,10 @@ jest.mock("@/lib/server/adminSocialCreates", () => ({
 }));
 
 import { requireUidFromBearer } from "@/lib/server/requireUidFromBearer";
+import {
+  requireUsernameForUid,
+  resolveGuestbookHost,
+} from "@/lib/server/resolveProfileUsername";
 import {
   adminCreateBbsNote,
   adminCreateGuestbookEntry,
@@ -47,9 +65,10 @@ describe("socialCreateHandlers", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(requireUidFromBearer).mockResolvedValue("uid-alice");
+    jest.mocked(requireUsernameForUid).mockResolvedValue("alice");
   });
 
-  it("creates a BBS note for the authenticated uid", async () => {
+  it("creates a BBS note using server-resolved username, not the body", async () => {
     jest.mocked(adminCreateBbsNote).mockResolvedValue({
       id: "bbs-1",
       authorId: "alice",
@@ -60,7 +79,7 @@ describe("socialCreateHandlers", () => {
 
     const response = await postBbsNote(
       jsonRequest({
-        username: "alice",
+        username: "spoofed-name",
         title: "Hi",
         body: "There",
       }),
@@ -68,11 +87,41 @@ describe("socialCreateHandlers", () => {
 
     expect(response).toBeInstanceOf(NextResponse);
     expect(response.status).toBe(201);
+    expect(requireUsernameForUid).toHaveBeenCalledWith("uid-alice");
     expect(adminCreateBbsNote).toHaveBeenCalledWith({
       authorUid: "uid-alice",
       username: "alice",
       title: "Hi",
       body: "There",
+    });
+  });
+
+  it("resolves guestbook host without trusting client hostUsername", async () => {
+    jest.mocked(adminCreateGuestbookEntry).mockResolvedValue({
+      id: "gb-1",
+      hostUserId: "bob",
+      authorId: "alice",
+      content: "Yo",
+      createdAt: "2026-09-04T00:00:00.000Z",
+    });
+
+    const response = await postGuestbookEntry(
+      jsonRequest({
+        username: "spoofed",
+        hostUid: "uid-bob",
+        hostUsername: "evil-label",
+        content: "Yo",
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(resolveGuestbookHost).toHaveBeenCalledWith("uid-bob");
+    expect(adminCreateGuestbookEntry).toHaveBeenCalledWith({
+      authorUid: "uid-alice",
+      username: "alice",
+      hostUid: "uid-bob",
+      hostUsername: "bob",
+      content: "Yo",
     });
   });
 
@@ -83,7 +132,6 @@ describe("socialCreateHandlers", () => {
 
     const response = await postStoryComment(
       jsonRequest({
-        username: "alice",
         documentId: "doc-1",
         ownerUid: "uid-bob",
         content: "Nice",
@@ -105,9 +153,7 @@ describe("socialCreateHandlers", () => {
 
     const response = await postGuestbookEntry(
       jsonRequest({
-        username: "alice",
         hostUid: "uid-bob",
-        hostUsername: "bob",
         content: "Yo",
       }),
     );

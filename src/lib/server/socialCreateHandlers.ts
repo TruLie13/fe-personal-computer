@@ -9,6 +9,11 @@ import {
   UnauthorizedError,
 } from "@/lib/server/requireUidFromBearer";
 import {
+  requireUsernameForUid,
+  resolveGuestbookHost,
+  ProfileUsernameError,
+} from "@/lib/server/resolveProfileUsername";
+import {
   isQuotaExceededError,
   QuotaExceededError,
 } from "@/lib/socialQuota";
@@ -36,6 +41,9 @@ function errorResponse(err: unknown): NextResponse {
   if (err instanceof UnauthorizedError) {
     return NextResponse.json({ error: err.message }, { status: 401 });
   }
+  if (err instanceof ProfileUsernameError) {
+    return NextResponse.json({ error: err.message }, { status: 400 });
+  }
   if (isQuotaExceededError(err) || err instanceof QuotaExceededError) {
     return NextResponse.json(
       {
@@ -55,10 +63,11 @@ function errorResponse(err: unknown): NextResponse {
 export async function postBbsNote(request: Request): Promise<NextResponse> {
   try {
     const uid = await requireUidFromBearer(request);
+    const username = await requireUsernameForUid(uid);
     const body = await readJson(request);
     const note = await adminCreateBbsNote({
       authorUid: uid,
-      username: stringField(body, "username"),
+      username,
       title: stringField(body, "title"),
       body: stringField(body, "body"),
     });
@@ -73,10 +82,11 @@ export async function postStoryComment(
 ): Promise<NextResponse> {
   try {
     const uid = await requireUidFromBearer(request);
+    const username = await requireUsernameForUid(uid);
     const body = await readJson(request);
     const comment = await adminCreateStoryComment({
       authorUid: uid,
-      username: stringField(body, "username"),
+      username,
       documentId: stringField(body, "documentId"),
       ownerUid: stringField(body, "ownerUid"),
       content: stringField(body, "content"),
@@ -92,12 +102,14 @@ export async function postGuestbookEntry(
 ): Promise<NextResponse> {
   try {
     const uid = await requireUidFromBearer(request);
+    const username = await requireUsernameForUid(uid);
     const body = await readJson(request);
+    const host = await resolveGuestbookHost(stringField(body, "hostUid"));
     const entry = await adminCreateGuestbookEntry({
       authorUid: uid,
-      username: stringField(body, "username"),
-      hostUid: stringField(body, "hostUid"),
-      hostUsername: stringField(body, "hostUsername"),
+      username,
+      hostUid: host.hostUid,
+      hostUsername: host.hostUsername,
       content: stringField(body, "content"),
     });
     return NextResponse.json(entry, { status: 201 });
